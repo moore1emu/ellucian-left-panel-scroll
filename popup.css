@@ -43,13 +43,16 @@ body {
   font-family: Arial, sans-serif;
   margin: 0;
   min-width: 360px;
+  width: 360px;
+  max-height: 580px;
+  overflow-y: auto;
 }
 
 /* Arrange the popup as a header, settings card, and scope footer. */
 .popup-shell {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
   padding: 12px;
 }
 
@@ -65,7 +68,7 @@ body {
   align-items: center;
   background: #6d28d9;
   border-radius: 10px;
-  color: #ffffff;
+  color: #000000;
   display: inline-flex;
   flex: 0 0 38px;
   font-size: 21px;
@@ -111,7 +114,7 @@ h1 {
   display: flex;
   gap: 18px;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 8px 12px;
 }
 
 /* Stack the setting name above its supporting explanation. */
@@ -196,7 +199,7 @@ h1 {
 /* Reset fieldset defaults while reusing the standard settings-card surface. */
 .search-display-card {
   margin: 0;
-  padding: 10px 12px;
+  padding: 8px 12px;
 }
 
 /* Use the same hierarchy as the width setting title. */
@@ -218,7 +221,7 @@ h1 {
 /* Stack the choices so each label and explanation remain readable. */
 .search-mode-options {
   display: grid;
-  gap: 7px;
+  gap: 5px;
 }
 
 /* Make each complete row a generous radio-button target. */
@@ -274,13 +277,71 @@ h1 {
   font-size: 11px;
 }
 
+/* Reveal personalization without making the default popup taller than necessary. */
+.icon-appearance-card {
+  flex-shrink: 0;
+  padding: 10px 12px;
+}
+
+/* Keep the native disclosure arrow, keyboard behavior, and existing title styling. */
+.icon-appearance-card summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Arrange background, initials, letter color, and reset in one compact row. */
+.icon-appearance-controls {
+  align-items: end;
+  display: flex;
+  gap: 12px;
+  margin: 10px 0 8px;
+}
+
+/* Give both inputs visible labels without adding another settings card. */
+.icon-control {
+  display: grid;
+  font-size: 12px;
+  gap: 5px;
+}
+
+/* Match the theme and align native inputs with the reset button. */
+.icon-control input,
+.icon-control select,
+#reset-icon {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  height: 30px;
+}
+
+/* Keep color selection and two initials comfortably sized on the same row. */
+#icon-color { cursor: pointer; padding: 2px; width: 64px; }
+#icon-letters { font: 700 14px Arial, sans-serif; padding: 4px 8px; text-transform: uppercase; width: 64px; }
+#icon-text-color { font: 12px Arial, sans-serif; padding: 4px; width: 76px; }
+#reset-icon { cursor: pointer; font: 12px Arial, sans-serif; margin-left: auto; padding: 0 10px; }
+
+/* Use the same visible focus treatment as the existing settings controls. */
+.icon-control input:focus-visible,
+.icon-control select:focus-visible,
+#reset-icon:focus-visible,
+.icon-appearance-card summary:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+
+/* Only reserve status space after a save or a validation error. */
+.icon-status { color: var(--muted); font-size: 12px; margin: 0; }
+.icon-status:not(:empty) { margin-top: 5px; }
+
 /* Summarize the extension's scope beneath the main setting. */
 footer {
   color: var(--muted);
   display: flex;
   flex-direction: column;
   font-size: 11px;
-  gap: 5px;
+  gap: 4px;
   line-height: 1.3;
   text-align: center;
 }

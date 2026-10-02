@@ -2,6 +2,24 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.16.2 — 2026-10-02
+
+- Renamed the extension to **Integration Navigator**, including its toolbar tooltip and settings header.
+- Updated the README, privacy policy, and store submission text while keeping Ellucian compatibility and the non-affiliation disclaimer clear.
+- Kept the existing unpacked folder, settings, favorites, and icon defaults unchanged. Existing installations update by replacing files in the same folder and selecting Reload.
+
+## 1.16.1 — 2026-10-02
+
+- Selecting a pinned package now raises its normal sidebar row when needed to reveal about five pipelines, depending on the available panel height.
+- Already-high packages stay in place. The adjustment follows the expansion animation and stops if you select something else or scroll the list yourself.
+- Added an explicit **White/Black** letter-color choice in **Icon appearance**, replacing automatic contrast selection. The default and Reset now use a black E on purple, including crisp packaged toolbar artwork.
+
+## 1.16.0 — 2026-10-02
+
+- Added **Icon appearance** settings for a background color and one or two letters, with a live preview and automatic black/white text contrast.
+- Remembers the toolbar icon across browser restarts and provides **Reset** to restore the original purple E. The settings header follows the same appearance; the store icon stays unchanged.
+- Kept these controls collapsible and generated toolbar artwork at multiple display scales without extra permissions, network requests, or background polling.
+
 ## 1.15.1 — 2026-10-01
 
 - Fixed pinned pipeline and search-result navigation stopping at the package page when versions differ only by a leading `v`, such as `v2.0.0` and `2.0.0`.

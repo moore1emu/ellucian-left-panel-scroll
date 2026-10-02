@@ -1,11 +1,11 @@
-# Ellucian Left Panel Scroll
+# Integration Navigator
 
 A Chrome and Microsoft Edge extension that improves package navigation in:
 
 - Ellucian Integration Packages
 - Ellucian Integration Designer
 
-It is designed for the Ellucian Experience Test and Production sites.
+It is designed for the Ellucian Experience Test and Production sites. Previously named **Ellucian Left Panel Scroll**.
 
 ## Updates
 
@@ -19,6 +19,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history and recent changes. The ins
 - Searches package and pipeline names.
 - Adds a search beside **Pipelines:** in Designer for the selected package, including entries on other table pages.
 - Pins frequently used packages and pipelines to a favorites area.
+- Selecting a pinned package raises it in the normal list when needed to reveal its pipelines, without moving already-high packages down.
 - Lets you reorder pinned packages and pipelines by dragging their handles.
 - Keeps package names, pipeline versions, and stars neatly aligned.
 - Remembers favorites separately for Integration Packages and Integration Designer in Test and Production.
@@ -33,6 +34,7 @@ Select the extension icon in the browser toolbar to:
 - Remember or reset the resized column width after refreshing.
 - Show search as a full box, a search button, or hide it.
 - Show or hide pinned favorites without deleting them.
+- Open **Icon appearance** to choose a background color, one or two letters, and white or black lettering, with a live preview above. The default is a black **E** on purple; **Reset** restores it. Your choice stays local to this browser; the store listing icon does not change.
 - Optionally show **Shared Environments** in Designer. Hover or focus a destination to see its newest shared version. Red means it differs from the published row within the same major version. This is off by default.
 - Sharing information refreshes when you return from either share flow, including after cancelling. Use the refresh icon beside **Shared Environments** to recheck displayed pipelines anytime. Results otherwise stay cached to limit traffic.
 - Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
@@ -40,7 +42,7 @@ Select the extension icon in the browser toolbar to:
 ## Install in Edge or Chrome
 
 1. Extract the downloaded ZIP file.
-2. Keep the extracted `ellucian-left-panel-scroll` folder somewhere it will not be deleted.
+2. Extract into a folder you will keep, such as `ellucian-left-panel-scroll`. The ZIP contains `manifest.json` directly at its root.
 3. Open your browser's extension page:
    - Edge: `edge://extensions`
    - Chrome: `chrome://extensions`
@@ -51,10 +53,10 @@ Select the extension icon in the browser toolbar to:
 
 ## Update the extension
 
-After replacing the extension files with a newer version:
+Replace the extension files in the same folder you originally loaded. The folder name is unchanged for existing installations; the display-name change does not require removing the extension or resetting favorites.
 
 1. Open the browser's extension page.
-2. Find **Ellucian Left Panel Scroll**.
+2. Find **Integration Navigator** (or **Ellucian Left Panel Scroll** before the first reload).
 3. Select its reload button.
 4. Refresh the Ellucian page.
 

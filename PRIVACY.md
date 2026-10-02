@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Ellucian Left Panel Scroll · Updated October 2, 2026
+Integration Navigator · Updated October 2, 2026
 
 Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
@@ -18,7 +18,7 @@ The extension does not read, copy, or store your password or bearer token. It do
 
 ## Local storage
 
-Your settings, column widths, favorite package and pipeline names, favorite version identifiers, ordering, and favorites layout preferences are saved in the browser's local extension storage. They are not synchronized by the extension to other devices or sent to the publisher. Temporary search indexes and sharing results remain in page memory.
+Your settings, icon background and letter colors, icon letters, column widths, favorite package and pipeline names, favorite version identifiers, ordering, and favorites layout preferences are saved in the browser's local extension storage. They are not synchronized by the extension to other devices or sent to the publisher. Temporary search indexes and sharing results remain in page memory.
 
 ## Sharing and tracking
 

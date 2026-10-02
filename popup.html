@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ellucian Left Panel Scroll</title>
+    <title>Integration Navigator</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
@@ -12,8 +12,8 @@
       <header class="popup-header">
         <span class="header-icon" aria-hidden="true">E</span>
         <div class="header-copy">
-          <h1>Left panel settings</h1>
-          <span>Ellucian package navigation</span>
+          <h1>Integration Navigator</h1>
+          <span>Navigation settings</span>
         </div>
       </header>
 
@@ -118,6 +118,34 @@
         </div>
       </fieldset>
 
+      <!-- Keep optional personalization compact until the user opens it. -->
+      <details class="settings-card icon-appearance-card">
+        <summary>Icon appearance</summary>
+        <div class="icon-appearance-controls">
+          <!-- Provide a native color picker and a short initials field. -->
+          <label class="icon-control" for="icon-color">
+            <span>Background</span>
+            <input id="icon-color" type="color" value="#6d28d9" />
+          </label>
+          <label class="icon-control" for="icon-letters">
+            <span>Letters</span>
+            <input id="icon-letters" type="text" value="E" maxlength="2" pattern="[A-Za-z]{1,2}" required autocomplete="off" spellcheck="false" aria-describedby="icon-help" />
+          </label>
+          <!-- Let the user choose letter contrast rather than selecting it automatically. -->
+          <label class="icon-control" for="icon-text-color">
+            <span>Letter color</span>
+            <select id="icon-text-color">
+              <option value="#000000">Black</option>
+              <option value="#ffffff">White</option>
+            </select>
+          </label>
+          <button id="reset-icon" type="button">Reset</button>
+        </div>
+        <!-- Use the header icon as the live preview for all three appearance choices. -->
+        <p class="card-description" id="icon-help">1–2 letters. Preview above.</p>
+        <p class="icon-status" id="icon-status" role="status" aria-live="polite"></p>
+      </details>
+
       <!-- Clarify scope, version, and the extension's independent status. -->
       <footer>
         <div class="footer-scope">
@@ -133,6 +161,7 @@
     </main>
 
     <!-- Load the preference behavior after the popup controls exist. -->
+    <script src="icon-appearance.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

@@ -568,6 +568,72 @@
     });
   }
 
+  // Reveal native child pipelines after selecting a pinned package, without lowering a high row.
+  function revealPinnedPackagePipelines(packageEntry, sequence) {
+    let remainingChecks = 10;
+    let watchedRegion = null;
+    let userScrolled = false;
+
+    // Stop adjusting immediately if the user starts scrolling the native package list.
+    const cancelForUserScroll = () => { userScrolled = true; };
+    const cancelForKeyboardScroll = (event) => {
+      if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(event.key)) userScrolled = true;
+    };
+    const cleanup = () => {
+      watchedRegion?.removeEventListener("wheel", cancelForUserScroll);
+      watchedRegion?.removeEventListener("keydown", cancelForKeyboardScroll);
+    };
+
+    // Re-find replaced rows and allow Ellucian's short expansion animation to settle.
+    const checkPosition = () => {
+      if (sequence !== navigationSequence || !isSupportedPage() || userScrolled) {
+        cleanup();
+        return;
+      }
+      const packageRow = findPackageRow(packageEntry);
+      const rowContent = packageRow?.querySelector(":scope > .MuiTreeItem-content");
+      const region = packageRow?.closest('[data-ellucian-scroll-region="true"]');
+
+      // Watch only the native scroll region, never the favorites area or whole page.
+      if (region !== watchedRegion) {
+        cleanup();
+        watchedRegion = region;
+        watchedRegion?.addEventListener("wheel", cancelForUserScroll, { passive: true });
+        watchedRegion?.addEventListener("keydown", cancelForKeyboardScroll);
+      }
+      const pipelines = packageRow ? Array.from(packageRow.querySelectorAll(
+        'li[data-level="2"][pipeline-element], li[data-level="2"][pipelineelement]',
+      )).slice(0, 5) : [];
+
+      // Wait for rendered children instead of estimating space from a stale index.
+      if (rowContent && region?.clientHeight > 0 && pipelines.length &&
+          packageRow.getAttribute("aria-expanded") === "true") {
+        const rowBounds = rowContent.getBoundingClientRect();
+        const lastPipelineBounds = pipelines.at(-1).getBoundingClientRect();
+        const visibleTop = region.getBoundingClientRect().top + region.clientTop;
+
+        // Prefer the midpoint, or higher when five child rows need more room below it.
+        const requiredSpace = Math.max(rowBounds.height, lastPipelineBounds.bottom - rowBounds.top) + 12;
+        const desiredOffset = Math.max(8, Math.min(region.clientHeight / 2, region.clientHeight - requiredSpace));
+        const currentOffset = rowBounds.top - visibleTop;
+
+        // Only raise a row that is too low; leave already-high packages exactly where they are.
+        if (rowBounds.height > 0 && currentOffset > desiredOffset + 1) {
+          const maximumScroll = Math.max(0, region.scrollHeight - region.clientHeight);
+          const targetScroll = Math.min(maximumScroll, region.scrollTop + currentOffset - desiredOffset);
+          if (targetScroll > region.scrollTop) region.scrollTop = targetScroll;
+        }
+      }
+
+      // Finish after one brief settling window, with no ongoing background polling.
+      if (--remainingChecks > 0) window.setTimeout(checkPosition, 100);
+      else cleanup();
+    };
+
+    // Let normal package activation and the existing expansion retry run first.
+    window.requestAnimationFrame(() => window.requestAnimationFrame(checkPosition));
+  }
+
   // Wait for React to render a pipeline after its package is expanded.
   function waitForPipelineRow(packageEntry, pipelineEntry) {
     return new Promise((resolve) => {
@@ -625,6 +691,8 @@
     if (result.type === "package") {
       activateTreeRow(packageRow);
       keepPackageExpanded(packageRow, result.packageEntry);
+      // Pinned parents should expose their native children without changing other navigation.
+      if (result.revealPipelines) revealPinnedPackagePipelines(result.packageEntry, sequence);
       return;
     }
 
@@ -1535,7 +1603,7 @@
       selectButton.setAttribute("title", packageEntry.name);
       selectButton.addEventListener("click", (event) => {
         event.stopPropagation();
-        activateSearchResult({ type: "package", packageEntry });
+        activateSearchResult({ type: "package", packageEntry, revealPipelines: true });
       });
 
       // Leave a flexible blank target that toggles children instead of navigation.
