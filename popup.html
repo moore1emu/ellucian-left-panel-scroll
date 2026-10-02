@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ellucian Left Panel Scroll</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup-shell">
+      <!-- Introduce the extension and its purpose at a glance. -->
+      <header class="popup-header">
+        <span class="header-icon" aria-hidden="true">E</span>
+        <div class="header-copy">
+          <h1>Left panel settings</h1>
+          <span>Ellucian package navigation</span>
+        </div>
+      </header>
+
+      <!-- Group the width preference into a standard settings card. -->
+      <section class="settings-card" aria-labelledby="width-setting-title">
+        <label class="setting-row" for="remember-width">
+          <span class="setting-copy">
+            <span class="setting-title" id="width-setting-title">
+              Remember resized width
+            </span>
+            <span class="setting-description">
+              Preserve your column size after refreshing Ellucian.
+            </span>
+          </span>
+
+          <!-- Keep the native checkbox accessible beneath the visual switch. -->
+          <span class="switch">
+            <input id="remember-width" type="checkbox" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+
+      </section>
+
+      <!-- Allow the remembered pinned-packages section to be hidden entirely. -->
+      <section class="settings-card" aria-labelledby="favorites-setting-title">
+        <label class="setting-row" for="favorites-enabled">
+          <span class="setting-copy">
+            <span class="setting-title" id="favorites-setting-title">
+              Pinned packages
+            </span>
+            <span class="setting-description">
+              Show remembered package and pipeline favorites.
+            </span>
+          </span>
+
+          <!-- Keep the native checkbox accessible beneath the visual switch. -->
+          <span class="switch">
+            <input id="favorites-enabled" type="checkbox" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+      </section>
+
+      <!-- Keep network-backed sharing details an explicit opt-in. -->
+      <section class="settings-card">
+        <label class="setting-row" for="shared-version-enabled">
+          <span class="setting-copy">
+            <span class="setting-title">Shared environments</span>
+            <span class="setting-description">Designer only. Checks shared releases and destinations.</span>
+          </span>
+          <span class="switch">
+            <input id="shared-version-enabled" type="checkbox" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+      </section>
+
+      <!-- Offer one clear three-state choice for the in-page search control. -->
+      <fieldset class="settings-card search-display-card">
+        <legend>Search display</legend>
+        <p class="card-description">
+          Beside the PACKAGES heading.
+        </p>
+
+        <div class="search-mode-options">
+          <label class="mode-option">
+            <input
+              type="radio"
+              name="search-display-mode"
+              value="box"
+            />
+            <span class="mode-option-content">
+              <span class="mode-option-title">Search box</span>
+              <span class="mode-option-detail">Always visible</span>
+            </span>
+          </label>
+
+          <label class="mode-option">
+            <input
+              type="radio"
+              name="search-display-mode"
+              value="icon"
+            />
+            <span class="mode-option-content">
+              <span class="mode-option-title">Icon</span>
+              <span class="mode-option-detail">Open when needed</span>
+            </span>
+          </label>
+
+          <label class="mode-option">
+            <input
+              type="radio"
+              name="search-display-mode"
+              value="hidden"
+            />
+            <span class="mode-option-content">
+              <span class="mode-option-title">Hidden</span>
+              <span class="mode-option-detail">Original layout</span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- Clarify scope, version, and the extension's independent status. -->
+      <footer>
+        <div class="footer-scope">
+          <span>Integration Packages &amp; Designer</span>
+          <span class="footer-separator" aria-hidden="true">•</span>
+          <span>Test &amp; Production</span>
+        </div>
+        <span id="extension-version"></span>
+        <p class="affiliation-notice">
+          This extension is not affiliated with or supported by Ellucian.
+        </p>
+      </footer>
+    </main>
+
+    <!-- Load the preference behavior after the popup controls exist. -->
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,1013 @@
+/* Turn the matching left panel into a viewport-height column. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] {
+  align-self: flex-start !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: var(--ellucian-left-panel-height) !important;
+  max-height: var(--ellucian-left-panel-height) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  position: sticky !important;
+  top: 0 !important;
+}
+
+/* Apply a temporary width only after the user drags the resize handle. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"][data-ellucian-panel-resized="true"] {
+  flex-basis: var(--ellucian-left-panel-width) !important;
+  max-width: var(--ellucian-left-panel-width) !important;
+  min-width: var(--ellucian-left-panel-width) !important;
+  width: var(--ellucian-left-panel-width) !important;
+}
+
+/* Keep the PACKAGES heading and optional add button outside the scrolling region. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] > :first-child {
+  box-sizing: border-box !important;
+  flex: 0 0 auto !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* Give the package-list wrapper the remaining height and its own scrollbar. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] > [data-ellucian-scroll-region="true"] {
+  box-sizing: border-box !important;
+  flex: 1 1 auto !important;
+  height: var(--ellucian-package-list-height) !important;
+  max-height: var(--ellucian-package-list-height) !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-color: rgba(80, 80, 80, 0.55) transparent;
+  scrollbar-width: thin;
+  width: var(--ellucian-package-list-width) !important;
+}
+
+/* Use a narrow scrollbar in Chromium-based browsers such as Edge and Chrome. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] > [data-ellucian-scroll-region="true"]::-webkit-scrollbar {
+  width: 6px;
+}
+
+/* Keep the scrollbar track visually unobtrusive. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] > [data-ellucian-scroll-region="true"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Give the narrow scrollbar thumb enough contrast to locate and drag. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] > [data-ellucian-scroll-region="true"]::-webkit-scrollbar-thumb {
+  background-color: rgba(80, 80, 80, 0.55);
+  border-radius: 999px;
+}
+
+/* Place a full-height resize target over the panel's right edge. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] > .ellucian-left-panel-resize-handle {
+  bottom: 0;
+  cursor: col-resize;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 8px;
+  z-index: 10;
+}
+
+/* Reveal a slim guide when the resize target is hovered or keyboard-focused. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] > .ellucian-left-panel-resize-handle::after {
+  background: transparent;
+  bottom: 0;
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: background-color 120ms ease;
+  width: 2px;
+}
+
+/* Highlight the edge without covering package names. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] > .ellucian-left-panel-resize-handle:hover::after,
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] > .ellucian-left-panel-resize-handle:focus-visible::after {
+  background: rgba(0, 96, 0, 0.65);
+}
+
+/* Prevent text selection and retain the resize cursor during a drag. */
+html[data-ellucian-panel-resizing="true"],
+html[data-ellucian-panel-resizing="true"] * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+/* Prevent the tree itself from imposing a height that defeats the wrapper scrollbar. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] > [data-ellucian-scroll-region="true"] > [role="tree"] {
+  box-sizing: border-box !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  width: 100% !important;
+}
+
+/* Allow expanded pipeline groups and their generated wrappers to use the full tree width. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [role="group"],
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [role="group"] > div,
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [role="group"] > div > div {
+  box-sizing: border-box !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* Expand each identified child-pipeline item across the available column width. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [data-ellucian-pipeline-item="true"] {
+  box-sizing: border-box !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* Let the Material UI row occupy the full available width. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [data-ellucian-pipeline-item="true"] > .MuiTreeItem-content {
+  box-sizing: border-box !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+/* Let the label use the space left after the tree's icon container. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [data-ellucian-pipeline-item="true"] .MuiTreeItem-label {
+  box-sizing: border-box !important;
+  flex: 1 1 auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+/* Remove fixed widths from Ellucian's two intermediate label wrappers. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [data-ellucian-pipeline-item="true"] .MuiTreeItem-label > div,
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [data-ellucian-pipeline-item="true"] .MuiTreeItem-label > div > div {
+  box-sizing: border-box !important;
+  display: block !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+/* Keep every pipeline name, version badge, and star in three aligned columns. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [data-ellucian-pipeline-row="true"] {
+  align-items: center !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  gap: 6px !important;
+  grid-template-columns: minmax(0, 1fr) max-content 28px !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  padding-right: 8px !important;
+  width: 100% !important;
+}
+
+/* Give the pipeline name all remaining room while retaining ellipsis when necessary. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [data-ellucian-pipeline-name="true"] {
+  grid-column: 1 !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  width: auto !important;
+}
+
+/* Keep the version fully visible and prevent Ellucian's fixed positioning from covering the name. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [data-ellucian-pipeline-version="true"] {
+  grid-column: 2 !important;
+  margin-left: 0 !important;
+  position: static !important;
+  transform: none !important;
+  white-space: nowrap !important;
+  width: auto !important;
+}
+
+/* Reserve the final column even while an unpinned star is visually quiet. */
+[data-testid="master"][data-ellucian-left-panel-scroll="enabled"] [data-ellucian-pipeline-row="true"] > .ellucian-pipeline-favorite-button {
+  grid-column: 3 !important;
+}
+
+/* Reserve room for the package star without changing Ellucian's tree behavior. */
+[data-testid="master"] [data-ellucian-package-row="true"] > .MuiTreeItem-label {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+/* Present a quiet star that becomes prominent on hover, focus, or selection. */
+.ellucian-package-favorite-button,
+.ellucian-pipeline-favorite-button {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #697480 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  flex: 0 0 28px !important;
+  height: 28px !important;
+  justify-content: center !important;
+  opacity: 0.45;
+  padding: 4px !important;
+  transition: color 120ms ease, opacity 120ms ease !important;
+  width: 28px !important;
+}
+
+/* Reveal unselected stars during pointer or keyboard interaction. */
+[data-ellucian-package-row="true"]:hover > .ellucian-package-favorite-button,
+[data-ellucian-pipeline-row="true"]:hover > .ellucian-pipeline-favorite-button,
+.ellucian-package-favorite-button:focus-visible,
+.ellucian-pipeline-favorite-button:focus-visible,
+.ellucian-package-favorite-button[data-favorite="true"],
+.ellucian-pipeline-favorite-button[data-favorite="true"] {
+  opacity: 1;
+}
+
+/* Use the extension purple to distinguish a saved package clearly. */
+.ellucian-package-favorite-button[data-favorite="true"],
+.ellucian-pipeline-favorite-button[data-favorite="true"] {
+  color: #6d28d9 !important;
+}
+
+/* Preserve a compact but visible keyboard focus indicator around each star. */
+.ellucian-package-favorite-button:focus-visible,
+.ellucian-pipeline-favorite-button:focus-visible {
+  border-radius: 5px !important;
+  outline: 2px solid #6d28d9 !important;
+  outline-offset: -2px !important;
+}
+
+/* Size the reusable vector star and switch between outline and filled states. */
+.ellucian-favorite-star-icon {
+  fill: transparent !important;
+  height: 17px !important;
+  pointer-events: none !important;
+  stroke: currentColor !important;
+  stroke-linejoin: round !important;
+  stroke-width: 1.8 !important;
+  width: 17px !important;
+}
+
+.ellucian-package-favorite-button[data-favorite="true"] .ellucian-favorite-star-icon,
+.ellucian-pipeline-favorite-button[data-favorite="true"] .ellucian-favorite-star-icon,
+.ellucian-favorite-remove[data-favorite="true"] .ellucian-favorite-star-icon,
+.ellucian-favorite-pipeline-remove .ellucian-favorite-star-icon {
+  fill: currentColor !important;
+}
+
+/* Place the remembered favorites directly beneath the package header. */
+.ellucian-favorites-section {
+  background: transparent !important;
+  border-bottom: 1px solid #e0e4e8 !important;
+  border-top: 1px solid #e0e4e8 !important;
+  box-sizing: border-box !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  width: var(--ellucian-package-list-width, 100%) !important;
+}
+
+/* Make the complete favorites heading a clear expand/collapse target. */
+.ellucian-favorites-toggle {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #303943 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  font-family: inherit !important;
+  min-height: 38px !important;
+  padding: 8px 20px !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+
+/* Highlight the section heading without competing with the PACKAGES title. */
+.ellucian-favorites-toggle:hover,
+.ellucian-favorites-toggle:focus-visible {
+  background: #eef1f4 !important;
+  outline: none !important;
+}
+
+.ellucian-favorites-toggle:focus-visible {
+  box-shadow: inset 0 0 0 2px #6d28d9 !important;
+}
+
+.ellucian-favorites-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+/* Show only the number of favorites verified against the current package index. */
+.ellucian-favorites-count {
+  background: #e5e0f3 !important;
+  border-radius: 999px !important;
+  color: #50319a !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  margin-left: 7px !important;
+  min-width: 18px !important;
+  padding: 2px 5px !important;
+  text-align: center !important;
+}
+
+/* Draw a lightweight chevron that rotates with the remembered section state. */
+.ellucian-favorites-chevron {
+  border-bottom: 1.5px solid currentColor !important;
+  border-right: 1.5px solid currentColor !important;
+  height: 7px !important;
+  margin-left: auto !important;
+  margin-right: 3px !important;
+  transform: rotate(-45deg) !important;
+  transition: transform 120ms ease !important;
+  width: 7px !important;
+}
+
+.ellucian-favorites-section[data-expanded="true"] .ellucian-favorites-chevron {
+  transform: rotate(45deg) !important;
+}
+
+/* Limit a long favorites list so the package tree still receives useful space. */
+.ellucian-favorites-list {
+  background: transparent !important;
+  border-top: 1px solid #e0e4e8 !important;
+  max-height: 150px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-gutter: stable !important;
+  scrollbar-color: #9ba3aa transparent !important;
+  scrollbar-width: thin !important;
+}
+
+/* Use the remembered height only after the user adjusts the divider. */
+.ellucian-favorites-section[data-custom-height="true"] .ellucian-favorites-list {
+  height: var(--ellucian-favorites-list-height) !important;
+  max-height: var(--ellucian-favorites-list-height) !important;
+}
+
+/* Match the package list's narrow Chromium scrollbar exactly. */
+.ellucian-favorites-list::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.ellucian-favorites-list::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.ellucian-favorites-list::-webkit-scrollbar-thumb {
+  background-color: rgba(80, 80, 80, 0.55) !important;
+  border-radius: 999px !important;
+}
+
+.ellucian-favorites-list[hidden] {
+  display: none !important;
+}
+
+/* Provide a thin horizontal target for adjusting the expanded list height. */
+.ellucian-favorites-resize-handle {
+  cursor: row-resize !important;
+  height: 8px !important;
+  position: relative !important;
+  width: 100% !important;
+}
+
+.ellucian-favorites-resize-handle::after {
+  background: #d6dbe0 !important;
+  content: "" !important;
+  height: 1px !important;
+  left: 0 !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: 3px !important;
+  transition: background-color 120ms ease, height 120ms ease !important;
+}
+
+.ellucian-favorites-resize-handle:hover::after,
+.ellucian-favorites-resize-handle:focus-visible::after {
+  background: #08783e !important;
+  height: 2px !important;
+}
+
+.ellucian-favorites-resize-handle:focus-visible {
+  outline: none !important;
+}
+
+/* Hide the resize target together with the collapsed favorites list. */
+.ellucian-favorites-section[data-expanded="false"] .ellucian-favorites-resize-handle {
+  display: none !important;
+}
+
+/* Retain the row-resize cursor and prevent selection during a drag. */
+html[data-ellucian-favorites-resizing="true"],
+html[data-ellucian-favorites-resizing="true"] * {
+  cursor: row-resize !important;
+  user-select: none !important;
+}
+
+/* Keep each package parent and its optional pipeline children in one hierarchy. */
+.ellucian-favorite-group {
+  border-bottom: 1px solid #e9ecef !important;
+  min-width: 0 !important;
+}
+
+.ellucian-favorite-group:last-child {
+  border-bottom: 0 !important;
+}
+
+/* Arrange each verified package parent as one Ellucian-style tree row. */
+.ellucian-favorite-item {
+  align-items: center !important;
+  cursor: default !important;
+  display: flex !important;
+  min-height: 40px !important;
+  min-width: 0 !important;
+  position: relative !important;
+}
+
+/* Match Material UI's subtle full-row hover used by the normal package list. */
+.ellucian-favorite-item:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Fade the source row and show a clear insertion line during reordering. */
+.ellucian-favorite-item[data-dragging="true"] {
+  opacity: 0.5 !important;
+}
+
+.ellucian-favorite-item[data-drop-position="before"]::before,
+.ellucian-favorite-item[data-drop-position="after"]::after {
+  background: #6d28d9 !important;
+  content: "" !important;
+  height: 2px !important;
+  left: 6px !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 6px !important;
+  z-index: 2 !important;
+}
+
+.ellucian-favorite-item[data-drop-position="before"]::before {
+  top: -1px !important;
+}
+
+.ellucian-favorite-item[data-drop-position="after"]::after {
+  bottom: -1px !important;
+}
+
+/* Provide a compact grab target while keeping names aligned with package rows. */
+.ellucian-favorite-drag-handle {
+  align-items: center !important;
+  align-self: stretch !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #7a848f !important;
+  cursor: grab !important;
+  display: inline-flex !important;
+  flex: 0 0 20px !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  width: 20px !important;
+}
+
+.ellucian-favorite-drag-handle:active {
+  cursor: grabbing !important;
+}
+
+.ellucian-favorite-drag-handle:focus-visible {
+  box-shadow: inset 3px 0 #0878d1 !important;
+  outline: none !important;
+}
+
+/* Keep the six-dot vector grip crisp at normal and scaled display sizes. */
+.ellucian-favorite-drag-icon {
+  fill: currentColor !important;
+  height: 18px !important;
+  pointer-events: none !important;
+  width: 14px !important;
+}
+
+.ellucian-favorite-select {
+  background: transparent !important;
+  border: 0 !important;
+  color: #303943 !important;
+  cursor: pointer !important;
+  flex: 0 1 auto !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  padding: 9px 4px 9px 0 !important;
+  text-align: left !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Reserve genuine row whitespace as a second mouse target for child disclosure. */
+.ellucian-favorite-spacer {
+  align-self: stretch !important;
+  flex: 1 1 12px !important;
+  min-width: 4px !important;
+}
+
+.ellucian-favorite-select:hover,
+.ellucian-favorite-select:focus-visible {
+  background: transparent !important;
+  outline: none !important;
+}
+
+/* Preserve keyboard visibility with the same left-edge cue used by selected rows. */
+.ellucian-favorite-select:focus-visible {
+  box-shadow: inset 3px 0 #0878d1 !important;
+}
+
+/* Draw a right-facing arrow that points down while child pipelines are open. */
+.ellucian-favorite-disclosure {
+  align-items: center !important;
+  align-self: stretch !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #697480 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  flex: 0 0 28px !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  width: 28px !important;
+}
+
+.ellucian-favorite-disclosure::before {
+  border-bottom: 1.5px solid currentColor !important;
+  border-right: 1.5px solid currentColor !important;
+  content: "" !important;
+  height: 7px !important;
+  transform: rotate(-45deg) !important;
+  transition: transform 120ms ease !important;
+  width: 7px !important;
+}
+
+.ellucian-favorite-disclosure[aria-expanded="true"]::before {
+  transform: rotate(45deg) !important;
+}
+
+.ellucian-favorite-disclosure[data-empty="true"] {
+  visibility: hidden !important;
+}
+
+.ellucian-favorite-disclosure:focus-visible {
+  box-shadow: inset 0 0 0 2px #0878d1 !important;
+  outline: none !important;
+}
+
+.ellucian-favorite-remove {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #697480 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  flex: 0 0 28px !important;
+  height: 28px !important;
+  justify-content: center !important;
+  padding: 4px !important;
+  width: 28px !important;
+}
+
+.ellucian-favorite-remove[data-favorite="true"] {
+  color: #6d28d9 !important;
+}
+
+.ellucian-favorite-remove:hover,
+.ellucian-favorite-remove:focus-visible {
+  background: transparent !important;
+  outline: none !important;
+}
+
+.ellucian-favorite-remove:focus-visible {
+  box-shadow: inset 0 0 0 2px #6d28d9 !important;
+}
+
+/* Indent pinned pipelines beneath the package name like Ellucian's native tree. */
+.ellucian-favorite-pipeline-list[hidden] {
+  display: none !important;
+}
+
+.ellucian-favorite-pipeline-item {
+  align-items: center !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  min-height: 36px !important;
+  min-width: 0 !important;
+  padding-left: 20px !important;
+  position: relative !important;
+}
+
+.ellucian-favorite-pipeline-item:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Reuse the compact parent grip while preserving the native child indentation. */
+.ellucian-favorite-pipeline-drag-handle {
+  align-items: center !important;
+  align-self: stretch !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #7a848f !important;
+  cursor: grab !important;
+  display: inline-flex !important;
+  flex: 0 0 20px !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  width: 20px !important;
+}
+
+.ellucian-favorite-pipeline-drag-handle:active {
+  cursor: grabbing !important;
+}
+
+.ellucian-favorite-pipeline-drag-handle:focus-visible {
+  box-shadow: inset 3px 0 #0878d1 !important;
+  outline: none !important;
+}
+
+/* Use the same drag feedback for pipeline rows as package rows. */
+.ellucian-favorite-pipeline-item[data-dragging="true"] {
+  opacity: 0.5 !important;
+}
+
+.ellucian-favorite-pipeline-item[data-drop-position="before"]::before,
+.ellucian-favorite-pipeline-item[data-drop-position="after"]::after {
+  background: #6d28d9 !important;
+  content: "" !important;
+  height: 2px !important;
+  left: 20px !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 0 !important;
+  z-index: 2 !important;
+}
+
+.ellucian-favorite-pipeline-item[data-drop-position="before"]::before {
+  top: -1px !important;
+}
+
+.ellucian-favorite-pipeline-item[data-drop-position="after"]::after {
+  bottom: -1px !important;
+}
+
+.ellucian-favorite-pipeline-select {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #303943 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  gap: 7px !important;
+  min-width: 0 !important;
+  padding: 7px 7px 7px 2px !important;
+  text-align: left !important;
+}
+
+.ellucian-favorite-pipeline-select:focus-visible {
+  box-shadow: inset 3px 0 #0878d1 !important;
+  outline: none !important;
+}
+
+.ellucian-favorite-pipeline-name {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.ellucian-favorite-pipeline-version {
+  background: #92979d !important;
+  border-radius: 6px !important;
+  color: #ffffff !important;
+  flex: 0 0 auto !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  padding: 1px 7px !important;
+  white-space: nowrap !important;
+}
+
+.ellucian-favorite-pipeline-remove {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #6d28d9 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  flex: 0 0 28px !important;
+  height: 28px !important;
+  justify-content: center !important;
+  padding: 4px !important;
+  width: 28px !important;
+}
+
+.ellucian-favorite-pipeline-remove:focus-visible {
+  box-shadow: inset 0 0 0 2px #6d28d9 !important;
+  outline: none !important;
+}
+
+/* Explain empty, loading, or temporarily unavailable favorite lists. */
+.ellucian-favorites-empty {
+  color: #68737f !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  padding: 10px 20px !important;
+}
+
+/* Provide a positioning surface for the grouped search results. */
+[data-testid="master"] [data-ellucian-search-surface="true"] {
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 20 !important;
+}
+
+/* Arrange PACKAGES, the search control, and Designer's add button in one row. */
+[data-testid="master"] [data-ellucian-search-host="true"] {
+  align-items: center !important;
+  display: flex !important;
+  gap: 8px !important;
+  justify-content: flex-start !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+
+/* Keep the search box attached to the PACKAGES label as the panel is resized. */
+.ellucian-package-search {
+  align-items: center;
+  display: flex;
+  flex: 0 1 240px;
+  margin-left: 4px;
+  max-width: 240px;
+  min-width: 72px;
+  position: relative;
+  width: 240px;
+}
+
+/* Keep Designer's add button at the far edge without moving the search box. */
+[data-testid="master"] [data-ellucian-search-host="true"] > #add-new-package-icon-button {
+  margin-left: auto !important;
+}
+
+/* Style the search field to fit Ellucian's compact package heading. */
+.ellucian-search-input {
+  background: #ffffff !important;
+  border: 1px solid #b8c0c8 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  color: #20252b !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  height: 34px !important;
+  line-height: 1.2 !important;
+  min-width: 0 !important;
+  outline: none !important;
+  padding: 6px 9px !important;
+  width: 100% !important;
+}
+
+/* Use Ellucian green for a clear but restrained focus indicator. */
+.ellucian-search-input:focus {
+  border-color: #08783e !important;
+  box-shadow: 0 0 0 2px rgba(8, 120, 62, 0.18) !important;
+}
+
+/* Preserve readable placeholder contrast without competing with real text. */
+.ellucian-search-input::placeholder {
+  color: #68737f !important;
+  opacity: 1 !important;
+}
+
+/* Hide the compact button while the full search box is selected. */
+.ellucian-package-search[data-search-mode="box"] .ellucian-search-icon-button {
+  display: none !important;
+}
+
+/* Reduce compact mode to a standard square icon button. */
+.ellucian-package-search[data-search-mode="icon"] {
+  flex: 0 0 auto;
+  margin-left: 4px;
+  min-width: 34px;
+  width: 34px;
+}
+
+/* Hide the text field until the compact search button is activated. */
+.ellucian-package-search[data-search-mode="icon"] .ellucian-search-input {
+  display: none !important;
+}
+
+/* Expand compact mode into a usable field without changing the saved preference. */
+.ellucian-package-search[data-search-mode="icon"][data-icon-expanded="true"] {
+  flex: 0 1 240px;
+  max-width: 240px;
+  width: 240px;
+}
+
+.ellucian-package-search[data-search-mode="icon"][data-icon-expanded="true"] .ellucian-search-input {
+  display: block !important;
+}
+
+.ellucian-package-search[data-search-mode="icon"][data-icon-expanded="true"] .ellucian-search-icon-button {
+  display: none !important;
+}
+
+/* Draw a locally styled magnifying glass without loading an image or font icon. */
+.ellucian-search-icon-button {
+  align-items: center !important;
+  background: #ffffff !important;
+  border: 1px solid #b8c0c8 !important;
+  border-radius: 6px !important;
+  color: #3f4852 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  padding: 0 !important;
+  width: 34px !important;
+}
+
+/* Keep the vector lens and handle crisp and centered inside the button. */
+.ellucian-search-icon {
+  fill: none !important;
+  height: 18px !important;
+  pointer-events: none !important;
+  stroke: currentColor !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  stroke-width: 2.25 !important;
+  width: 18px !important;
+}
+
+/* Highlight the compact button during mouse and keyboard interaction. */
+.ellucian-search-icon-button:hover,
+.ellucian-search-icon-button:focus-visible {
+  border-color: #08783e !important;
+  outline: 2px solid rgba(8, 120, 62, 0.18) !important;
+  outline-offset: 1px !important;
+}
+
+/* Overlay grouped results directly below the package heading. */
+.ellucian-search-results {
+  background: #ffffff !important;
+  border: 1px solid #cbd1d7 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 22px rgba(25, 35, 45, 0.2) !important;
+  color: #20252b !important;
+  left: 8px !important;
+  max-height: min(420px, 55vh) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  position: absolute !important;
+  right: 16px !important;
+  top: calc(100% + 4px) !important;
+  z-index: 100 !important;
+}
+
+/* Ensure the native hidden attribute always closes the result overlay. */
+.ellucian-search-results[hidden] {
+  display: none !important;
+}
+
+/* Separate package and pipeline result groups with compact labels. */
+.ellucian-search-results-heading {
+  background: #f3f5f7 !important;
+  color: #5d6874 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  padding: 7px 10px !important;
+  text-transform: uppercase !important;
+}
+
+/* Make every result a full-width, two-line text button. */
+.ellucian-search-result {
+  align-items: flex-start !important;
+  background: #ffffff !important;
+  border: 0 !important;
+  border-bottom: 1px solid #edf0f2 !important;
+  color: #20252b !important;
+  cursor: pointer !important;
+  display: flex !important;
+  flex-direction: column !important;
+  font-family: inherit !important;
+  gap: 2px !important;
+  padding: 8px 10px !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+
+/* Show clear selection feedback for both mouse and keyboard users. */
+.ellucian-search-result:hover,
+.ellucian-search-result:focus-visible {
+  background: #eef7f1 !important;
+  outline: 2px solid #08783e !important;
+  outline-offset: -2px !important;
+}
+
+/* Keep long result names on one readable line. */
+.ellucian-search-result-name {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Show package context and version as secondary information. */
+.ellucian-search-result-detail {
+  color: #68737f !important;
+  font-size: 11px !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Explain a valid query that has no indexed matches. */
+.ellucian-search-empty {
+  color: #68737f !important;
+  font-size: 12px !important;
+  padding: 14px 10px !important;
+  text-align: center !important;
+}
+
+/* Explain when only the rendered DOM fallback index is available. */
+.ellucian-search-notice {
+  background: #fff8e6 !important;
+  border-bottom: 1px solid #ead8a8 !important;
+  color: #5f4b18 !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  padding: 8px 10px !important;
+}
+
+/* State when additional matches exist beyond the compact result limits. */
+.ellucian-search-limit {
+  background: #f8f9fa !important;
+  color: #5d6874 !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  padding: 8px 10px !important;
+  text-align: center !important;
+}
+/* Keep optional sharing values aligned with native table content. */
+[data-ellucian-shared-cell] { white-space: nowrap; }
+.ellucian-shared-value { position: relative; cursor: help; }
+.ellucian-shared-value:focus-visible { outline: 2px solid #6d28d9; outline-offset: 3px; }
+/* Reveal the same destination explanation for mouse and keyboard users. */
+.ellucian-shared-tooltip {
+  display: none;
+  position: absolute;
+  z-index: 1500;
+  bottom: calc(100% + 8px);
+  left: 0;
+  max-width: 260px;
+  width: max-content;
+  white-space: normal;
+  padding: 7px 10px;
+  border-radius: 4px;
+  background: #272b30;
+  color: #fff;
+  font: 12px/1.4 Arial, sans-serif;
+}
+/* Popovers escape table clipping and stacking contexts. */
+.ellucian-shared-tooltip[popover] { position: fixed; margin: 0; inset: auto; border: 0; }
+.ellucian-shared-tooltip:popover-open { display: block; }
+/* Keep Designer's package search close to the heading and readable at narrow widths. */
+.ellucian-designer-search { display: inline-block; position: relative; margin: 8px 16px; font: 14px Arial, sans-serif; vertical-align: middle; }
+.ellucian-designer-search input { box-sizing: border-box; width: 260px; max-width: 100%; padding: 10px; border: 1px solid #b6c2d0; border-radius: 5px; background: #fff; color: #17202a; }
+.ellucian-designer-results { position: absolute; left: 0; top: 100%; z-index: 1500; width: min(440px, 60vw); max-height: 300px; overflow: auto; padding: 6px; background: #fff; color: #17202a; border: 1px solid #b6c2d0; box-shadow: 0 4px 16px #0002; }
+.ellucian-designer-results[hidden] { display: none; }
+.ellucian-designer-results button { display: block; width: 100%; padding: 9px; text-align: left; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.ellucian-designer-results button:hover, .ellucian-designer-results button:focus-visible { background: #e8f4ed; }
+/* Keep the heading and its search adjacent while preserving the native add control. */
+.ellucian-pipeline-heading-group { display: flex !important; align-items: center !important; justify-content: flex-start !important; flex-wrap: wrap; gap: 12px; }
+.ellucian-pipeline-heading-group > .ellucian-pipeline-heading { flex: 0 0 auto !important; width: auto !important; margin-right: 0 !important; }
+.ellucian-pipeline-heading-group > .ellucian-designer-search { flex: 0 1 280px; margin: 8px 0; }
+.ellucian-pipeline-heading-group > .ellucian-designer-search ~ * { margin-left: auto; }
+/* Match native column emphasis and expose mismatched destinations in red. */
+th[data-ellucian-shared-cell] > span { font-weight: 700; }
+.ellucian-shared-outdated { color: #b42318; font-weight: 600; }
+
+/* Keep the manual refresh control compact and aligned with the native heading. */
+.ellucian-shared-refresh { display: inline-flex; vertical-align: middle; align-items: center; justify-content: center; margin-left: 8px; width: 28px; height: 28px; padding: 4px; border: 0; border-radius: 4px; color: inherit; background: transparent; cursor: pointer; }
+.ellucian-shared-refresh svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* Make keyboard focus, hover, and in-progress checks visible without shifting text. */
+.ellucian-shared-refresh:hover:not(:disabled) { background: rgba(0, 0, 0, 0.06); }
+.ellucian-shared-refresh:focus-visible { outline: 2px solid #6d28d9; outline-offset: 2px; }
+.ellucian-shared-refresh:disabled { cursor: default; opacity: 0.5; }
+.ellucian-shared-refresh[aria-busy="true"] svg { animation: ellucian-shared-spin 1s linear infinite; }
+@keyframes ellucian-shared-spin { to { transform: rotate(360deg); } }
+/* Respect system motion preferences while retaining the disabled/loading state. */
+@media (prefers-reduced-motion: reduce) { .ellucian-shared-refresh[aria-busy="true"] svg { animation: none; } }

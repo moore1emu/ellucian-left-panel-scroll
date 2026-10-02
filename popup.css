@@ -1,0 +1,312 @@
+/* Define a polished light theme and announce support for both system color modes. */
+:root {
+  color-scheme: light dark;
+  --accent: #08783e;
+  --accent-soft: #e8f4ed;
+  --background: #f4f6f8;
+  --border: #dce1e6;
+  --muted: #5c6875;
+  --purple: #6d28d9;
+  --purple-soft: #f0e9ff;
+  --shadow: 0 8px 24px rgba(24, 34, 45, 0.14);
+  --surface: #ffffff;
+  --switch-off: #8c97a3;
+  --text: #17202a;
+}
+
+/* Follow the operating system automatically when dark mode is preferred. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #66cf8a;
+    --accent-soft: #183b29;
+    --background: #1c1f23;
+    --border: #3c424a;
+    --muted: #aeb7c1;
+    --purple: #b999ff;
+    --purple-soft: #35245a;
+    --shadow: 0 8px 26px rgba(0, 0, 0, 0.38);
+    --surface: #272b30;
+    --switch-off: #737d88;
+    --text: #f1f4f6;
+  }
+}
+
+/* Establish a consistent base without inheriting browser popup defaults. */
+* {
+  box-sizing: border-box;
+}
+
+/* Keep the popup compact while giving the content room to breathe. */
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+  margin: 0;
+  min-width: 360px;
+}
+
+/* Arrange the popup as a header, settings card, and scope footer. */
+.popup-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px;
+}
+
+/* Align the extension symbol with its title and subtitle. */
+.popup-header {
+  align-items: center;
+  display: flex;
+  gap: 11px;
+}
+
+/* Create a simple local symbol without loading external artwork. */
+.header-icon {
+  align-items: center;
+  background: #6d28d9;
+  border-radius: 10px;
+  color: #ffffff;
+  display: inline-flex;
+  flex: 0 0 38px;
+  font-size: 21px;
+  font-weight: 700;
+  height: 38px;
+  justify-content: center;
+}
+
+/* Stack the title and product context tightly. */
+.header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Give the main title a familiar extension-popup hierarchy. */
+h1 {
+  font-size: 16px;
+  line-height: 1.25;
+  margin: 0;
+}
+
+/* Use muted text for the short product context. */
+.header-copy > span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+/* Present the preference on a distinct, standard settings surface. */
+.settings-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* Make the full preference row clickable and comfortably spaced. */
+.setting-row {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+/* Stack the setting name above its supporting explanation. */
+.setting-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Emphasize the preference name without overpowering the popup title. */
+.setting-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Keep the explanation readable and visually secondary. */
+.setting-description {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Reserve the exact space needed for the custom switch. */
+.switch {
+  display: inline-block;
+  flex: 0 0 auto;
+  height: 24px;
+  position: relative;
+  width: 44px;
+}
+
+/* Retain the native checkbox for keyboard and screen-reader interaction. */
+.switch input {
+  height: 1px;
+  opacity: 0;
+  position: absolute;
+  width: 1px;
+}
+
+/* Draw the switch track and animate state changes gently. */
+.switch-track {
+  background: var(--switch-off);
+  border-radius: 999px;
+  inset: 0;
+  position: absolute;
+  transition: background-color 140ms ease;
+}
+
+/* Draw the switch thumb with a subtle depth cue. */
+.switch-track::after {
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  content: "";
+  height: 20px;
+  left: 2px;
+  position: absolute;
+  top: 2px;
+  transition: transform 140ms ease;
+  width: 20px;
+}
+
+/* Use the theme accent when remembering is enabled. */
+.switch input:checked + .switch-track {
+  background: var(--accent);
+}
+
+/* Move the thumb to the on position. */
+.switch input:checked + .switch-track::after {
+  transform: translateX(20px);
+}
+
+/* Preserve a strong, accessible keyboard focus indicator. */
+.switch input:focus-visible + .switch-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Reset fieldset defaults while reusing the standard settings-card surface. */
+.search-display-card {
+  margin: 0;
+  padding: 10px 12px;
+}
+
+/* Use the same hierarchy as the width setting title. */
+.search-display-card legend {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  padding: 0 4px;
+}
+
+/* Explain the three-state control before presenting its choices. */
+.card-description {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0 0 7px;
+}
+
+/* Stack the choices so each label and explanation remain readable. */
+.search-mode-options {
+  display: grid;
+  gap: 7px;
+}
+
+/* Make each complete row a generous radio-button target. */
+.mode-option {
+  cursor: pointer;
+  display: block;
+  position: relative;
+}
+
+/* Keep the native radio accessible while drawing a cleaner selection card. */
+.mode-option > input {
+  height: 1px;
+  opacity: 0;
+  position: absolute;
+  width: 1px;
+}
+
+/* Present mode names and descriptions in a compact bordered row. */
+.mode-option-content {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 6px 9px;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+/* Emphasize the selected mode with the extension's purple identity color. */
+.mode-option > input:checked + .mode-option-content {
+  background: var(--purple-soft);
+  border-color: var(--purple);
+}
+
+/* Preserve a visible keyboard focus state around the complete choice. */
+.mode-option > input:focus-visible + .mode-option-content {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+
+/* Keep the mode name compact and easy to scan. */
+.mode-option-title {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Place the behavioral explanation on the right in secondary text. */
+.mode-option-detail {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Summarize the extension's scope beneath the main setting. */
+footer {
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+  gap: 5px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* Keep the compact product and environment scope on one wrapping line. */
+.footer-scope {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* Give the installed version a small but discoverable location. */
+#extension-version {
+  font-weight: 700;
+}
+
+/* State the relationship with Ellucian without overwhelming the settings. */
+.affiliation-notice {
+  line-height: 1.4;
+  margin: 2px 0 0;
+  max-width: 310px;
+}
+
+/* De-emphasize the compact separator between scope labels. */
+.footer-separator {
+  opacity: 0.65;
+}
