@@ -1,0 +1,11 @@
+# Keep local environment credentials out of this public repository.
+.env
+.env.*
+
+# Exclude local dependencies and scratch artifacts.
+node_modules/
+work/
+
+# Keep operating-system metadata out of source control.
+Thumbs.db
+.DS_Store
