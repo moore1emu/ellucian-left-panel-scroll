@@ -144,6 +144,27 @@
         <!-- Use the header icon as the live preview for all three appearance choices. -->
         <p class="card-description" id="icon-help">1–2 letters. Preview above.</p>
         <p class="icon-status" id="icon-status" role="status" aria-live="polite"></p>
+
+        <!-- Keep star personalization beside the icon rather than adding another card. -->
+        <div class="favorite-appearance-controls">
+          <span class="setting-title">Favorite stars</span>
+          <label class="favorite-match-control" for="favorite-match-icon">
+            <input id="favorite-match-icon" type="checkbox" disabled />
+            <span>Match icon color</span>
+          </label>
+          <div class="favorite-color-controls">
+            <label class="icon-control" for="favorite-color">
+              <span>Star color</span>
+              <input id="favorite-color" type="color" value="#6d28d9" disabled />
+            </label>
+            <!-- Preview the unchanged filled star shape in the chosen color. -->
+            <span id="favorite-color-preview" role="img" aria-label="Favorite star preview">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.4l2.66 5.39 5.95.86-4.3 4.2 1.02 5.92L12 16.97l-5.32 2.8 1.01-5.92-4.3-4.2 5.95-.86L12 3.4z" /></svg>
+            </span>
+            <button id="reset-favorite-color" type="button" disabled>Reset stars</button>
+          </div>
+          <p id="favorite-color-status" class="icon-status" role="status" aria-live="polite"></p>
+        </div>
       </details>
 
       <!-- Keep vanity-domain setup collapsed so everyday settings remain compact. -->
@@ -179,6 +200,7 @@
 
     <!-- Load the preference behavior after the popup controls exist. -->
     <script src="icon-appearance.js"></script>
+    <script src="favorite-appearance.js"></script>
     <script src="popup.js"></script>
     <script src="custom-sites.js"></script>
     <script src="custom-sites-popup.js"></script>

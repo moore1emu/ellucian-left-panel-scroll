@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Integration Navigator",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "description": "Adds independent scrolling, adjustable panels, search, and pinned package and pipeline favorites to Ellucian Integration pages.",
   "permissions": [
     "storage"
@@ -53,6 +53,7 @@
         "styles.css"
       ],
       "js": [
+        "favorite-appearance.js",
         "content.js",
         "search.js"
       ],

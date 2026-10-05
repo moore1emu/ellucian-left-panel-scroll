@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.18.0 — 2026-10-05
+
+- Added **Favorite stars** within Icon appearance: choose a custom color or **Match icon color** to follow the toolbar icon's background.
+- Applies the same color to pinned packages, pinned pipelines, and selected stars in the main list without rebuilding favorites. Unpinned stars remain gray outlines.
+- Includes a live star preview and **Reset stars**, which restores independent purple without changing the toolbar icon. Preferences remain local to this browser.
+
 ## 1.17.0 — 2026-10-05
 
 - Added a collapsible **Custom sites** list in Settings for university vanity URLs, with Add, Remove, and Allow controls.

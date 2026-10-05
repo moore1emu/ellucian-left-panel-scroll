@@ -335,6 +335,20 @@ h1 {
 .icon-status { color: var(--muted); font-size: 12px; margin: 0; }
 .icon-status:not(:empty) { margin-top: 5px; }
 
+/* Keep star controls inside the existing collapsed appearance card. */
+.favorite-appearance-controls { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; }
+.favorite-match-control { align-items: center; cursor: pointer; display: flex; font-size: 12px; gap: 6px; margin: 8px 0; }
+.favorite-match-control input { accent-color: var(--purple); margin: 0; }
+.favorite-color-controls { align-items: end; display: flex; gap: 12px; }
+#favorite-color { cursor: pointer; padding: 2px; width: 64px; }
+#favorite-color:disabled { cursor: default; opacity: 0.5; }
+
+/* Preview the same vector star with no raster images or extra network requests. */
+#favorite-color-preview { align-items: center; color: #6d28d9; display: flex; height: 30px; }
+#favorite-color-preview svg { fill: currentColor; height: 24px; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.8; width: 24px; }
+#reset-favorite-color { background: var(--background); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; font: 12px Arial, sans-serif; height: 30px; margin-left: auto; padding: 0 10px; }
+#reset-favorite-color:focus-visible, #favorite-match-icon:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
 /* Summarize the extension's scope beneath the main setting. */
 footer {
   color: var(--muted);

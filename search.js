@@ -54,6 +54,10 @@
   // Default to a visible, expanded favorites section with no saved packages.
   let favoritesEnabled = true;
 
+  // Keep star colors global to this browser without changing per-site favorite identities.
+  let favoriteAppearance = FavoriteAppearance.DEFAULT;
+  let iconAppearance = null;
+
   // Keep the ordered parent groups separate from explicit package and pipeline pins.
   let favoriteNames = new Set();
   let favoritePackageIdentities = new Set();
@@ -2995,6 +2999,13 @@
       return;
     }
 
+    // Update colors in place; do not rebuild favorites or disturb open pipeline groups.
+    if (changes[FavoriteAppearance.KEY] || changes[FavoriteAppearance.ICON_KEY]) {
+      if (changes[FavoriteAppearance.KEY]) favoriteAppearance = FavoriteAppearance.normalize(changes[FavoriteAppearance.KEY].newValue);
+      if (changes[FavoriteAppearance.ICON_KEY]) iconAppearance = changes[FavoriteAppearance.ICON_KEY].newValue;
+      FavoriteAppearance.apply(favoriteAppearance, iconAppearance, document.documentElement);
+    }
+
     // Disabling the option removes the column and prevents further checks.
     if (changes[SHARED_VERSION_ENABLED_KEY]) {
       sharedVersionEnabled = changes[SHARED_VERSION_ENABLED_KEY].newValue === true;
@@ -3057,6 +3068,8 @@
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [SHARED_VERSION_ENABLED_KEY]: false,
       [FAVORITES_ENABLED_KEY]: true,
+      [FavoriteAppearance.KEY]: FavoriteAppearance.DEFAULT,
+      [FavoriteAppearance.ICON_KEY]: null,
       [FAVORITES_BY_HOST_KEY]: {},
       [FAVORITES_EXPANDED_BY_HOST_KEY]: {},
       [FAVORITES_HEIGHTS_BY_HOST_KEY]: {},
@@ -3073,6 +3086,10 @@
       searchMode = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
       sharedVersionEnabled = settings[SHARED_VERSION_ENABLED_KEY] === true;
       favoritesEnabled = settings[FAVORITES_ENABLED_KEY] !== false;
+      // Apply the saved color before inserting stars, including after a page refresh.
+      favoriteAppearance = FavoriteAppearance.normalize(settings[FavoriteAppearance.KEY]);
+      iconAppearance = settings[FavoriteAppearance.ICON_KEY];
+      FavoriteAppearance.apply(favoriteAppearance, iconAppearance, document.documentElement);
       activeFavoritesStorageKey = currentStorageKey;
 
       // Load page-specific values only when starting on a supported route.

@@ -18,7 +18,7 @@ The extension does not read, copy, or store your password or bearer token. It do
 
 ## Local storage
 
-Your settings, custom Experience site domains, icon background and letter colors, icon letters, column widths, favorite package and pipeline names, favorite version identifiers, ordering, and favorites layout preferences are saved in the browser's local extension storage. They are not synchronized by the extension to other devices or sent to the publisher. Pasted custom URLs are reduced to their HTTPS domain; paths, query strings, and fragments are not saved. Temporary search indexes and sharing results remain in page memory.
+Your settings, custom Experience site domains, icon background and letter colors, icon letters, favorite-star color and match-icon preference, column widths, favorite package and pipeline names, favorite version identifiers, ordering, and favorites layout preferences are saved in the browser's local extension storage. They are not synchronized by the extension to other devices or sent to the publisher. Pasted custom URLs are reduced to their HTTPS domain; paths, query strings, and fragments are not saved. Temporary search indexes and sharing results remain in page memory.
 
 ## Website permissions
 

@@ -21,6 +21,12 @@
   const resetIconButton = document.querySelector("#reset-icon");
   const iconPreview = document.querySelector(".header-icon");
   const iconStatus = document.querySelector("#icon-status");
+  const favoriteColorInput = document.querySelector("#favorite-color");
+  const favoriteMatchSwitch = document.querySelector("#favorite-match-icon");
+  const favoritePreview = document.querySelector("#favorite-color-preview");
+  const favoriteStatus = document.querySelector("#favorite-color-status");
+  const resetFavoriteButton = document.querySelector("#reset-favorite-color");
+  let appearanceLoaded = false;
   const searchModeInputs = document.querySelectorAll(
     'input[name="search-display-mode"]',
   );
@@ -35,6 +41,9 @@
   iconLettersInput.disabled = true;
   iconTextColorInput.disabled = true;
   resetIconButton.disabled = true;
+  favoriteColorInput.disabled = true;
+  favoriteMatchSwitch.disabled = true;
+  resetFavoriteButton.disabled = true;
 
   // Load every popup preference in one storage read to avoid redundant startup work.
   chrome.storage.local.get(
@@ -44,6 +53,7 @@
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [IconAppearance.KEY]: IconAppearance.DEFAULT,
+      [FavoriteAppearance.KEY]: FavoriteAppearance.DEFAULT,
     },
     (settings) => {
       // Display the width preference and its explanatory status.
@@ -66,11 +76,18 @@
       iconColorInput.value = appearance.color;
       iconLettersInput.value = appearance.letters;
       iconTextColorInput.value = appearance.textColor;
+      // Restore the independent color even when stars are linked to the icon.
+      const stars = FavoriteAppearance.normalize(settings[FavoriteAppearance.KEY]);
+      favoriteColorInput.value = stars.color;
+      favoriteMatchSwitch.checked = stars.matchIcon;
+      appearanceLoaded = true;
       previewIcon();
       iconColorInput.disabled = false;
       iconLettersInput.disabled = false;
       iconTextColorInput.disabled = false;
       resetIconButton.disabled = false;
+      favoriteMatchSwitch.disabled = false;
+      resetFavoriteButton.disabled = false;
     },
   );
 
@@ -81,7 +98,45 @@
     iconPreview.style.backgroundColor = appearance.color;
     iconPreview.style.color = appearance.textColor;
     iconPreview.style.fontSize = appearance.letters.length === 2 ? "17px" : "21px";
+    // Linked stars preview the icon's background as the user edits it.
+    previewFavoriteColor();
   }
+
+  // Show the resolved star color without overwriting the user's separate custom color.
+  function previewFavoriteColor() {
+    favoritePreview.style.color = FavoriteAppearance.resolve(
+      { color: favoriteColorInput.value, matchIcon: favoriteMatchSwitch.checked },
+      { color: iconColorInput.value },
+    );
+    favoriteColorInput.disabled = !appearanceLoaded || favoriteMatchSwitch.checked;
+  }
+
+  // Save only the star preference; color changes never alter favorites or icon settings.
+  function saveFavoriteColor() {
+    const appearance = FavoriteAppearance.normalize({ color: favoriteColorInput.value, matchIcon: favoriteMatchSwitch.checked });
+    chrome.storage.local.set({ [FavoriteAppearance.KEY]: appearance }, () => {
+      favoriteStatus.textContent = chrome.runtime.lastError ? "Could not save. Please try again." : "Star color saved on this browser.";
+    });
+  }
+
+  // Preview the picker live, committing after the completed color change.
+  favoriteColorInput.addEventListener("input", () => {
+    favoriteStatus.textContent = "";
+    previewFavoriteColor();
+  });
+  favoriteColorInput.addEventListener("change", saveFavoriteColor);
+  favoriteMatchSwitch.addEventListener("change", () => {
+    previewFavoriteColor();
+    saveFavoriteColor();
+  });
+
+  // Reset stars to independent purple without changing the toolbar icon.
+  resetFavoriteButton.addEventListener("click", () => {
+    favoriteColorInput.value = FavoriteAppearance.DEFAULT.color;
+    favoriteMatchSwitch.checked = FavoriteAppearance.DEFAULT.matchIcon;
+    previewFavoriteColor();
+    saveFavoriteColor();
+  });
 
   // Save only valid initials; the worker updates the toolbar when storage changes.
   function saveIcon() {
