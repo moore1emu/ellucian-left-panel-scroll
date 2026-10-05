@@ -6,8 +6,12 @@ let pendingIconUpdate = Promise.resolve();
 
 // Serialize site changes so a removal cannot race an earlier registration request.
 let pendingSiteUpdate = Promise.resolve();
-function updateSites() {
-  pendingSiteUpdate = pendingSiteUpdate.catch(() => {}).then(CustomSites.sync);
+function updateSites(removeOrigin) {
+  pendingSiteUpdate = pendingSiteUpdate.catch(() => {}).then(async () => {
+    // Finish removal before reconciling grants so a queued refresh cannot restore it.
+    if (removeOrigin !== undefined) await CustomSites.removeSite(removeOrigin);
+    await CustomSites.sync();
+  });
   return pendingSiteUpdate;
 }
 
@@ -53,10 +57,13 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && Object.hasOwn(changes, CustomSites.KEY)) restoreSites();
 });
 
-// Acknowledge registration before the popup asks the user to refresh their page.
+// Keep site completion in the worker; closing the popup does not cancel the operation.
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.type !== CustomSites.MESSAGE || sender.id !== chrome.runtime.id || sender.tab) return;
-  updateSites().then(() => respond({ ok: true }), () => respond({ ok: false }));
+  updateSites(message.removeOrigin).then(
+    () => respond({ ok: true }),
+    (error) => respond({ ok: false, error: error.message }),
+  );
   return true;
 });
 

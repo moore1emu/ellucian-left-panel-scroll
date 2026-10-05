@@ -22,7 +22,7 @@ Your settings, custom Experience site domains, icon background and letter colors
 
 ## Website permissions
 
-The two standard Experience sites remain enabled. For a custom site, the extension requests optional scripting access and permission for that exact HTTPS domain only after you choose to add or allow it. Declaring optional HTTPS access lets users supply their own domains; it does not automatically grant access to every website or its subdomains. Only packaged extension scripts are registered, and the navigation controls remain limited to the supported Integration Packages/Designer routes. No browsing-history permission is requested.
+The two standard Experience sites remain enabled. For a custom site, the extension requests optional scripting access and permission for that exact HTTPS domain only after you choose to add or allow it. It also reads the extension's current site permissions to recover previously approved exact HTTPS custom domains into the removable list; this recovery grants no new access and ignores wildcard permissions and the two standard sites. Declaring optional HTTPS access lets users supply their own domains; it does not automatically grant access to every website or its subdomains. Only packaged extension scripts are registered, and the navigation controls remain limited to the supported Integration Packages/Designer routes. No browsing-history permission is requested.
 
 ## Sharing and tracking
 

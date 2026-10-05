@@ -11,6 +11,7 @@ Reconstructed from this development chat, including recorded file changes. Dates
 - Made **Search Display** collapsible with independent dropdowns for **Package Sidebar Search** (both pages) and **Designer Pipeline Search** (within a selected package). Each supports Search Box, Icon, or Hidden; existing sidebar preferences are preserved.
 - Standardized settings labels and extension-added page headings to Title Case; descriptions remain in sentence case.
 - Fixed the Star Color swatch to follow the icon when Match Icon Color is enabled. Turning matching off restores the retained custom color.
+- Fixed Custom Sites setup when the permission prompt closes settings. The background saves approved domains, existing exact custom-site approvals are recovered into the list, and Remove completes in the background without deleting favorites or widths.
 
 ## 1.17.0 — 2026-10-05
 

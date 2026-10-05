@@ -16,15 +16,20 @@
   }
 
   // Wait for the worker to activate the latest list before reporting success.
-  async function syncSites() {
-    const result = await chrome.runtime.sendMessage({ type: CustomSites.MESSAGE });
-    if (!result?.ok) throw new Error("Could not activate custom sites. Reopen settings to retry.");
+  async function syncSites(removeOrigin) {
+    const result = await chrome.runtime.sendMessage({
+      type: CustomSites.MESSAGE,
+      ...(removeOrigin === undefined ? {} : { removeOrigin }),
+    });
+    if (!result?.ok) throw new Error(removeOrigin === undefined
+      ? "Could not activate custom sites. Reopen settings to retry."
+      : result.error || "Could not remove this site. Please try again.");
   }
 
   // Show exact domains and a restore-access action when browser permissions were revoked.
   async function renderSites() {
-    const saved = await chrome.storage.local.get({ [CustomSites.KEY]: [] });
-    const origins = CustomSites.normalizeList(saved[CustomSites.KEY]);
+    // Include browser-approved domains even if they were never saved by the old popup.
+    const origins = await CustomSites.readSites();
     const rows = [];
     for (const origin of origins) {
       const allowed = await chrome.permissions.contains({ permissions: ["scripting"], origins: [CustomSites.pattern(origin)] });
@@ -77,10 +82,7 @@
         return;
       }
 
-      // Merge against current storage rather than the list shown when the popup opened.
-      const saved = await chrome.storage.local.get({ [CustomSites.KEY]: [] });
-      const origins = CustomSites.normalizeList([...CustomSites.normalizeList(saved[CustomSites.KEY]), origin]);
-      await chrome.storage.local.set({ [CustomSites.KEY]: origins });
+      // The permission event wakes the worker even when this popup is already closed.
       await syncSites();
       input.value = "";
       status.textContent = "Site enabled. Refresh your Experience page to load the extension.";
@@ -96,10 +98,8 @@
     if (busy) return;
     setBusy(true);
     try {
-      await chrome.permissions.remove({ origins: [CustomSites.pattern(origin)] });
-      const saved = await chrome.storage.local.get({ [CustomSites.KEY]: [] });
-      await chrome.storage.local.set({ [CustomSites.KEY]: CustomSites.normalizeList(saved[CustomSites.KEY]).filter((site) => site !== origin) });
-      await syncSites();
+      // Let the worker own both writes so closing settings cannot interrupt removal.
+      await syncSites(origin);
       status.textContent = "Site removed. Refresh any open page to clear the extension's existing controls.";
     } catch (error) {
       status.textContent = error.message || "Could not remove this site. Please try again.";

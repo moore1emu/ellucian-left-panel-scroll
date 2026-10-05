@@ -45,12 +45,38 @@ globalThis.CustomSites = (() => {
     return `${origin}/*`;
   }
 
+  // Recover exact approved domains when a permission prompt interrupted the popup.
+  async function readSites() {
+    const saved = await chrome.storage.local.get({ [KEY]: [] });
+    const granted = await chrome.permissions.getAll();
+    const builtIn = defaults();
+    // Ignore wildcard grants and standard sites rather than expanding their scope.
+    const exactHosts = (granted.origins || []).filter((origin) => /^https:\/\/[^/*]+\/\*$/u.test(origin));
+    return normalizeList([...normalizeList(saved[KEY]), ...exactHosts]).filter((origin) => !builtIn.includes(origin));
+  }
+
+  // Complete revocation and list removal in the worker even if the popup closes.
+  async function removeSite(value) {
+    const origin = normalize(value);
+    if (defaults().includes(origin)) throw new Error("Standard Experience sites cannot be removed here.");
+    await chrome.permissions.remove({ origins: [pattern(origin)] });
+    // Do not claim success if browser-wide access still covers the requested domain.
+    if (await chrome.permissions.contains({ origins: [pattern(origin)] })) {
+      throw new Error("Site access could not be removed. Check the browser's extension site-access settings.");
+    }
+    const saved = await chrome.storage.local.get({ [KEY]: [] });
+    await chrome.storage.local.set({ [KEY]: normalizeList(saved[KEY]).filter((site) => site !== origin) });
+  }
+
   // Register the existing page files only for saved domains with user-granted access.
   async function sync() {
-    if (!await chrome.permissions.contains({ permissions: ["scripting"] })) return;
+    const candidates = await readSites();
     const saved = await chrome.storage.local.get({ [KEY]: [] });
-    const builtIn = defaults();
-    const candidates = normalizeList(saved[KEY]).filter((origin) => !builtIn.includes(origin));
+    // Persist recovered approvals once, without rewriting unchanged preferences.
+    if (JSON.stringify(candidates) !== JSON.stringify(normalizeList(saved[KEY]))) {
+      await chrome.storage.local.set({ [KEY]: candidates });
+    }
+    if (!await chrome.permissions.contains({ permissions: ["scripting"] })) return;
     const matches = [];
     for (const origin of candidates) {
       if (await chrome.permissions.contains({ origins: [pattern(origin)] })) matches.push(pattern(origin));
@@ -85,5 +111,5 @@ globalThis.CustomSites = (() => {
     if (additions.length) await chrome.scripting.registerContentScripts(additions);
   }
 
-  return Object.freeze({ KEY, MESSAGE, normalize, normalizeList, defaults, pattern, sync });
+  return Object.freeze({ KEY, MESSAGE, normalize, normalizeList, defaults, pattern, readSites, removeSite, sync });
 })();
