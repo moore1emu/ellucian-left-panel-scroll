@@ -18,8 +18,9 @@
     "/data-connect-designer",
   ];
 
-  // Store one mutually exclusive search presentation mode.
+  // Keep sidebar and selected-package Designer search presentation independent.
   const SEARCH_MODE_KEY = "searchDisplayMode";
+  const DESIGNER_SEARCH_MODE_KEY = "designerSearchDisplayMode";
   const SEARCH_MODES = new Set(["box", "icon", "hidden"]);
   const DEFAULT_SEARCH_MODE = "box";
 
@@ -44,6 +45,7 @@
 
   // Hold only the sanitized names and versions returned by the page-world indexer.
   let searchMode = DEFAULT_SEARCH_MODE;
+  let designerSearchMode = DEFAULT_SEARCH_MODE;
   let searchIndex = [];
   let completeSearchIndex = [];
   let completeSearchIndexKey = "";
@@ -2744,30 +2746,82 @@
     refresh.setAttribute('aria-label', busy ? 'Refreshing shared environments' : 'Refresh shared environments');
   }
 
-  // Apply the selected presentation mode to every matching package panel.
   // Place a package-scoped search beside the Designer Pipelines heading.
   function updateDesignerSearch() {
     const heading = isDesignerPackagePage() && Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim() === 'Pipelines:');
     const packageName = Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim().startsWith('Package:'))?.textContent.trim() || '';
     document.querySelectorAll('.ellucian-designer-search').forEach((control) => {
-      if (!heading || control.dataset.package !== packageName) control.remove();
+      // Restore native heading styling and cancel pending work when the control leaves.
+      if (!heading || control.dataset.package !== packageName || designerSearchMode === 'hidden') {
+        control.disposeDesignerSearch();
+      }
     });
-    if (!heading || document.querySelector('.ellucian-designer-search')) return;
+    if (!heading || designerSearchMode === 'hidden') return;
+    // Change presentation in place so unrelated page updates do not clear the query.
+    const existing = document.querySelector('.ellucian-designer-search');
+    if (existing) {
+      if (existing.dataset.searchMode !== designerSearchMode) existing.closeDesignerSearch(true);
+      existing.dataset.searchMode = designerSearchMode;
+      if (designerSearchMode !== 'icon') existing.removeAttribute('data-icon-expanded');
+      return;
+    }
     const control = document.createElement('span');
     control.className = 'ellucian-designer-search';
     control.dataset.package = packageName;
+    control.dataset.searchMode = designerSearchMode;
+    // Reuse the sidebar's crisp vector style without loading image assets.
+    const iconButton = document.createElement('button');
+    iconButton.type = 'button';
+    iconButton.className = 'ellucian-search-icon-button';
+    iconButton.setAttribute('aria-label', 'Open pipeline search in this package');
+    iconButton.title = 'Search pipelines in this package';
+    iconButton.setAttribute('aria-expanded', 'false');
+    iconButton.innerHTML = '<svg class="ellucian-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="M14.5 14.5L20 20"/></svg>';
     const input = document.createElement('input');
     input.type = 'search';
     input.placeholder = 'Search pipelines';
     input.setAttribute('aria-label', 'Search pipelines in this package');
+    input.autocomplete = 'off';
     const results = document.createElement('span');
     results.className = 'ellucian-designer-results';
     results.hidden = true;
+    results.id = `ellucian-designer-results-${crypto.randomUUID()}`;
+    results.setAttribute('role', 'region');
+    results.setAttribute('aria-label', 'Pipeline search results');
+    results.setAttribute('aria-live', 'polite');
+    input.setAttribute('aria-controls', results.id);
+    input.setAttribute('aria-expanded', 'false');
+    iconButton.setAttribute('aria-controls', results.id);
     let timer;
+    // Invalidate delayed results as well as closing the visible overlay.
+    const closeResults = (collapseIcon = false) => {
+      window.clearTimeout(timer);
+      control.removeAttribute('data-request');
+      results.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      if (collapseIcon) {
+        control.removeAttribute('data-icon-expanded');
+        iconButton.setAttribute('aria-expanded', 'false');
+      }
+    };
+    control.closeDesignerSearch = closeResults;
+    // Stop debounced messages and release only extension-owned layout classes.
+    control.disposeDesignerSearch = () => {
+      closeResults();
+      heading.classList.remove('ellucian-pipeline-heading');
+      heading.parentElement?.classList.remove('ellucian-pipeline-heading-group');
+      control.remove();
+    };
+    // Expand the compact control and focus its editable field.
+    iconButton.addEventListener('click', () => {
+      control.dataset.iconExpanded = 'true';
+      iconButton.setAttribute('aria-expanded', 'true');
+      input.focus();
+      if (input.value.trim()) input.dispatchEvent(new Event('input'));
+    });
     // Debounce local data lookup while the user types.
     input.addEventListener('input', () => {
-      window.clearTimeout(timer);
-      results.hidden = true;
+      closeResults();
       if (!input.value.trim()) return;
       timer = window.setTimeout(() => {
         control.dataset.request = `designer-${Date.now()}`;
@@ -2775,10 +2829,13 @@
       }, 150);
     });
     input.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') results.hidden = true;
+      if (event.key === 'Escape') {
+        closeResults(true);
+        if (designerSearchMode === 'icon') iconButton.focus();
+      }
       if (event.key === 'ArrowDown') results.querySelector('button')?.focus();
     });
-    control.append(input, results);
+    control.append(iconButton, input, results);
     // Align siblings without moving React-owned nodes out of their native parent.
     heading.classList.add('ellucian-pipeline-heading');
     heading.parentElement.classList.add('ellucian-pipeline-heading-group');
@@ -2800,11 +2857,12 @@
       button.textContent = `${normalizeText(pipeline.name)} · ${normalizeText(pipeline.version) || 'Draft'}`;
       button.addEventListener('click', () => {
         window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-open', packageName: normalizeText(event.data.packageName), name: normalizeText(pipeline.name), version: normalizeText(pipeline.version), status: normalizeText(pipeline.status) }, window.location.origin);
-        results.hidden = true;
+        control.closeDesignerSearch(true);
       });
       results.appendChild(button);
     });
     results.hidden = false;
+    control.querySelector('input').setAttribute('aria-expanded', 'true');
   });
 
   function applySearchMode() {
@@ -2870,6 +2928,9 @@
   document.addEventListener(
     "pointerdown",
     (event) => {
+      // Reuse the outside-click listener for the independent Designer overlay.
+      const designerControl = document.querySelector('.ellucian-designer-search');
+      if (designerControl && !designerControl.contains(event.target)) designerControl.closeDesignerSearch(true);
       if (!activeSearchControl) {
         return;
       }
@@ -3013,8 +3074,10 @@
     }
 
     // Apply search presentation changes without requiring a page refresh.
-    if (changes[SEARCH_MODE_KEY]) {
-      searchMode = normalizeSearchMode(changes[SEARCH_MODE_KEY].newValue);
+    if (changes[SEARCH_MODE_KEY] || changes[DESIGNER_SEARCH_MODE_KEY]) {
+      // Normalize only the preference that changed; leave the other area untouched.
+      if (changes[SEARCH_MODE_KEY]) searchMode = normalizeSearchMode(changes[SEARCH_MODE_KEY].newValue);
+      if (changes[DESIGNER_SEARCH_MODE_KEY]) designerSearchMode = normalizeSearchMode(changes[DESIGNER_SEARCH_MODE_KEY].newValue);
       applySearchMode();
     }
 
@@ -3066,6 +3129,7 @@
   chrome.storage.local.get(
     {
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
+      [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [SHARED_VERSION_ENABLED_KEY]: false,
       [FAVORITES_ENABLED_KEY]: true,
       [FavoriteAppearance.KEY]: FavoriteAppearance.DEFAULT,
@@ -3084,6 +3148,7 @@
 
       // Apply only the current page-specific settings format.
       searchMode = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
+      designerSearchMode = normalizeSearchMode(settings[DESIGNER_SEARCH_MODE_KEY]);
       sharedVersionEnabled = settings[SHARED_VERSION_ENABLED_KEY] === true;
       favoritesEnabled = settings[FAVORITES_ENABLED_KEY] !== false;
       // Apply the saved color before inserting stars, including after a page refresh.

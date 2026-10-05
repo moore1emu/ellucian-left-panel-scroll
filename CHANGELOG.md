@@ -7,7 +7,8 @@ Reconstructed from this development chat, including recorded file changes. Dates
 - Added **Favorite stars** within **Icon & Favorites appearance**: choose a custom color or **Match icon color** to follow the toolbar icon's background.
 - Applies the same color to pinned packages, pinned pipelines, and selected stars in the main list without rebuilding favorites. Unpinned stars remain gray outlines.
 - Includes a live star preview and **Reset stars**, which restores independent purple without changing the toolbar icon. Preferences remain local to this browser.
-- Renamed the appearance section **Icon & Favorites appearance** and made **Search display** collapsible, keeping its three search choices unchanged.
+- Renamed the appearance section **Icon & Favorites appearance** and shortened the main setting descriptions.
+- Made **Search display** collapsible with independent dropdowns for **Package sidebar search** (both pages) and **Designer pipeline search** (within a selected package). Each supports Search box, Icon, or Hidden; existing sidebar preferences are preserved.
 
 ## 1.17.0 — 2026-10-05
 

@@ -32,7 +32,7 @@ Pipeline favorites follow the same major version. For example, a favorite pinned
 Select the extension icon in the browser toolbar to:
 
 - Remember or reset the resized column width after refreshing.
-- Open **Search display** to show search as a full box, a search button, or hide it. This section can be expanded or collapsed.
+- Open **Search display** for two independent dropdowns: **Package sidebar search** (beside PACKAGES on both pages) and **Designer pipeline search** (inside the selected package). Each offers **Search box**, **Icon**, or **Hidden**. Icon opens on demand; Escape or clicking elsewhere closes it. Both default to Search box, and the settings section can be collapsed.
 - Show or hide pinned favorites without deleting them.
 - Open **Custom sites** to add your university's Experience URL. Allow access when prompted, then refresh the page. You can add multiple sites or remove them later; the two standard Experience sites stay enabled.
 - Open **Icon & Favorites appearance** to choose a background color, one or two letters, and white or black lettering, with a live preview above. The default is a black **E** on purple; **Reset** restores it. Your choice stays local to this browser; the store listing icon does not change.

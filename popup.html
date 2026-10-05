@@ -25,7 +25,7 @@
               Remember resized width
             </span>
             <span class="setting-description">
-              Preserve your column size after refreshing Ellucian.
+              Keep panel width after refresh.
             </span>
           </span>
 
@@ -46,7 +46,7 @@
               Pinned packages
             </span>
             <span class="setting-description">
-              Show remembered package and pipeline favorites.
+              Show pinned packages and pipelines.
             </span>
           </span>
 
@@ -63,7 +63,7 @@
         <label class="setting-row" for="shared-version-enabled">
           <span class="setting-copy">
             <span class="setting-title">Shared environments</span>
-            <span class="setting-description">Designer only. Checks shared releases and destinations.</span>
+            <span class="setting-description">Show sharing details in Designer.</span>
           </span>
           <span class="switch">
             <input id="shared-version-enabled" type="checkbox" />
@@ -75,47 +75,25 @@
       <!-- Keep search choices available in a compact, keyboard-accessible disclosure. -->
       <details class="settings-card search-display-card">
         <summary>Search display</summary>
-        <p class="card-description">
-          Beside the PACKAGES heading.
-        </p>
-
-        <div class="search-mode-options" role="radiogroup" aria-label="Search display">
-          <label class="mode-option">
-            <input
-              type="radio"
-              name="search-display-mode"
-              value="box"
-            />
-            <span class="mode-option-content">
-              <span class="mode-option-title">Search box</span>
-              <span class="mode-option-detail">Always visible</span>
-            </span>
-          </label>
-
-          <label class="mode-option">
-            <input
-              type="radio"
-              name="search-display-mode"
-              value="icon"
-            />
-            <span class="mode-option-content">
-              <span class="mode-option-title">Icon</span>
-              <span class="mode-option-detail">Open when needed</span>
-            </span>
-          </label>
-
-          <label class="mode-option">
-            <input
-              type="radio"
-              name="search-display-mode"
-              value="hidden"
-            />
-            <span class="mode-option-content">
-              <span class="mode-option-title">Hidden</span>
-              <span class="mode-option-detail">Original layout</span>
-            </span>
-          </label>
-        </div>
+        <!-- Keep the two search areas independent without adding tall option cards. -->
+        <label class="search-display-control" for="search-display-mode">
+          <span>Package sidebar search</span>
+          <select id="search-display-mode" disabled>
+            <option value="box">Search box</option>
+            <option value="icon">Icon</option>
+            <option value="hidden">Hidden</option>
+          </select>
+        </label>
+        <p class="card-description">Beside PACKAGES on both pages.</p>
+        <label class="search-display-control" for="designer-search-display-mode">
+          <span>Designer pipeline search</span>
+          <select id="designer-search-display-mode" disabled>
+            <option value="box">Search box</option>
+            <option value="icon">Icon</option>
+            <option value="hidden">Hidden</option>
+          </select>
+        </label>
+        <p class="card-description">Beside Pipelines in the selected package.</p>
       </details>
 
       <!-- Keep optional personalization compact until the user opens it. -->

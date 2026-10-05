@@ -5,6 +5,7 @@
   const REMEMBER_WIDTH_KEY = "rememberWidth";
   const SAVED_WIDTHS_KEY = "savedWidths";
   const SEARCH_MODE_KEY = "searchDisplayMode";
+  const DESIGNER_SEARCH_MODE_KEY = "designerSearchDisplayMode";
   const SEARCH_MODES = new Set(["box", "icon", "hidden"]);
   const DEFAULT_SEARCH_MODE = "box";
   const FAVORITES_ENABLED_KEY = "favoritesEnabled";
@@ -27,9 +28,9 @@
   const favoriteStatus = document.querySelector("#favorite-color-status");
   const resetFavoriteButton = document.querySelector("#reset-favorite-color");
   let appearanceLoaded = false;
-  const searchModeInputs = document.querySelectorAll(
-    'input[name="search-display-mode"]',
-  );
+  // Keep the existing sidebar preference separate from the Designer package search.
+  const searchModeSelect = document.querySelector("#search-display-mode");
+  const designerSearchModeSelect = document.querySelector("#designer-search-display-mode");
 
   // Accept only one of the three supported search presentation modes.
   function normalizeSearchMode(value) {
@@ -52,6 +53,7 @@
       [FAVORITES_ENABLED_KEY]: true,
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
+      [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [IconAppearance.KEY]: IconAppearance.DEFAULT,
       [FavoriteAppearance.KEY]: FavoriteAppearance.DEFAULT,
     },
@@ -64,12 +66,11 @@
       favoritesEnabledSwitch.checked =
         settings[FAVORITES_ENABLED_KEY] !== false;
 
-      // Select the saved search mode, defaulting to the always-visible box.
-      const selectedMode = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
-      const selectedInput = document.querySelector(
-        `input[name="search-display-mode"][value="${selectedMode}"]`,
-      );
-      selectedInput.checked = true;
+      // Restore both independent choices before allowing changes to be saved.
+      searchModeSelect.value = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
+      designerSearchModeSelect.value = normalizeSearchMode(settings[DESIGNER_SEARCH_MODE_KEY]);
+      searchModeSelect.disabled = false;
+      designerSearchModeSelect.disabled = false;
 
       // Show the saved appearance without changing other popup preferences.
       const appearance = IconAppearance.normalize(settings[IconAppearance.KEY]);
@@ -205,17 +206,14 @@
     });
   });
 
-  // Save each mutually exclusive search display choice immediately.
-  searchModeInputs.forEach((searchModeInput) => {
-    searchModeInput.addEventListener("change", () => {
-      if (!searchModeInput.checked) {
-        return;
-      }
+  // Save sidebar changes without changing the Designer pipeline preference.
+  searchModeSelect.addEventListener("change", () => {
+    chrome.storage.local.set({ [SEARCH_MODE_KEY]: normalizeSearchMode(searchModeSelect.value) });
+  });
 
-      chrome.storage.local.set({
-        [SEARCH_MODE_KEY]: normalizeSearchMode(searchModeInput.value),
-      });
-    });
+  // Apply the selected-package search choice independently on open Designer pages.
+  designerSearchModeSelect.addEventListener("change", () => {
+    chrome.storage.local.set({ [DESIGNER_SEARCH_MODE_KEY]: normalizeSearchMode(designerSearchModeSelect.value) });
   });
 
   // Read the installed manifest so the footer always shows the current version.

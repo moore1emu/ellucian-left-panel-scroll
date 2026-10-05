@@ -996,6 +996,11 @@ html[data-ellucian-favorites-resizing="true"] * {
 .ellucian-pipeline-heading-group > .ellucian-pipeline-heading { flex: 0 0 auto !important; width: auto !important; margin-right: 0 !important; }
 .ellucian-pipeline-heading-group > .ellucian-designer-search { flex: 0 1 280px; margin: 8px 0; }
 .ellucian-pipeline-heading-group > .ellucian-designer-search ~ * { margin-left: auto; }
+/* Hide the magnifier in full-box mode; compact mode grows only when opened. */
+.ellucian-designer-search[data-search-mode="box"] > .ellucian-search-icon-button,
+.ellucian-designer-search[data-icon-expanded="true"] > .ellucian-search-icon-button { display: none !important; }
+.ellucian-pipeline-heading-group > .ellucian-designer-search[data-search-mode="icon"] { flex: 0 0 auto; }
+.ellucian-designer-search[data-search-mode="icon"]:not([data-icon-expanded="true"]) > input { display: none; }
 /* Match native column emphasis and expose mismatched destinations in red. */
 th[data-ellucian-shared-cell] > span { font-weight: 700; }
 .ellucian-shared-outdated { color: #b42318; font-weight: 600; }
