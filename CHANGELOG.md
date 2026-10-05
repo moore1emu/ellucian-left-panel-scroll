@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.18.1 — 2026-10-05
+
+- Issued the current Custom Sites fixes and settings refinements as a distinctly numbered patch release. Existing approved sites appear with Remove, and site setup finishes even if settings close.
+- Every subsequent delivered revision receives a new version, with small fixes increasing the patch number.
+
+Earlier development rebuilds reused 1.18.0. Their changes remain grouped below under the version actually delivered, rather than assigning retrospective version numbers.
+
 ## 1.18.0 — 2026-10-05
 
 - Added **Favorite Stars** within **Icon & Favorites Appearance**: choose a custom color or **Match Icon Color** to follow the toolbar icon's background.

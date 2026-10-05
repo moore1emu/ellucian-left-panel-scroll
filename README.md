@@ -11,6 +11,8 @@ It works on the standard Ellucian Experience Test and Production sites, with opt
 
 See [CHANGELOG.md](CHANGELOG.md) for version history and recent changes. The installed version is shown at the bottom of the extension settings.
 
+Each delivered update receives a new version; small fixes increase the last number (for example, 1.18.1 → 1.18.2).
+
 ## Features
 
 - Adds a separate, thin scrollbar to the package list.
