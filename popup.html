@@ -72,14 +72,14 @@
         </label>
       </section>
 
-      <!-- Offer one clear three-state choice for the in-page search control. -->
-      <fieldset class="settings-card search-display-card">
-        <legend>Search display</legend>
+      <!-- Keep search choices available in a compact, keyboard-accessible disclosure. -->
+      <details class="settings-card search-display-card">
+        <summary>Search display</summary>
         <p class="card-description">
           Beside the PACKAGES heading.
         </p>
 
-        <div class="search-mode-options">
+        <div class="search-mode-options" role="radiogroup" aria-label="Search display">
           <label class="mode-option">
             <input
               type="radio"
@@ -116,11 +116,11 @@
             </span>
           </label>
         </div>
-      </fieldset>
+      </details>
 
       <!-- Keep optional personalization compact until the user opens it. -->
       <details class="settings-card icon-appearance-card">
-        <summary>Icon appearance</summary>
+        <summary>Icon &amp; Favorites appearance</summary>
         <div class="icon-appearance-controls">
           <!-- Provide a native color picker and a short initials field. -->
           <label class="icon-control" for="icon-color">

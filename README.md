@@ -32,11 +32,11 @@ Pipeline favorites follow the same major version. For example, a favorite pinned
 Select the extension icon in the browser toolbar to:
 
 - Remember or reset the resized column width after refreshing.
-- Show search as a full box, a search button, or hide it.
+- Open **Search display** to show search as a full box, a search button, or hide it. This section can be expanded or collapsed.
 - Show or hide pinned favorites without deleting them.
 - Open **Custom sites** to add your university's Experience URL. Allow access when prompted, then refresh the page. You can add multiple sites or remove them later; the two standard Experience sites stay enabled.
-- Open **Icon appearance** to choose a background color, one or two letters, and white or black lettering, with a live preview above. The default is a black **E** on purple; **Reset** restores it. Your choice stays local to this browser; the store listing icon does not change.
-- Under **Icon appearance → Favorite stars**, choose a star color or enable **Match icon color** to follow the icon's background. **Reset stars** restores independent purple. Unpinned stars stay gray outlines; all pinned package and pipeline stars use your chosen color.
+- Open **Icon & Favorites appearance** to choose a background color, one or two letters, and white or black lettering, with a live preview above. The default is a black **E** on purple; **Reset** restores it. Your choice stays local to this browser; the store listing icon does not change.
+- Under **Icon & Favorites appearance → Favorite stars**, choose a star color or enable **Match icon color** to follow the icon's background. **Reset stars** restores independent purple. Unpinned stars stay gray outlines; all pinned package and pipeline stars use your chosen color.
 - Optionally show **Shared Environments** in Designer. Hover or focus a destination to see its newest shared version. Red means it differs from the published row within the same major version. This is off by default.
 - Sharing information refreshes when you return from either share flow, including after cancelling. Use the refresh icon beside **Shared Environments** to recheck displayed pipelines anytime. Results otherwise stay cached to limit traffic.
 - Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
