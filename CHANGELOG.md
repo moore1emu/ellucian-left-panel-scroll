@@ -10,6 +10,7 @@ Reconstructed from this development chat, including recorded file changes. Dates
 - Renamed the appearance section **Icon & Favorites Appearance** and shortened the main setting descriptions.
 - Made **Search Display** collapsible with independent dropdowns for **Package Sidebar Search** (both pages) and **Designer Pipeline Search** (within a selected package). Each supports Search Box, Icon, or Hidden; existing sidebar preferences are preserved.
 - Standardized settings labels and extension-added page headings to Title Case; descriptions remain in sentence case.
+- Fixed the Star Color swatch to follow the icon when Match Icon Color is enabled. Turning matching off restores the retained custom color.
 
 ## 1.17.0 — 2026-10-05
 

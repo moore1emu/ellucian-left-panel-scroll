@@ -28,6 +28,8 @@
   const favoriteStatus = document.querySelector("#favorite-color-status");
   const resetFavoriteButton = document.querySelector("#reset-favorite-color");
   let appearanceLoaded = false;
+  // Retain the custom choice while the disabled picker displays the linked icon color.
+  let independentFavoriteColor = FavoriteAppearance.DEFAULT.color;
   // Keep the existing sidebar preference separate from the Designer package search.
   const searchModeSelect = document.querySelector("#search-display-mode");
   const designerSearchModeSelect = document.querySelector("#designer-search-display-mode");
@@ -79,7 +81,7 @@
       iconTextColorInput.value = appearance.textColor;
       // Restore the independent color even when stars are linked to the icon.
       const stars = FavoriteAppearance.normalize(settings[FavoriteAppearance.KEY]);
-      favoriteColorInput.value = stars.color;
+      independentFavoriteColor = stars.color;
       favoriteMatchSwitch.checked = stars.matchIcon;
       appearanceLoaded = true;
       previewIcon();
@@ -105,16 +107,23 @@
 
   // Show the resolved star color without overwriting the user's separate custom color.
   function previewFavoriteColor() {
-    favoritePreview.style.color = FavoriteAppearance.resolve(
-      { color: favoriteColorInput.value, matchIcon: favoriteMatchSwitch.checked },
+    const resolvedColor = FavoriteAppearance.resolve(
+      { color: independentFavoriteColor, matchIcon: favoriteMatchSwitch.checked },
       { color: iconColorInput.value },
     );
+    // Keep the swatch and star preview in sync without losing the independent choice.
+    favoriteColorInput.value = resolvedColor;
+    favoritePreview.style.color = resolvedColor;
     favoriteColorInput.disabled = !appearanceLoaded || favoriteMatchSwitch.checked;
   }
 
   // Save only the star preference; color changes never alter favorites or icon settings.
   function saveFavoriteColor() {
-    const appearance = FavoriteAppearance.normalize({ color: favoriteColorInput.value, matchIcon: favoriteMatchSwitch.checked });
+    // Accept a completed custom picker change only while it is not linked to the icon.
+    if (!favoriteMatchSwitch.checked) {
+      independentFavoriteColor = FavoriteAppearance.normalize({ color: favoriteColorInput.value }).color;
+    }
+    const appearance = FavoriteAppearance.normalize({ color: independentFavoriteColor, matchIcon: favoriteMatchSwitch.checked });
     chrome.storage.local.set({ [FavoriteAppearance.KEY]: appearance }, () => {
       favoriteStatus.textContent = chrome.runtime.lastError ? "Could not save. Please try again." : "Star color saved on this browser.";
     });
@@ -123,6 +132,10 @@
   // Preview the picker live, committing after the completed color change.
   favoriteColorInput.addEventListener("input", () => {
     favoriteStatus.textContent = "";
+    // Preview custom edits without replacing the retained choice in matching mode.
+    if (!favoriteMatchSwitch.checked) {
+      independentFavoriteColor = FavoriteAppearance.normalize({ color: favoriteColorInput.value }).color;
+    }
     previewFavoriteColor();
   });
   favoriteColorInput.addEventListener("change", saveFavoriteColor);
@@ -133,7 +146,7 @@
 
   // Reset stars to independent purple without changing the toolbar icon.
   resetFavoriteButton.addEventListener("click", () => {
-    favoriteColorInput.value = FavoriteAppearance.DEFAULT.color;
+    independentFavoriteColor = FavoriteAppearance.DEFAULT.color;
     favoriteMatchSwitch.checked = FavoriteAppearance.DEFAULT.matchIcon;
     previewFavoriteColor();
     saveFavoriteColor();
