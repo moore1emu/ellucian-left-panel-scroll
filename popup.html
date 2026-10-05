@@ -146,6 +146,23 @@
         <p class="icon-status" id="icon-status" role="status" aria-live="polite"></p>
       </details>
 
+      <!-- Keep vanity-domain setup collapsed so everyday settings remain compact. -->
+      <details class="settings-card custom-sites-card">
+        <summary>Custom sites</summary>
+        <p class="card-description">Standard Experience Test and Production sites are already enabled.</p>
+        <form id="custom-site-form">
+          <label for="custom-site-url">University Experience URL</label>
+          <div class="custom-site-entry">
+            <input id="custom-site-url" type="text" placeholder="https://experience.university.edu" autocomplete="off" spellcheck="false" aria-describedby="custom-site-help custom-site-status" disabled />
+            <button id="add-custom-site" type="submit" disabled>Add</button>
+          </div>
+        </form>
+        <p class="card-description" id="custom-site-help">Allow access when prompted, then refresh your Experience page. Only add sites you trust.</p>
+        <!-- Render saved domains as text, never as user-provided HTML. -->
+        <ul id="custom-site-list" aria-label="Custom Experience sites"></ul>
+        <p id="custom-site-status" role="status" aria-live="polite"></p>
+      </details>
+
       <!-- Clarify scope, version, and the extension's independent status. -->
       <footer>
         <div class="footer-scope">
@@ -163,5 +180,7 @@
     <!-- Load the preference behavior after the popup controls exist. -->
     <script src="icon-appearance.js"></script>
     <script src="popup.js"></script>
+    <script src="custom-sites.js"></script>
+    <script src="custom-sites-popup.js"></script>
   </body>
 </html>

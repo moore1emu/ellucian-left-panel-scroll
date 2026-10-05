@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.17.0 — 2026-10-05
+
+- Added a collapsible **Custom sites** list in Settings for university vanity URLs, with Add, Remove, and Allow controls.
+- Requests optional access to each added HTTPS domain. The standard Experience Test and Production sites remain enabled without additional setup.
+- Remembers approved custom sites across browser restarts, while keeping favorites and widths separate by domain as before.
+- Removing a site revokes its optional access; refresh open pages to clear already-loaded controls. Updated the README and privacy policy.
+
 ## 1.16.2 — 2026-10-02
 
 - Renamed the extension to **Integration Navigator**, including its toolbar tooltip and settings header.

@@ -1,12 +1,12 @@
 # Privacy Policy
 
-Integration Navigator · Updated October 2, 2026
+Integration Navigator · Updated October 5, 2026
 
 Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
 ## What the extension does
 
-This independent browser extension improves navigation in Ellucian Integration Packages and Integration Designer on the Ellucian Experience Test and Production websites. It adds scrolling, resizing, search, favorites, and an optional Shared Environments column.
+This independent browser extension improves navigation in Ellucian Integration Packages and Integration Designer on the standard Ellucian Experience Test and Production websites and university vanity domains you explicitly add. It adds scrolling, resizing, search, favorites, and an optional Shared Environments column.
 
 ## Information used
 
@@ -18,7 +18,11 @@ The extension does not read, copy, or store your password or bearer token. It do
 
 ## Local storage
 
-Your settings, icon background and letter colors, icon letters, column widths, favorite package and pipeline names, favorite version identifiers, ordering, and favorites layout preferences are saved in the browser's local extension storage. They are not synchronized by the extension to other devices or sent to the publisher. Temporary search indexes and sharing results remain in page memory.
+Your settings, custom Experience site domains, icon background and letter colors, icon letters, column widths, favorite package and pipeline names, favorite version identifiers, ordering, and favorites layout preferences are saved in the browser's local extension storage. They are not synchronized by the extension to other devices or sent to the publisher. Pasted custom URLs are reduced to their HTTPS domain; paths, query strings, and fragments are not saved. Temporary search indexes and sharing results remain in page memory.
+
+## Website permissions
+
+The two standard Experience sites remain enabled. For a custom site, the extension requests optional scripting access and permission for that exact HTTPS domain only after you choose to add or allow it. Declaring optional HTTPS access lets users supply their own domains; it does not automatically grant access to every website or its subdomains. Only packaged extension scripts are registered, and the navigation controls remain limited to the supported Integration Packages/Designer routes. No browsing-history permission is requested.
 
 ## Sharing and tracking
 
@@ -30,7 +34,7 @@ If you email support, the publisher receives the information you choose to inclu
 
 ## Your controls
 
-You can disable search, hide favorites, and turn off Shared Environments in the extension settings. Hiding favorites does not delete them; use their stars to remove individual favorites. Removing the extension removes its local extension storage through the browser. Closing or reloading the page clears its in-memory data.
+You can disable search, hide favorites, and turn off Shared Environments in the extension settings. Hiding favorites does not delete them; use their stars to remove individual favorites. Removing a custom site revokes its optional domain access and stops future loading there; refresh any open page to clear previously injected controls. Site-specific favorites and widths are retained locally for reuse if you add the site again. Removing the extension removes its local extension storage through the browser. Closing or reloading the page clears its in-memory data.
 
 ## Updates and contact
 

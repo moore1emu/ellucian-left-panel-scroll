@@ -371,3 +371,29 @@ footer {
 .footer-separator {
   opacity: 0.65;
 }
+
+/* Keep custom domains compact and consistent with the existing disclosure card. */
+.custom-sites-card { flex-shrink: 0; padding: 10px 12px; }
+.custom-sites-card summary { cursor: pointer; font-size: 14px; font-weight: 700; }
+.custom-sites-card > .card-description { margin-top: 8px; }
+#custom-site-form label { display: block; font-size: 12px; margin-bottom: 5px; }
+.custom-site-entry { display: flex; gap: 6px; }
+
+/* Allow long vanity domains without forcing a wider popup. */
+.custom-sites-card input, .custom-sites-card button {
+  background: var(--background); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font: 12px Arial, sans-serif; min-height: 30px; padding: 5px 8px;
+}
+.custom-sites-card input { flex: 1; min-width: 0; }
+.custom-sites-card button { cursor: pointer; flex-shrink: 0; }
+.custom-sites-card button:disabled { cursor: wait; opacity: 0.6; }
+.custom-sites-card :is(input, button, summary):focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* Align each saved domain with its access and removal controls. */
+#custom-site-list { list-style: none; margin: 8px 0 0; padding: 0; }
+#custom-site-list:empty { display: none; }
+#custom-site-list li { align-items: center; display: flex; gap: 5px; padding: 5px 0; }
+#custom-site-list li + li { border-top: 1px solid var(--border); }
+#custom-site-list li > span { flex: 1; font-size: 12px; min-width: 0; overflow-wrap: anywhere; }
+#custom-site-status { color: var(--muted); font-size: 12px; line-height: 1.4; margin: 0; }
+#custom-site-status:not(:empty) { margin-top: 8px; }
