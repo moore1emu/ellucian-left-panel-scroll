@@ -2000,7 +2000,7 @@
 
     const title = document.createElement("span");
     title.className = "ellucian-favorites-title";
-    title.textContent = "Pinned packages";
+    title.textContent = "Pinned Packages";
 
     const count = document.createElement("span");
     count.className = "ellucian-favorites-count";

@@ -22,7 +22,7 @@
         <label class="setting-row" for="remember-width">
           <span class="setting-copy">
             <span class="setting-title" id="width-setting-title">
-              Remember resized width
+              Remember Resized Width
             </span>
             <span class="setting-description">
               Keep panel width after refresh.
@@ -43,7 +43,7 @@
         <label class="setting-row" for="favorites-enabled">
           <span class="setting-copy">
             <span class="setting-title" id="favorites-setting-title">
-              Pinned packages
+              Pinned Packages
             </span>
             <span class="setting-description">
               Show pinned packages and pipelines.
@@ -62,7 +62,7 @@
       <section class="settings-card">
         <label class="setting-row" for="shared-version-enabled">
           <span class="setting-copy">
-            <span class="setting-title">Shared environments</span>
+            <span class="setting-title">Shared Environments</span>
             <span class="setting-description">Show sharing details in Designer.</span>
           </span>
           <span class="switch">
@@ -74,21 +74,21 @@
 
       <!-- Keep search choices available in a compact, keyboard-accessible disclosure. -->
       <details class="settings-card search-display-card">
-        <summary>Search display</summary>
+        <summary>Search Display</summary>
         <!-- Keep the two search areas independent without adding tall option cards. -->
         <label class="search-display-control" for="search-display-mode">
-          <span>Package sidebar search</span>
+          <span>Package Sidebar Search</span>
           <select id="search-display-mode" disabled>
-            <option value="box">Search box</option>
+            <option value="box">Search Box</option>
             <option value="icon">Icon</option>
             <option value="hidden">Hidden</option>
           </select>
         </label>
         <p class="card-description">Beside PACKAGES on both pages.</p>
         <label class="search-display-control" for="designer-search-display-mode">
-          <span>Designer pipeline search</span>
+          <span>Designer Pipeline Search</span>
           <select id="designer-search-display-mode" disabled>
-            <option value="box">Search box</option>
+            <option value="box">Search Box</option>
             <option value="icon">Icon</option>
             <option value="hidden">Hidden</option>
           </select>
@@ -98,7 +98,7 @@
 
       <!-- Keep optional personalization compact until the user opens it. -->
       <details class="settings-card icon-appearance-card">
-        <summary>Icon &amp; Favorites appearance</summary>
+        <summary>Icon &amp; Favorites Appearance</summary>
         <div class="icon-appearance-controls">
           <!-- Provide a native color picker and a short initials field. -->
           <label class="icon-control" for="icon-color">
@@ -111,7 +111,7 @@
           </label>
           <!-- Let the user choose letter contrast rather than selecting it automatically. -->
           <label class="icon-control" for="icon-text-color">
-            <span>Letter color</span>
+            <span>Letter Color</span>
             <select id="icon-text-color">
               <option value="#000000">Black</option>
               <option value="#ffffff">White</option>
@@ -125,21 +125,21 @@
 
         <!-- Keep star personalization beside the icon rather than adding another card. -->
         <div class="favorite-appearance-controls">
-          <span class="setting-title">Favorite stars</span>
+          <span class="setting-title">Favorite Stars</span>
           <label class="favorite-match-control" for="favorite-match-icon">
             <input id="favorite-match-icon" type="checkbox" disabled />
-            <span>Match icon color</span>
+            <span>Match Icon Color</span>
           </label>
           <div class="favorite-color-controls">
             <label class="icon-control" for="favorite-color">
-              <span>Star color</span>
+              <span>Star Color</span>
               <input id="favorite-color" type="color" value="#6d28d9" disabled />
             </label>
             <!-- Preview the unchanged filled star shape in the chosen color. -->
             <span id="favorite-color-preview" role="img" aria-label="Favorite star preview">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.4l2.66 5.39 5.95.86-4.3 4.2 1.02 5.92L12 16.97l-5.32 2.8 1.01-5.92-4.3-4.2 5.95-.86L12 3.4z" /></svg>
             </span>
-            <button id="reset-favorite-color" type="button" disabled>Reset stars</button>
+            <button id="reset-favorite-color" type="button" disabled>Reset Stars</button>
           </div>
           <p id="favorite-color-status" class="icon-status" role="status" aria-live="polite"></p>
         </div>
@@ -147,7 +147,7 @@
 
       <!-- Keep vanity-domain setup collapsed so everyday settings remain compact. -->
       <details class="settings-card custom-sites-card">
-        <summary>Custom sites</summary>
+        <summary>Custom Sites</summary>
         <p class="card-description">Standard Experience Test and Production sites are already enabled.</p>
         <form id="custom-site-form">
           <label for="custom-site-url">University Experience URL</label>
