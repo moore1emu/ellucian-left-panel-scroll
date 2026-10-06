@@ -293,6 +293,7 @@
         'open-designer': 'Open Designer in the source environment, then try again.',
         'left-designer': 'Refresh stopped because you left Designer.',
         'not-ready': 'Designer is still loading. Try again shortly.',
+        'extension-reloaded': 'Refresh this page after reloading the extension, then try again.',
         busy: 'A refresh is already running.',
       };
       sharedFromStatus.textContent = result?.ok === true ? 'Updated this Designer environment.'

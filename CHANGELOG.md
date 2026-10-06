@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.6 — 2026-10-06
+
+- Prevented Shared From cache saves from throwing when an extension reload disconnects an already-open page. Source checks stop safely and give a page-refresh hint, without clearing saved sources, favorites, or settings.
+- Covered missing messaging APIs, invalidated connections, and reloads while a save reply is pending. Normal save failures still have one retry; successful refresh behavior is unchanged.
+
 ## 1.19.5 — 2026-10-06
 
 - Fixed Shared From collection when entering or revisiting Designer through Experience without a full refresh. Each visit waits for a fresh, complete package index, with bounded local readiness checks and no continuous polling.

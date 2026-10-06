@@ -93,6 +93,8 @@
   let ownershipIndexTimer = 0;
   // Hold at most one popup reply until the requested snapshot is actually saved.
   let ownershipManualResponse = null;
+  // A reloaded extension cannot reconnect this old page script until the page refreshes.
+  let ownershipExtensionDisconnected = false;
   // Allow one startup retry per inventory, without background polling.
   let ownershipAttempts = 0;
   let navigationSequence = 0;
@@ -2666,9 +2668,18 @@
     finishOwnershipRefresh({ ok: false, reason });
   }
 
+  // Stop this old script's source checks without changing saved cache, favorites, or consent.
+  function stopDisconnectedOwnership() {
+    if (ownershipExtensionDisconnected) return;
+    ownershipExtensionDisconnected = true;
+    resetDesignerOwnership('extension-reloaded');
+    // Give one recovery hint rather than throwing or repeatedly retrying a missing connection.
+    console.info('Integration Navigator connection unavailable. Refresh this page after reloading the extension.');
+  }
+
   // Wait for React's complete package data using bounded local messages, not server polling.
   function requestDesignerOwnershipIndex() {
-    if (!sharedFromEnabled || !isDesignerPackagePage() || ownershipIndexReady || ownershipIndexTimer) return;
+    if (ownershipExtensionDisconnected || !sharedFromEnabled || !isDesignerPackagePage() || ownershipIndexReady || ownershipIndexTimer) return;
     if (ownershipIndexAttempts >= OWNERSHIP_INDEX_ATTEMPTS) {
       finishOwnershipRefresh({ ok: false, reason: 'not-ready' });
       return;
@@ -2693,7 +2704,7 @@
 
   // Ask for one source snapshot only after this visit's loaded Designer index is ready.
   function requestDesignerOwnership() {
-    if (!sharedFromEnabled || !isDesignerPackagePage() || !ownershipIndexReady || indexState !== "ready" || ownershipRequest) return;
+    if (ownershipExtensionDisconnected || !sharedFromEnabled || !isDesignerPackagePage() || !ownershipIndexReady || indexState !== "ready" || ownershipRequest) return;
     const signature = JSON.stringify([getFavoritesStorageKey(), searchIndex.map((entry) => [entry.name, entry.pipelines.map((pipeline) => pipeline.name)])]);
     // A changed inventory gets its own bounded attempt budget.
     if (signature !== ownershipSignature) {
@@ -2721,7 +2732,12 @@
 
   // Accept manual refresh only from this extension's settings on the current Designer page.
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
-    if (message?.type !== 'designer-ownership-refresh' || sender.id !== chrome.runtime.id || sender.tab) return;
+    if (message?.type !== 'designer-ownership-refresh' || sender.id !== chrome.runtime?.id || sender.tab) return;
+    // Do not leave a settings request waiting after this page has lost its connection.
+    if (ownershipExtensionDisconnected) {
+      respond({ ok: false, reason: 'extension-reloaded' });
+      return;
+    }
     if (!sharedFromEnabled || !isDesignerPackagePage()) {
       respond({ ok: false, reason: sharedFromEnabled ? 'open-designer' : 'disabled' });
       return;
@@ -3236,23 +3252,48 @@
       if (!sharedFromEnabled || !isDesignerPackagePage() || !ownershipRequest || event.data.requestId !== ownershipRequest) return;
       // Keep this request pending until the background confirms the cache write.
       const requestId = ownershipRequest;
-      chrome.runtime.sendMessage({ type: 'designer-ownership-save', tenantId: normalizeText(event.data.tenantId), environment: normalizeText(event.data.environment),
-        pipelines: Array.isArray(event.data.pipelines) ? event.data.pipelines.slice(0, 10001).map(normalizeText) : [] }, (result) => {
-        // Ignore a late callback after opt-out, navigation, or a replacement request.
-        if (ownershipRequest !== requestId) return;
-        window.clearTimeout(ownershipTimer);
-        ownershipRequest = '';
-        // Report persistence failure without dumping names or page data into the console.
-        if (chrome.runtime.lastError || result?.ok !== true) {
-          console.warn('Designer source cache could not be saved. Revisit Designer to retry.');
-          if (ownershipAttempts < 2) requestDesignerOwnership();
-          else finishOwnershipRefresh({ ok: false, reason: 'save-failed' });
-        } else {
-          // A successful snapshot needs no mutation-driven follow-up request.
-          ownershipAttempts = 2;
-          finishOwnershipRefresh({ ok: true });
+      // Extension reloads can remove the API or make an existing API throw synchronously.
+      try {
+        const runtime = globalThis.chrome?.runtime;
+        if (!runtime?.id || typeof runtime.sendMessage !== 'function') {
+          stopDisconnectedOwnership();
+          return;
         }
-      });
+        // Send only the current sanitized source snapshot, never page content or credentials.
+        runtime.sendMessage({ type: 'designer-ownership-save', tenantId: normalizeText(event.data.tenantId), environment: normalizeText(event.data.environment),
+          pipelines: Array.isArray(event.data.pipelines) ? event.data.pipelines.slice(0, 10001).map(normalizeText) : [] }, (result) => {
+          // Ignore a late callback after opt-out, navigation, or a replacement request.
+          if (ownershipRequest !== requestId) return;
+          let saveFailed;
+          // The extension can also disappear between sending and receiving the reply.
+          try {
+            const lastError = runtime.lastError;
+            if (globalThis.chrome?.runtime !== runtime || !runtime.id || /Extension context invalidated/i.test(lastError?.message || '')) {
+              stopDisconnectedOwnership();
+              return;
+            }
+            saveFailed = Boolean(lastError) || result?.ok !== true;
+          } catch (_error) {
+            stopDisconnectedOwnership();
+            return;
+          }
+          // Clear the pending lookup only after the runtime reply can safely be inspected.
+          window.clearTimeout(ownershipTimer);
+          ownershipRequest = '';
+          // Ordinary persistence failures retain the existing single retry budget.
+          if (saveFailed) {
+            console.warn('Designer source cache could not be saved. Revisit Designer to retry.');
+            if (ownershipAttempts < 2) requestDesignerOwnership();
+            else finishOwnershipRefresh({ ok: false, reason: 'save-failed' });
+          } else {
+            // A successful snapshot needs no mutation-driven follow-up request.
+            ownershipAttempts = 2;
+            finishOwnershipRefresh({ ok: true });
+          }
+        });
+      } catch (_error) {
+        stopDisconnectedOwnership();
+      }
       return;
     }
 
