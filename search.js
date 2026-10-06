@@ -40,6 +40,9 @@
   const MAX_PACKAGE_RESULTS = 12;
   const MAX_PIPELINE_RESULTS = 30;
   const INDEX_RESPONSE_TIMEOUT = 1200;
+  // Retry loaded-page indexing briefly after SPA entry, never poll indefinitely.
+  const OWNERSHIP_INDEX_RETRY_MS = 1500;
+  const OWNERSHIP_INDEX_ATTEMPTS = 10;
   const MIN_FAVORITES_LIST_HEIGHT = 64;
   const MAX_FAVORITES_VIEWPORT_RATIO = 0.45;
   const MAX_FAVORITES_LIST_HEIGHT = 360;
@@ -83,6 +86,13 @@
   let ownershipRequest = "";
   let ownershipSignature = "";
   let ownershipTimer = 0;
+  // Require a fresh complete index for each Designer visit, not a previous page's index.
+  let ownershipPageKey = "";
+  let ownershipIndexReady = false;
+  let ownershipIndexAttempts = 0;
+  let ownershipIndexTimer = 0;
+  // Hold at most one popup reply until the requested snapshot is actually saved.
+  let ownershipManualResponse = null;
   // Allow one startup retry per inventory, without background polling.
   let ownershipAttempts = 0;
   let navigationSequence = 0;
@@ -2632,9 +2642,58 @@
     });
   }
 
-  // Ask for one source snapshot after loaded Designer names change or a page is revisited.
+  // Complete a manual refresh only after persistence, cancellation, or a bounded failure.
+  function finishOwnershipRefresh(result) {
+    const respond = ownershipManualResponse;
+    ownershipManualResponse = null;
+    // Closing settings must not cancel collection or create a console error.
+    if (respond) {
+      try { respond(result); } catch (_error) { /* The popup may already be closed. */ }
+    }
+  }
+
+  // Discard the previous visit's requests without clearing saved sources or favorites.
+  function resetDesignerOwnership(reason) {
+    window.clearTimeout(ownershipTimer);
+    window.clearTimeout(ownershipIndexTimer);
+    ownershipTimer = 0;
+    ownershipIndexTimer = 0;
+    ownershipRequest = "";
+    ownershipSignature = "";
+    ownershipAttempts = 0;
+    ownershipIndexReady = false;
+    ownershipIndexAttempts = 0;
+    finishOwnershipRefresh({ ok: false, reason });
+  }
+
+  // Wait for React's complete package data using bounded local messages, not server polling.
+  function requestDesignerOwnershipIndex() {
+    if (!sharedFromEnabled || !isDesignerPackagePage() || ownershipIndexReady || ownershipIndexTimer) return;
+    if (ownershipIndexAttempts >= OWNERSHIP_INDEX_ATTEMPTS) {
+      finishOwnershipRefresh({ ok: false, reason: 'not-ready' });
+      return;
+    }
+    ownershipIndexAttempts += 1;
+    requestSearchIndex();
+    // A successful complete-index response cancels this timer before any further checks.
+    ownershipIndexTimer = window.setTimeout(() => {
+      ownershipIndexTimer = 0;
+      requestDesignerOwnershipIndex();
+    }, OWNERSHIP_INDEX_RETRY_MS);
+  }
+
+  // Recognize SPA entry and exit even when the browser emits no pageshow or popstate.
+  function updateDesignerOwnershipVisit(force = false) {
+    const pageKey = sharedFromEnabled && isDesignerPackagePage() ? getFavoritesStorageKey() : '';
+    if (!force && pageKey === ownershipPageKey) return;
+    resetDesignerOwnership(sharedFromEnabled ? 'left-designer' : 'disabled');
+    ownershipPageKey = pageKey;
+    if (pageKey) requestDesignerOwnershipIndex();
+  }
+
+  // Ask for one source snapshot only after this visit's loaded Designer index is ready.
   function requestDesignerOwnership() {
-    if (!sharedFromEnabled || !isDesignerPackagePage() || indexState !== "ready" || ownershipRequest) return;
+    if (!sharedFromEnabled || !isDesignerPackagePage() || !ownershipIndexReady || indexState !== "ready" || ownershipRequest) return;
     const signature = JSON.stringify([getFavoritesStorageKey(), searchIndex.map((entry) => [entry.name, entry.pipelines.map((pipeline) => pipeline.name)])]);
     // A changed inventory gets its own bounded attempt budget.
     if (signature !== ownershipSignature) {
@@ -2650,12 +2709,34 @@
       // Leaving Designer or disabling the option must not restart collection.
       if (!sharedFromEnabled || !isDesignerPackagePage()) return;
       if (ownershipAttempts < 2) requestDesignerOwnership();
-      else console.warn('Designer source cache lookup did not finish. Revisit Designer to retry.');
+      else {
+        console.warn('Designer source cache lookup did not finish. Revisit Designer to retry.');
+        finishOwnershipRefresh({ ok: false, reason: 'lookup-failed' });
+      }
     }, 15000);
     // Repeat the opt-in handshake in case the page helper loaded after settings did.
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-setting", enabled: true }, window.location.origin);
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-request", requestId: ownershipRequest }, window.location.origin);
   }
+
+  // Accept manual refresh only from this extension's settings on the current Designer page.
+  chrome.runtime.onMessage.addListener((message, sender, respond) => {
+    if (message?.type !== 'designer-ownership-refresh' || sender.id !== chrome.runtime.id || sender.tab) return;
+    if (!sharedFromEnabled || !isDesignerPackagePage()) {
+      respond({ ok: false, reason: sharedFromEnabled ? 'open-designer' : 'disabled' });
+      return;
+    }
+    // Prevent repeated settings clicks from launching overlapping manual lookups.
+    if (ownershipManualResponse) {
+      respond({ ok: false, reason: 'busy' });
+      return;
+    }
+    resetDesignerOwnership('restarted');
+    ownershipPageKey = getFavoritesStorageKey();
+    ownershipManualResponse = respond;
+    requestDesignerOwnershipIndex();
+    return true;
+  });
 
   // Confine source-cache guidance to the keyboard-accessible column heading.
   function createOwnershipHeading() {
@@ -3051,6 +3132,8 @@
   });
 
   function applySearchMode() {
+    // Begin or cancel source collection before applying controls for the current route.
+    updateDesignerOwnershipVisit();
     updateDesignerSearch();
     updateSharedVersionColumn();
     updateSharedFromColumn();
@@ -3097,6 +3180,8 @@
 
     pendingSearchFrame = window.requestAnimationFrame(() => {
       pendingSearchFrame = 0;
+      // Route changes need their own source refresh even when the inventory is unchanged.
+      updateDesignerOwnershipVisit();
 
       // Load the destination page's saved state after internal navigation.
       const currentStorageKey = isSupportedPage()
@@ -3160,10 +3245,12 @@
         // Report persistence failure without dumping names or page data into the console.
         if (chrome.runtime.lastError || result?.ok !== true) {
           console.warn('Designer source cache could not be saved. Revisit Designer to retry.');
-          requestDesignerOwnership();
+          if (ownershipAttempts < 2) requestDesignerOwnership();
+          else finishOwnershipRefresh({ ok: false, reason: 'save-failed' });
         } else {
           // A successful snapshot needs no mutation-driven follow-up request.
           ownershipAttempts = 2;
+          finishOwnershipRefresh({ ok: true });
         }
       });
       return;
@@ -3224,6 +3311,12 @@
       completeSearchIndexKey = currentIndexKey;
       searchIndex = completeSearchIndex;
       indexState = "ready";
+      // Only a complete response for the current Designer visit permits source collection.
+      if (sharedFromEnabled && isDesignerPackagePage() && ownershipPageKey === getFavoritesStorageKey()) {
+        ownershipIndexReady = true;
+        window.clearTimeout(ownershipIndexTimer);
+        ownershipIndexTimer = 0;
+      }
       requestDesignerOwnership();
       refreshOpenSearchResults();
       refreshFavoritesUI();
@@ -3238,7 +3331,7 @@
   // Reattach controls after restored pages, tab returns, or replaced app roots.
   function resumePageControls() {
     // Rechecking after a genuine visit refreshes timestamps without a polling timer.
-    ownershipSignature = '';
+    updateDesignerOwnershipVisit(true);
     scheduleSearchUpdate();
     if (isSupportedPage()) requestSearchIndex();
     window.dispatchEvent(new Event(LAYOUT_REQUEST_EVENT));
@@ -3289,9 +3382,7 @@
     // Collect nothing while disabled, and discard pending results immediately on opt-out.
     if (changes[SHARED_FROM_ENABLED_KEY]) {
       sharedFromEnabled = changes[SHARED_FROM_ENABLED_KEY].newValue === true;
-      ownershipSignature = '';
-      ownershipRequest = '';
-      window.clearTimeout(ownershipTimer);
+      updateDesignerOwnershipVisit(true);
       if (!sharedFromEnabled) ownershipByName.clear();
       else chrome.storage.local.get({ [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
         loadOwnershipCache(settings[OWNERSHIP_CACHE_KEY]);

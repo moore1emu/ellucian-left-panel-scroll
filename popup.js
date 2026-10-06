@@ -21,6 +21,7 @@
   const sharedFromConfirmation = document.querySelector("#shared-from-confirmation");
   const sharedFromStatus = document.querySelector("#shared-from-status");
   const exportSharedFromButton = document.querySelector("#export-shared-from");
+  const refreshSharedFromButton = document.querySelector("#refresh-shared-from");
   const versionLabel = document.querySelector("#extension-version");
   const iconColorInput = document.querySelector("#icon-color");
   const iconLettersInput = document.querySelector("#icon-letters");
@@ -73,6 +74,7 @@
       // Restore opt-in without collecting anything while the popup initializes.
       sharedFromSwitch.checked = settings[SHARED_FROM_ENABLED_KEY] === true;
       sharedFromSwitch.disabled = false;
+      refreshSharedFromButton.disabled = false;
 
       // Display the favorites preference, defaulting to the visible section.
       favoritesEnabledSwitch.checked =
@@ -270,6 +272,37 @@
     sharedFromConfirmation.hidden = true;
     sharedFromSwitch.checked = false;
     sharedFromSwitch.focus();
+  });
+
+  // Ask only the active tab to recollect its own Designer sources, without extra permissions.
+  refreshSharedFromButton.addEventListener('click', async () => {
+    if (!sharedFromSwitch.checked) {
+      sharedFromStatus.textContent = 'Enable Shared From first.';
+      return;
+    }
+    refreshSharedFromButton.disabled = true;
+    sharedFromStatus.textContent = 'Updating this Designer environment…';
+    try {
+      // Read the active tab's identifier only; do not scan other tabs or their URLs.
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!Number.isInteger(tab?.id)) throw new Error('No active tab.');
+      const result = await chrome.tabs.sendMessage(tab.id, { type: 'designer-ownership-refresh' });
+      // Report completion only after the page confirms that the source cache was saved.
+      const guidance = {
+        disabled: 'Enable Shared From first.',
+        'open-designer': 'Open Designer in the source environment, then try again.',
+        'left-designer': 'Refresh stopped because you left Designer.',
+        'not-ready': 'Designer is still loading. Try again shortly.',
+        busy: 'A refresh is already running.',
+      };
+      sharedFromStatus.textContent = result?.ok === true ? 'Updated this Designer environment.'
+        : guidance[result?.reason] || 'Could not update sources. Please try again.';
+    } catch (_error) {
+      // Unsupported tabs and pages not refreshed after an extension reload have no receiver.
+      sharedFromStatus.textContent = 'Open Designer on an enabled site, then try again. If already open, refresh that page once.';
+    } finally {
+      refreshSharedFromButton.disabled = false;
+    }
   });
 
   // Read a fresh snapshot on demand, without collecting data or changing opt-in.

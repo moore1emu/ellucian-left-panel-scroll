@@ -213,11 +213,12 @@ h1 {
 .local-data-notice p { margin: 6px 0; }
 .local-data-notice button { background: var(--background); border: 1px solid var(--border); border-radius: 5px; color: var(--text); cursor: pointer; font: inherit; padding: 5px 7px; }
 
-/* Keep the snapshot action compact and consistent with the themed confirmation buttons. */
-#export-shared-from { background: var(--background); border: 1px solid var(--border); border-radius: 5px; color: var(--text); cursor: pointer; font: 12px Arial, sans-serif; margin-top: 6px; padding: 5px 7px; }
-#export-shared-from:hover { border-color: var(--purple); }
-#export-shared-from:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
-#export-shared-from:disabled { cursor: wait; opacity: 0.6; }
+/* Fit the two source actions on one row, wrapping safely if text is enlarged. */
+.shared-from-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.shared-from-actions button { background: var(--background); border: 1px solid var(--border); border-radius: 5px; color: var(--text); cursor: pointer; font: 12px Arial, sans-serif; padding: 5px 7px; }
+.shared-from-actions button:hover { border-color: var(--purple); }
+.shared-from-actions button:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+.shared-from-actions button:disabled { cursor: wait; opacity: 0.6; }
 
 /* Match the other compact disclosure cards without changing the radio choices. */
 .search-display-card {

@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.5 — 2026-10-06
+
+- Fixed Shared From collection when entering or revisiting Designer through Experience without a full refresh. Each visit waits for a fresh, complete package index, with bounded local readiness checks and no continuous polling.
+- Added **Refresh Shared From Data** under **Page Behavior**, beside **Export JSON**. It refreshes only the active Designer environment and reports success after the cache is saved.
+- Manual refresh gives guidance when disabled, on another page, still loading, or unable to complete. Leaving Designer or disabling Shared From cancels pending checks; closing settings does not cancel an active collection. Favorites and permissions are unchanged.
+
 ## 1.19.4 — 2026-10-06
 
 - Fixed a delayed favorites save that could write one page's pins into the other page after navigation. Saves now retain their original page and pin snapshot; failed reads do not overwrite saved lists.

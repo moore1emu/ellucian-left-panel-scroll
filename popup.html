@@ -92,8 +92,11 @@
           <button id="cancel-shared-from" type="button">Cancel</button>
         </div>
         <p id="shared-from-help" class="card-description">Packages only. Visit Designer in each source environment first.</p>
-        <!-- Download only the optional cache, never favorites or other browser settings. -->
-        <button id="export-shared-from" type="button" title="Download a snapshot of saved Designer sources">Export Shared From JSON</button>
+        <!-- Keep manual collection and snapshot export together without adding a settings card. -->
+        <div class="shared-from-actions">
+          <button id="refresh-shared-from" type="button" disabled title="Update sources from the current Designer environment">Refresh Shared From Data</button>
+          <button id="export-shared-from" type="button" aria-label="Export Shared From JSON" title="Download a snapshot of saved Designer sources">Export JSON</button>
+        </div>
         <p id="shared-from-status" class="icon-status" role="status" aria-live="polite"></p>
       </details>
 
