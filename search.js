@@ -2650,13 +2650,20 @@
     Object.values(cache || {}).forEach((snapshot) => {
       const environment = normalizeText(snapshot?.environment);
       const checkedAt = Number(snapshot?.checkedAt);
-      if (!environment || !Number.isFinite(checkedAt) || !Array.isArray(snapshot?.pipelines)) return;
-      snapshot.pipelines.slice(0, 10000).forEach((name) => {
-        const cleanName = normalizeText(name);
-        if (!cleanName) return;
-        const owners = ownershipByName.get(cleanName) || [];
-        owners.push({ environment, checkedAt });
-        ownershipByName.set(cleanName, owners);
+      if (!environment || !Number.isFinite(checkedAt) || !Array.isArray(snapshot?.packages)) return;
+      const seenNames = new Set();
+      // Build the same fast name lookup from groups, with no duplicate persisted flat list.
+      snapshot.packages.slice(0, 10000).forEach((entry) => {
+        if (!Array.isArray(entry?.pipelines)) return;
+        entry.pipelines.slice(0, 10000).forEach((name) => {
+          const cleanName = normalizeText(name);
+          // Multiple versions or package rows in one environment must not look like multiple sources.
+          if (!cleanName || seenNames.has(cleanName)) return;
+          seenNames.add(cleanName);
+          const owners = ownershipByName.get(cleanName) || [];
+          owners.push({ environment, checkedAt });
+          ownershipByName.set(cleanName, owners);
+        });
       });
     });
   }
@@ -3279,7 +3286,11 @@
         }
         // Send only the current sanitized source snapshot, never page content or credentials.
         runtime.sendMessage({ type: 'designer-ownership-save', tenantId: normalizeText(event.data.tenantId), environment: normalizeText(event.data.environment),
-          pipelines: Array.isArray(event.data.pipelines) ? event.data.pipelines.slice(0, 10001).map(normalizeText) : [] }, (result) => {
+          // Preserve group membership while rejecting incomplete arrays instead of clearing saved names.
+          packages: Array.isArray(event.data.packages) ? event.data.packages.slice(0, 10001).map((entry) => ({
+            name: normalizeText(entry?.name),
+            pipelines: Array.isArray(entry?.pipelines) ? entry.pipelines.slice(0, 10001).map(normalizeText) : null,
+          })) : null }, (result) => {
           // Ignore a late callback after opt-out, navigation, or a replacement request.
           if (ownershipRequest !== requestId) return;
           let saveFailed;

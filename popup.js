@@ -318,9 +318,17 @@
         // Export only the documented source fields, with human-readable timestamps.
         const environments = Object.entries(cache || {}).flatMap(([environmentId, entry]) => {
           const checkedAt = Number(entry?.checkedAt);
-          if (typeof entry?.environment !== "string" || !Array.isArray(entry?.pipelines) || !Number.isFinite(checkedAt) || !Number.isFinite(new Date(checkedAt).getTime())) return [];
+          if (typeof entry?.environment !== "string" || !Array.isArray(entry?.packages) || !Number.isFinite(checkedAt) || !Number.isFinite(new Date(checkedAt).getTime())) return [];
+          // Export only grouped names, distinguishing preserved names whose package is still unknown.
+          const packages = entry.packages.flatMap((group) => {
+            if ((group?.name !== null && typeof group?.name !== 'string') || !Array.isArray(group?.pipelines)) return [];
+            const names = group.pipelines.filter((name) => typeof name === 'string');
+            return [group.name === null
+              ? { name: 'Package Not Yet Recorded', packageNameRecorded: false, pipelines: names }
+              : { name: group.name, pipelines: names }];
+          });
           return [{ environmentId, environment: entry.environment, lastCheckedAt: new Date(checkedAt).toISOString(),
-            pipelines: entry.pipelines.filter((name) => typeof name === "string") }];
+            packages }];
         });
         // Guide users to populate the cache before requesting another export.
         if (!environments.length) {

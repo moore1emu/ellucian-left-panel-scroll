@@ -295,10 +295,15 @@
     // Resolve just this Designer environment, not other environments or pipeline content.
     const tenant = await getTenantDetails(modules.server, tenantId);
     const environment = tenant.environment || tenant.tenantName;
-    const packages = buildSearchIndex();
-    const pipelines = [...new Set(packages.flatMap((entry) => entry.pipelines.map((pipeline) => pipeline.name)).filter(Boolean))];
-    if (!ownershipEnabled || !environment || pipelines.length > 10000 || !/\/data-connect-designer\/?$/iu.test(window.location.pathname)) return;
-    window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-response", requestId, tenantId, environment, pipelines }, window.location.origin);
+    // Retain the already-loaded package relationship without adding any service requests.
+    const packages = buildSearchIndex().map((entry) => ({
+      name: entry.name,
+      // Store names once per package, not once per published or draft version.
+      pipelines: [...new Set(entry.pipelines.map((pipeline) => pipeline.name).filter(Boolean))],
+    }));
+    const pipelineCount = packages.reduce((count, entry) => count + entry.pipelines.length, 0);
+    if (!ownershipEnabled || !environment || packages.length > 10000 || pipelineCount > 10000 || !/\/data-connect-designer\/?$/iu.test(window.location.pathname)) return;
+    window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-response", requestId, tenantId, environment, packages }, window.location.origin);
   });
 
   // Find the live Designer manager through the package row's React ancestry.

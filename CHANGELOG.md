@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.9 — 2026-10-06
+
+- Grouped saved and exported Shared From data by environment, package, and pipeline name. Package relationships come from already-loaded Designer data; no additional service requests or duplicate flat pipeline list are needed.
+- Kept the fast pipeline-name lookup, bounded storage, current-environment refresh, and existing privacy controls. Package and pipeline names are sorted and duplicate versions are combined within each package.
+- Preserved previously saved pipeline names under **Package Not Yet Recorded** until Designer is refreshed in that source environment. Their original last-checked times remain unchanged, and actual package groups replace the placeholder on refresh. Favorites and other settings are untouched.
+
 ## 1.19.8 — 2026-10-06
 
 - Renamed Shared Environments to **Shared To** in the Designer column, settings, refresh-button labels, and current user documentation to pair with **Shared From**. Existing settings and sharing behavior are unchanged.
