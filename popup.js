@@ -11,6 +11,7 @@
   const FAVORITES_ENABLED_KEY = "favoritesEnabled";
   const SHARED_VERSION_ENABLED_KEY = "sharedVersionEnabled";
   const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
+  const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
 
   // Locate the popup controls after the static popup document loads.
   const rememberWidthSwitch = document.querySelector("#remember-width");
@@ -19,6 +20,7 @@
   const sharedFromSwitch = document.querySelector("#shared-from-enabled");
   const sharedFromConfirmation = document.querySelector("#shared-from-confirmation");
   const sharedFromStatus = document.querySelector("#shared-from-status");
+  const exportSharedFromButton = document.querySelector("#export-shared-from");
   const versionLabel = document.querySelector("#extension-version");
   const iconColorInput = document.querySelector("#icon-color");
   const iconLettersInput = document.querySelector("#icon-letters");
@@ -268,6 +270,55 @@
     sharedFromConfirmation.hidden = true;
     sharedFromSwitch.checked = false;
     sharedFromSwitch.focus();
+  });
+
+  // Read a fresh snapshot on demand, without collecting data or changing opt-in.
+  exportSharedFromButton.addEventListener("click", () => {
+    exportSharedFromButton.disabled = true;
+    sharedFromStatus.textContent = "";
+    chrome.storage.local.get({ [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
+      try {
+        // Report failed reads instead of downloading an empty or misleading file.
+        if (chrome.runtime.lastError) throw new Error("Cache read failed.");
+        const cache = settings[OWNERSHIP_CACHE_KEY];
+        // Export only the documented source fields, with human-readable timestamps.
+        const environments = Object.entries(cache || {}).flatMap(([environmentId, entry]) => {
+          const checkedAt = Number(entry?.checkedAt);
+          if (typeof entry?.environment !== "string" || !Array.isArray(entry?.pipelines) || !Number.isFinite(checkedAt) || !Number.isFinite(new Date(checkedAt).getTime())) return [];
+          return [{ environmentId, environment: entry.environment, lastCheckedAt: new Date(checkedAt).toISOString(),
+            pipelines: entry.pipelines.filter((name) => typeof name === "string") }];
+        });
+        // Guide users to populate the cache before requesting another export.
+        if (!environments.length) {
+          sharedFromStatus.textContent = "No saved sources. Enable Shared From and visit Designer first.";
+          return;
+        }
+        const exportedAt = new Date().toISOString();
+        const snapshot = { extensionVersion: chrome.runtime.getManifest().version, exportedAt,
+          note: "Observed Designer ownership, not live sharing history. This file is a snapshot and does not update automatically.", environments };
+        // Use a local JSON download without new permissions or any network upload.
+        const file = new Blob([JSON.stringify(snapshot, null, 2) + "\r\n"], { type: "application/json" });
+        const url = URL.createObjectURL(file);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `integration-navigator-shared-from-${exportedAt.slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        try {
+          // Let the browser choose the destination using normal download preferences.
+          link.click();
+          sharedFromStatus.textContent = "Download requested. Exported files do not update automatically.";
+        } finally {
+          // Remove temporary controls and release the buffer after browser hand-off.
+          link.remove();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+      } catch (_error) {
+        sharedFromStatus.textContent = "Could not export. Please try again.";
+      } finally {
+        // Allow retries after an empty cache, cancelled download, or temporary failure.
+        exportSharedFromButton.disabled = false;
+      }
+    });
   });
 
   // Read the installed manifest so the footer always shows the current version.

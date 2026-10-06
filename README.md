@@ -44,6 +44,8 @@ Select the extension icon in the browser toolbar to:
 - Optionally show **Shared From** in Integration Packages. Enable it under **Page Behavior** and accept the local-data notice, then visit Designer in each source environment. This browser remembers pipeline names, their Designer environment, and when they were last checked. Hover or focus a source for its last-checked time; an unknown source shows an information icon explaining setup. Revisit Designer to update the information. It reflects observed Designer ownership, not live share history, and can become stale. Turning it off clears only this source cache, not favorites.
 - Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
 
+To inspect saved Shared From data, use **Page Behavior → Export Shared From JSON**. It downloads environment identifiers and labels, pipeline names, and readable last-checked times using your browser's normal download location or save prompt. The file is a snapshot, not an automatically updated cache. Nothing is uploaded; exporting does not change settings or favorites. If no sources are saved, enable Shared From and visit Designer first. Turning Shared From off clears the browser cache, but does not delete files you previously exported.
+
 ## Install in Edge or Chrome
 
 1. Extract the downloaded ZIP file.

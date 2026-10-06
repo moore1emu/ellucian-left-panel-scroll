@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.1 — 2026-10-06
+
+- Added **Export Shared From JSON** under **Page Behavior** to download a readable snapshot of cached source environments, pipeline names, and last-checked times.
+- Export uses normal browser download handling, requires no additional permissions, and does not change the live cache or upload data. Exported files do not update automatically and remain after the browser cache is cleared.
+
 ## 1.19.0 — 2026-10-06
 
 - Added optional **Shared From** in Integration Packages, using pipeline names observed in Designer across environments. Unknown or conflicting sources show setup guidance; known sources show their last-checked time on hover or keyboard focus.
