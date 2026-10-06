@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.2 — 2026-10-06
+
+- Fixed Shared From collection when Designer does not provide preloaded environment information. It now uses the current environment already held by the page.
+- Repeats the opt-in handshake at collection time and retries a missed startup lookup once. Successful snapshots are not repeatedly requested; temporary environment lookup failures can recover.
+
 ## 1.19.1 — 2026-10-06
 
 - Added **Export Shared From JSON** under **Page Behavior** to download a readable snapshot of cached source environments, pipeline names, and last-checked times.

@@ -83,6 +83,8 @@
   let ownershipRequest = "";
   let ownershipSignature = "";
   let ownershipTimer = 0;
+  // Allow one startup retry per inventory, without background polling.
+  let ownershipAttempts = 0;
   let navigationSequence = 0;
   let sharedStatusRequestCounter = 0;
   const sharedStatusCache = new Map();
@@ -2624,11 +2626,24 @@
   function requestDesignerOwnership() {
     if (!sharedFromEnabled || !isDesignerPackagePage() || indexState !== "ready" || ownershipRequest) return;
     const signature = JSON.stringify([getFavoritesStorageKey(), searchIndex.map((entry) => [entry.name, entry.pipelines.map((pipeline) => pipeline.name)])]);
-    if (signature === ownershipSignature) return;
-    ownershipSignature = signature;
+    // A changed inventory gets its own bounded attempt budget.
+    if (signature !== ownershipSignature) {
+      ownershipSignature = signature;
+      ownershipAttempts = 0;
+    }
+    if (ownershipAttempts >= 2) return;
+    ownershipAttempts += 1;
     ownershipRequest = crypto.randomUUID();
-    // Give the environment-label lookup time to finish without retrying on every mutation.
-    ownershipTimer = window.setTimeout(() => { ownershipRequest = ""; }, 15000);
+    // Retry a missed or not-yet-ready lookup once, then wait for a genuine revisit.
+    ownershipTimer = window.setTimeout(() => {
+      ownershipRequest = "";
+      // Leaving Designer or disabling the option must not restart collection.
+      if (!sharedFromEnabled || !isDesignerPackagePage()) return;
+      if (ownershipAttempts < 2) requestDesignerOwnership();
+      else console.warn('Designer source cache lookup did not finish. Revisit Designer to retry.');
+    }, 15000);
+    // Repeat the opt-in handshake in case the page helper loaded after settings did.
+    window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-setting", enabled: true }, window.location.origin);
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-request", requestId: ownershipRequest }, window.location.origin);
   }
 
@@ -3098,12 +3113,22 @@
     // Only a pending opt-in request may persist sanitized names from the current Designer.
     if (event.data.type === 'designer-ownership-response') {
       if (!sharedFromEnabled || !isDesignerPackagePage() || !ownershipRequest || event.data.requestId !== ownershipRequest) return;
-      window.clearTimeout(ownershipTimer);
-      ownershipRequest = '';
+      // Keep this request pending until the background confirms the cache write.
+      const requestId = ownershipRequest;
       chrome.runtime.sendMessage({ type: 'designer-ownership-save', tenantId: normalizeText(event.data.tenantId), environment: normalizeText(event.data.environment),
         pipelines: Array.isArray(event.data.pipelines) ? event.data.pipelines.slice(0, 10001).map(normalizeText) : [] }, (result) => {
+        // Ignore a late callback after opt-out, navigation, or a replacement request.
+        if (ownershipRequest !== requestId) return;
+        window.clearTimeout(ownershipTimer);
+        ownershipRequest = '';
         // Report persistence failure without dumping names or page data into the console.
-        if (chrome.runtime.lastError || result?.ok !== true) console.warn('Designer source cache could not be saved. Re-enable Shared From and revisit Designer to retry.');
+        if (chrome.runtime.lastError || result?.ok !== true) {
+          console.warn('Designer source cache could not be saved. Revisit Designer to retry.');
+          requestDesignerOwnership();
+        } else {
+          // A successful snapshot needs no mutation-driven follow-up request.
+          ownershipAttempts = 2;
+        }
       });
       return;
     }

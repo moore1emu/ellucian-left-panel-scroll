@@ -63,10 +63,21 @@
           ? JSON.parse(window.atob(preloadedState))
           : preloadedState;
 
-      return normalizeText(parsedState?.tenant);
+      const tenantId = normalizeText(parsedState?.tenant);
+      if (tenantId) return tenantId;
     } catch (_error) {
-      return "";
+      // Continue with Designer's loaded state when preloaded state is unavailable.
     }
+
+    // Find the actual current environment already held by the Designer component.
+    const row = document.querySelector('li[data-level="1"]');
+    const fiberKey = row && Object.keys(row).find((key) => key.startsWith('__reactFiber$'));
+    let fiber = fiberKey ? row[fiberKey] : null;
+    for (let depth = 0; fiber && depth < 60; depth += 1, fiber = fiber.return) {
+      const tenantId = normalizeText(fiber.stateNode?.state?.currentTenant);
+      if (tenantId) return tenantId;
+    }
+    return "";
   }
 
   // Reuse Ellucian's authenticated helpers without reading or copying its token.
@@ -120,7 +131,11 @@
         tenantId,
         tenantName: normalizeText(tenant?.name),
       }))
-      .catch(() => ({ tenantId }));
+      .catch(() => {
+        // A temporary lookup failure must not poison the bounded startup retry.
+        tenantDetailsCache.delete(tenantId);
+        return { tenantId };
+      });
     tenantDetailsCache.set(tenantId, tenantPromise);
     return tenantPromise;
   }
