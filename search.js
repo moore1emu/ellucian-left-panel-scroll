@@ -442,6 +442,8 @@
 
   // Load the correct page-specific favorites after an in-app route change.
   function loadFavoritesForCurrentPage() {
+    // An old page cannot read extension storage again after its connection is lost.
+    if (ownershipExtensionDisconnected) return;
     if (!isSupportedPage()) {
       activeFavoritesStorageKey = "";
       applySearchMode();
@@ -451,39 +453,54 @@
     const requestedStorageKey = getFavoritesStorageKey();
     activeFavoritesStorageKey = requestedStorageKey;
 
-    chrome.storage.local.get(
-      {
-        [FAVORITES_BY_HOST_KEY]: {},
-        [FAVORITES_EXPANDED_BY_HOST_KEY]: {},
-        [FAVORITES_HEIGHTS_BY_HOST_KEY]: {},
-      },
-      (settings) => {
-        // Ignore a delayed response if the user navigated again meanwhile.
-        if (
-          !isSupportedPage() ||
-          getFavoritesStorageKey() !== requestedStorageKey
-        ) {
-          return;
-        }
+    // Storage calls can throw after an extension reload even when the API still exists.
+    try {
+      const runtime = globalThis.chrome?.runtime;
+      const storage = globalThis.chrome?.storage?.local;
+      if (!runtime?.id || typeof storage?.get !== 'function') {
+        stopDisconnectedOwnership();
+        return;
+      }
+      // Read only this browser's saved navigation state, keeping existing defaults unchanged.
+      storage.get(
+        {
+          [FAVORITES_BY_HOST_KEY]: {},
+          [FAVORITES_EXPANDED_BY_HOST_KEY]: {},
+          [FAVORITES_HEIGHTS_BY_HOST_KEY]: {},
+        },
+        (settings) => {
+          // Ignore stale replies before inspecting a potentially disconnected runtime.
+          if (ownershipExtensionDisconnected || !isSupportedPage() || getFavoritesStorageKey() !== requestedStorageKey) return;
+          try {
+            const lastError = runtime.lastError;
+            if (globalThis.chrome?.runtime !== runtime || !runtime.id || /Extension context invalidated/i.test(lastError?.message || '')) {
+              stopDisconnectedOwnership();
+              return;
+            }
+            // A failed read is not an empty favorites list; never load its fallback defaults.
+            if (lastError || !settings) return;
+          } catch (_error) {
+            stopDisconnectedOwnership();
+            return;
+          }
 
-        const favoritesByHost = settings[FAVORITES_BY_HOST_KEY] ?? {};
-        const expandedByHost =
-          settings[FAVORITES_EXPANDED_BY_HOST_KEY] ?? {};
-        const heightsByHost = settings[FAVORITES_HEIGHTS_BY_HOST_KEY] ?? {};
+          // Restore the destination page's hierarchy, disclosure, and height only after a valid read.
+          const favoritesByHost = settings[FAVORITES_BY_HOST_KEY] ?? {};
+          const expandedByHost = settings[FAVORITES_EXPANDED_BY_HOST_KEY] ?? {};
+          const heightsByHost = settings[FAVORITES_HEIGHTS_BY_HOST_KEY] ?? {};
+          loadFavoriteState(favoritesByHost[requestedStorageKey]);
+          favoritesExpanded = expandedByHost[requestedStorageKey] !== false;
+          const storedHeight = Number(heightsByHost[requestedStorageKey]);
+          favoriteListHeight = Number.isFinite(storedHeight) && storedHeight > 0 ? storedHeight : null;
 
-        // Restore the destination page's hierarchy, disclosure, and height.
-        loadFavoriteState(favoritesByHost[requestedStorageKey]);
-        favoritesExpanded = expandedByHost[requestedStorageKey] !== false;
-        const storedHeight = Number(heightsByHost[requestedStorageKey]);
-        favoriteListHeight =
-          Number.isFinite(storedHeight) && storedHeight > 0
-            ? storedHeight
-            : null;
-
-        applySearchMode();
-        requestSearchIndex();
-      },
-    );
+          applySearchMode();
+          requestSearchIndex();
+        },
+      );
+    } catch (_error) {
+      // Leave saved and in-memory pins untouched; one page refresh restores a fresh connection.
+      stopDisconnectedOwnership();
+    }
   }
 
   // Use the visible package tree when private React properties are unavailable.

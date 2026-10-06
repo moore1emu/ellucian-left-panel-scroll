@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.7 — 2026-10-06
+
+- Protected favorites loading during in-app navigation after an extension reload, including missing storage APIs, synchronous context errors, and delayed replies after disconnection.
+- Failed favorites reads no longer restore empty defaults. Disconnected checks stop with a page-refresh hint; saved favorites, settings, and Shared From sources are not cleared.
+
 ## 1.19.6 — 2026-10-06
 
 - Prevented Shared From cache saves from throwing when an extension reload disconnects an already-open page. Source checks stop safely and give a page-refresh hint, without clearing saved sources, favorites, or settings.

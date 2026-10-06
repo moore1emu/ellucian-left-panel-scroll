@@ -46,7 +46,7 @@ Select the extension icon in the browser toolbar to:
 
 Shared From sources refresh automatically when you enter Designer through Experience, after its package data is ready. For a manual retry, open Designer in the source environment and select **Page Behavior → Refresh Shared From Data**. It updates only that environment and confirms when the cache is saved; it does not contact other environments or change favorites.
 
-After reloading the extension, refresh any already-open Experience page once. If its old connection is unavailable, Shared From checks stop safely until you refresh; saved sources and favorites remain untouched.
+After reloading the extension, refresh any already-open Experience page once. If its old connection is unavailable, Shared From checks and favorites loading stop safely until you refresh; saved sources and favorites remain untouched. A failed favorites read is not treated as an empty list.
 
 To inspect saved Shared From data, use **Page Behavior → Export JSON**. It downloads environment identifiers and labels, pipeline names, and readable last-checked times using your browser's normal download location or save prompt. The file is a snapshot, not an automatically updated cache. Nothing is uploaded; exporting does not change settings or favorites. If no sources are saved, enable Shared From and visit Designer first. Turning Shared From off clears the browser cache, but does not delete files you previously exported.
 
