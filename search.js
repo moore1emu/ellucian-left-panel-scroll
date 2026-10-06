@@ -805,13 +805,18 @@
 
   // Persist the current page's complete favorite hierarchy without changing other pages.
   function saveFavorites() {
+    // Snapshot the originating page and pins before navigation can change either one.
+    const storageKey = getFavoritesStorageKey();
+    const favoriteState = structuredClone(serializeFavoriteState());
     chrome.storage.local.get(
       { [FAVORITES_BY_HOST_KEY]: {} },
       (settings) => {
+        // A failed read must not replace other pages' saved favorites with an empty map.
+        if (chrome.runtime.lastError) return;
         const favoritesByHost = {
           ...settings[FAVORITES_BY_HOST_KEY],
           // Preserve parent order, explicit package pins, pipeline pins, and open states.
-          [getFavoritesStorageKey()]: serializeFavoriteState(),
+          [storageKey]: favoriteState,
         };
 
         chrome.storage.local.set({
@@ -823,12 +828,17 @@
 
   // Persist whether this environment's favorites section is expanded.
   function saveFavoritesExpandedState() {
+    // Keep a delayed disclosure save attached to the page where the click occurred.
+    const storageKey = getFavoritesStorageKey();
+    const expanded = favoritesExpanded;
     chrome.storage.local.get(
       { [FAVORITES_EXPANDED_BY_HOST_KEY]: {} },
       (settings) => {
+        // Preserve saved disclosure states if the storage read fails.
+        if (chrome.runtime.lastError) return;
         const expandedByHost = {
           ...settings[FAVORITES_EXPANDED_BY_HOST_KEY],
-          [getFavoritesStorageKey()]: favoritesExpanded,
+          [storageKey]: expanded,
         };
 
         chrome.storage.local.set({
@@ -2647,22 +2657,15 @@
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-request", requestId: ownershipRequest }, window.location.origin);
   }
 
-  // Show a keyboard-accessible explanation using the same unclipped tooltip style.
-  function createOwnershipValue(label, explanation, unknown) {
+  // Confine source-cache guidance to the keyboard-accessible column heading.
+  function createOwnershipHeading() {
+    const label = 'Shared From';
+    const explanation = 'Cached Designer sources. Visit Designer in each environment to update.';
     const value = document.createElement('span');
     value.className = 'ellucian-shared-value';
     value.tabIndex = 0;
     value.textContent = label;
     value.setAttribute('aria-label', `${label}. ${explanation}`);
-    // An information icon makes the setup instructions discoverable on unpopulated rows.
-    if (unknown) {
-      const icon = document.createElement('span');
-      icon.className = 'ellucian-source-info';
-      icon.setAttribute('aria-hidden', 'true');
-      // Use vector geometry instead of a font glyph that varies with browser scaling.
-      icon.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6"/><path d="M8 7v4"/><circle class="ellucian-source-info-dot" cx="8" cy="4.5" r="0.75"/></svg>';
-      value.appendChild(icon);
-    }
     const tip = document.createElement('span');
     tip.className = 'ellucian-shared-tooltip';
     tip.textContent = explanation;
@@ -2709,7 +2712,7 @@
       header.dataset.ellucianSourceCell = 'true';
       header.scope = 'col';
       header.style.fontWeight = '700';
-      header.textContent = 'Shared From';
+      header.appendChild(createOwnershipHeading());
       versionHeader.after(header);
     }
     // Enhance only actual pipeline links, leaving placeholders and other native rows alone.
@@ -2730,16 +2733,14 @@
       const owners = ownershipByName.get(link.textContent.trim()) || [];
       const owner = owners.length === 1 ? owners[0] : null;
       const label = owner ? owner.environment : '—';
-      const explanation = owner
-        ? `Last checked: ${new Date(owner.checkedAt).toLocaleString()}.`
-        : owners.length > 1 ? 'Conflicting sources. Revisit Designer in each source environment.'
-        : 'Visit Designer in each source environment to load sources.';
-      // Leave unchanged cells alone so extension tooltips do not trigger repeated rendering.
-      const summary = JSON.stringify([label, explanation]);
+      // Plain source values have no hover target, icon, or redundant tab stop.
+      const summary = label;
       if (cell.dataset.summary === summary) return;
       cell.dataset.summary = summary;
       // Match the actual Version value, including native nested text styling.
-      const value = createOwnershipValue(label, explanation, !owner);
+      const value = document.createElement('span');
+      value.className = 'ellucian-source-value';
+      value.textContent = label;
       const nativeStyle = window.getComputedStyle(versionCell.querySelector('p, span') || versionCell);
       ['fontFamily', 'fontSize', 'fontWeight', 'color', 'lineHeight', 'letterSpacing'].forEach((property) => {
         value.style[property] = nativeStyle[property];
@@ -2787,15 +2788,24 @@
       refresh.className = 'ellucian-shared-refresh';
       refresh.setAttribute('aria-label', 'Refresh shared environments');
       refresh.title = 'Refresh sharing information for displayed pipelines';
-      // Keep one connected circular arrow legible at normal toolbar sizes.
-      refresh.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M20 12a8 8 0 1 1-2.34-5.66"/></svg>';
+      // Restore the original two-arrow design with scalable, rounded vector strokes.
+      refresh.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/></svg>';
       refresh.addEventListener('click', () => {
         // Only currently displayed published pipelines trigger fresh lookups.
         if (sharedVersionEnabled && !refresh.disabled) {
+          // Request feedback even when there are no published versions to look up.
+          header.dataset.manualRefresh = 'true';
           refreshSharedPipelines(Array.from(table.querySelectorAll('td[data-shared-name]'), (cell) => cell.dataset.sharedName));
+          updateSharedVersionColumn();
         }
       });
       header.appendChild(refresh);
+      // Announce manual results without adding hover text to unrelated table values.
+      const feedback = document.createElement('span');
+      feedback.className = 'ellucian-shared-refresh-status';
+      feedback.setAttribute('role', 'status');
+      feedback.hidden = true;
+      header.appendChild(feedback);
       statusHeader.after(header);
     }
 
@@ -2896,10 +2906,29 @@
     const refresh = table.querySelector('.ellucian-shared-refresh');
     const cells = Array.from(table.querySelectorAll('td[data-shared-name]')).filter((cell) => cell.dataset.sharedName);
     const busy = cells.some((cell) => sharedStatusCache.get(cell.dataset.sharedKey)?.pending);
-    refresh.disabled = busy || !cells.length;
+    refresh.disabled = busy;
     refresh.setAttribute('aria-busy', String(busy));
     refresh.setAttribute('aria-label', busy ? 'Refreshing shared environments' : 'Refresh shared environments');
     refresh.title = busy ? 'Refreshing sharing information…' : 'Refresh sharing information for displayed pipelines';
+    // Reset manual feedback when React reuses the table for another package.
+    const header = refresh.closest('th');
+    const packageScope = Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim().startsWith('Package:'))?.textContent.trim() || window.location.pathname;
+    if (header.dataset.packageScope !== packageScope) {
+      header.dataset.packageScope = packageScope;
+      delete header.dataset.manualRefresh;
+    }
+    const feedback = header.querySelector('.ellucian-shared-refresh-status');
+    feedback.hidden = header.dataset.manualRefresh !== 'true';
+    // Errors remain distinct from a successful lookup that found no shares.
+    if (!feedback.hidden) {
+      const results = cells.map((cell) => sharedStatusCache.get(cell.dataset.sharedKey));
+      const message = busy ? 'Checking sharing information…'
+        : results.some((result) => result?.error) ? 'Sharing info unavailable. Try again.'
+        : results.some((result) => result?.shared) ? 'Sharing info refreshed.'
+        : 'No shared pipelines in this package view.';
+      // Avoid repeating the same live-region announcement during unrelated mutations.
+      if (feedback.textContent !== message) feedback.textContent = message;
+    }
   }
 
   // Place a package-scoped search beside the Designer Pipelines heading.

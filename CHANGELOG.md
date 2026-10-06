@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.4 — 2026-10-06
+
+- Fixed a delayed favorites save that could write one page's pins into the other page after navigation. Saves now retain their original page and pin snapshot; failed reads do not overwrite saved lists.
+- Restored the original borderless, two-arrow Shared Environments refresh design with stronger vector strokes.
+- Moved Shared From guidance to the heading only. Source values match Version and have no individual tooltips or information icons.
+- Kept refresh available when no shares or published rows are displayed. Manual checks show checking, success, no-shares, or failure feedback for the current package view, without extra requests for draft-only rows.
+
 ## 1.19.3 — 2026-10-06
 
 - Simplified the Shared Environments refresh icon and replaced the Shared From information glyph with a vector icon.
