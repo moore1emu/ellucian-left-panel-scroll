@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.8 — 2026-10-06
+
+- Renamed Shared Environments to **Shared To** in the Designer column, settings, refresh-button labels, and current user documentation to pair with **Shared From**. Existing settings and sharing behavior are unchanged.
+
 ## 1.19.7 — 2026-10-06
 
 - Protected favorites loading during in-app navigation after an extension reload, including missing storage APIs, synchronous context errors, and delayed replies after disconnection.

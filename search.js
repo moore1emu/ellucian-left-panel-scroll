@@ -2894,14 +2894,15 @@
       // Explicitly match the bold table headings instead of the wrapper's weight.
       label.style.fontWeight = '700';
       label.style.fontSize = nativeStyle.fontSize;
-      label.textContent = 'Shared Environments';
+      // Pair destination wording with the source column's Shared From label.
+      label.textContent = 'Shared To';
       header.appendChild(label);
       // Provide an accessible manual retry without refreshing the whole page.
       const refresh = document.createElement('button');
       refresh.type = 'button';
       refresh.className = 'ellucian-shared-refresh';
-      refresh.setAttribute('aria-label', 'Refresh shared environments');
-      refresh.title = 'Refresh sharing information for displayed pipelines';
+      refresh.setAttribute('aria-label', 'Refresh Shared To information');
+      refresh.title = 'Refresh Shared To information for displayed pipelines';
       // Restore the original two-arrow design with scalable, rounded vector strokes.
       refresh.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/></svg>';
       refresh.addEventListener('click', () => {
@@ -3022,8 +3023,8 @@
     const busy = cells.some((cell) => sharedStatusCache.get(cell.dataset.sharedKey)?.pending);
     refresh.disabled = busy;
     refresh.setAttribute('aria-busy', String(busy));
-    refresh.setAttribute('aria-label', busy ? 'Refreshing shared environments' : 'Refresh shared environments');
-    refresh.title = busy ? 'Refreshing sharing information…' : 'Refresh sharing information for displayed pipelines';
+    refresh.setAttribute('aria-label', busy ? 'Refreshing Shared To information' : 'Refresh Shared To information');
+    refresh.title = busy ? 'Refreshing Shared To information…' : 'Refresh Shared To information for displayed pipelines';
     // Reset manual feedback when React reuses the table for another package.
     const header = refresh.closest('th');
     const packageScope = Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim().startsWith('Package:'))?.textContent.trim() || window.location.pathname;

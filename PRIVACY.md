@@ -6,13 +6,13 @@ Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
 ## What the extension does
 
-This independent browser extension improves navigation in Ellucian Integration Packages and Integration Designer on the standard Ellucian Experience Test and Production websites and university vanity domains you explicitly add. It adds scrolling, resizing, search, favorites, and optional Shared Environments and Shared From columns.
+This independent browser extension improves navigation in Ellucian Integration Packages and Integration Designer on the standard Ellucian Experience Test and Production websites and university vanity domains you explicitly add. It adds scrolling, resizing, search, favorites, and optional Shared To and Shared From columns.
 
 ## Information used
 
 The extension reads package and pipeline names, versions, and relevant page structure from the Ellucian page you are using. Search terms are processed in your browser. It uses the current site, tenant, and page context to keep navigation and optional sharing lookups within your existing Ellucian session.
 
-When you enable Shared Environments, the extension uses Ellucian's existing authenticated page helpers to request pipeline sharing metadata and destination environment details from Ellucian. Those requests include the identifiers and pipeline names or versions needed by Ellucian's services. Results are cached in memory to limit repeated requests and can be refreshed manually. This feature is off by default.
+When you enable Shared To, the extension uses Ellucian's existing authenticated page helpers to request pipeline sharing metadata and destination environment details from Ellucian. Those requests include the identifiers and pipeline names or versions needed by Ellucian's services. Results are cached in memory to limit repeated requests and can be refreshed manually. This feature is off by default.
 
 The extension does not read, copy, or store your password or bearer token. It does not request student records or pipeline execution data.
 
@@ -40,7 +40,7 @@ If you email support, the publisher receives the information you choose to inclu
 
 ## Your controls
 
-You can disable search, hide favorites, and turn off Shared Environments or Shared From in the extension settings. Hiding favorites does not delete them; use their stars to remove individual favorites. Turning Shared From off stops collection and clears its additional local cache. Removing a custom site revokes its optional domain access and stops future loading there; refresh any open page to clear previously injected controls. Site-specific favorites and widths are retained locally for reuse if you add the site again. Removing the extension removes its local extension storage through the browser. Closing or reloading the page clears its in-memory data, but not saved preferences or an enabled Shared From cache.
+You can disable search, hide favorites, and turn off Shared To or Shared From in the extension settings. Hiding favorites does not delete them; use their stars to remove individual favorites. Turning Shared From off stops collection and clears its additional local cache. Removing a custom site revokes its optional domain access and stops future loading there; refresh any open page to clear previously injected controls. Site-specific favorites and widths are retained locally for reuse if you add the site again. Removing the extension removes its local extension storage through the browser. Closing or reloading the page clears its in-memory data, but not saved preferences or an enabled Shared From cache.
 
 ## Updates and contact
 
