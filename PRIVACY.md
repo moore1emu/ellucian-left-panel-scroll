@@ -1,12 +1,12 @@
 # Privacy Policy
 
-Integration Navigator · Updated October 5, 2026
+Integration Navigator · Updated October 6, 2026
 
 Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
 ## What the extension does
 
-This independent browser extension improves navigation in Ellucian Integration Packages and Integration Designer on the standard Ellucian Experience Test and Production websites and university vanity domains you explicitly add. It adds scrolling, resizing, search, favorites, and an optional Shared Environments column.
+This independent browser extension improves navigation in Ellucian Integration Packages and Integration Designer on the standard Ellucian Experience Test and Production websites and university vanity domains you explicitly add. It adds scrolling, resizing, search, favorites, and optional Shared Environments and Shared From columns.
 
 ## Information used
 
@@ -16,9 +16,13 @@ When you enable Shared Environments, the extension uses Ellucian's existing auth
 
 The extension does not read, copy, or store your password or bearer token. It does not request student records or pipeline execution data.
 
+Shared From is a separate, optional feature that is off by default. It requires accepting a local-data notice before collection begins. On Designer pages you visit, it reads the already-loaded pipeline names and uses the existing authenticated page helper to resolve that current environment's label. It does not contact every environment from one page or fetch pipeline contents. Integration Packages matches names against these locally observed Designer sources. This is an ownership inference, not a live record of sharing activity, and may be stale or unavailable.
+
 ## Local storage
 
 Your settings, custom Experience site domains, icon background and letter colors, icon letters, favorite-star color and match-icon preference, column widths, favorite package and pipeline names, favorite version identifiers, ordering, and favorites layout preferences are saved in the browser's local extension storage. They are not synchronized by the extension to other devices or sent to the publisher. Pasted custom URLs are reduced to their HTTPS domain; paths, query strings, and fragments are not saved. Temporary search indexes and sharing results remain in page memory.
+
+If you enable Shared From, an additional bounded local cache saves pipeline names, the identifiers and labels of their observed Designer environments, and last-checked timestamps. No pipeline contents, credentials, or execution data are stored in this cache. It is shared between this extension's supported environments on the same browser so Integration Packages can identify sources learned from other Designer environments. Revisit Designer in each source environment to refresh its snapshot. Turning Shared From off clears this cache without deleting favorites or other settings.
 
 ## Website permissions
 
@@ -34,7 +38,7 @@ If you email support, the publisher receives the information you choose to inclu
 
 ## Your controls
 
-You can disable search, hide favorites, and turn off Shared Environments in the extension settings. Hiding favorites does not delete them; use their stars to remove individual favorites. Removing a custom site revokes its optional domain access and stops future loading there; refresh any open page to clear previously injected controls. Site-specific favorites and widths are retained locally for reuse if you add the site again. Removing the extension removes its local extension storage through the browser. Closing or reloading the page clears its in-memory data.
+You can disable search, hide favorites, and turn off Shared Environments or Shared From in the extension settings. Hiding favorites does not delete them; use their stars to remove individual favorites. Turning Shared From off stops collection and clears its additional local cache. Removing a custom site revokes its optional domain access and stops future loading there; refresh any open page to clear previously injected controls. Site-specific favorites and widths are retained locally for reuse if you add the site again. Removing the extension removes its local extension storage through the browser. Closing or reloading the page clears its in-memory data, but not saved preferences or an enabled Shared From cache.
 
 ## Updates and contact
 

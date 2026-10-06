@@ -33,7 +33,7 @@ Pipeline favorites follow the same major version. For example, a favorite pinned
 
 Select the extension icon in the browser toolbar to:
 
-- Remember or reset the resized column width after refreshing.
+- Open **Page Behavior** to remember the resized width, show pinned favorites, or enable optional sharing columns.
 - Open **Search Display** for two independent dropdowns: **Package Sidebar Search** (beside PACKAGES on both pages) and **Designer Pipeline Search** (inside the selected package). Each offers **Search Box**, **Icon**, or **Hidden**. Icon opens on demand; Escape or clicking elsewhere closes it. Both default to Search Box, and the settings section can be collapsed.
 - Show or hide pinned favorites without deleting them.
 - Open **Custom Sites** to add your university's Experience URL. Allow access when prompted, then refresh the page. Site setup finishes in the background even if settings close. Previously approved custom domains appear here too, with a **Remove** button for each site; the two standard Experience sites stay enabled.
@@ -41,6 +41,7 @@ Select the extension icon in the browser toolbar to:
 - Under **Icon & Favorites Appearance → Favorite Stars**, choose a star color or enable **Match Icon Color** to follow the icon's background. The swatch and star preview show the matching color; turning matching off restores your custom choice. **Reset Stars** restores independent purple. Unpinned stars stay gray outlines; all pinned package and pipeline stars use your chosen color.
 - Optionally show **Shared Environments** in Designer. Hover or focus a destination to see its newest shared version. Red means it differs from the published row within the same major version. This is off by default.
 - Sharing information refreshes when you return from either share flow, including after cancelling. Use the refresh icon beside **Shared Environments** to recheck displayed pipelines anytime. Results otherwise stay cached to limit traffic.
+- Optionally show **Shared From** in Integration Packages. Enable it under **Page Behavior** and accept the local-data notice, then visit Designer in each source environment. This browser remembers pipeline names, their Designer environment, and when they were last checked. Hover or focus a source for its last-checked time; an unknown source shows an information icon explaining setup. Revisit Designer to update the information. It reflects observed Designer ownership, not live share history, and can become stale. Turning it off clears only this source cache, not favorites.
 - Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
 
 ## Install in Edge or Chrome
@@ -67,7 +68,7 @@ Replace the extension files in the same folder you originally loaded. The folder
 ## Notes
 
 - The extension does not modify Ellucian packages or pipelines.
-- Settings and favorites are stored locally by the browser.
+- Settings, favorites, and the optional Designer source cache are stored locally by the browser.
 - Custom sites must use HTTPS and the normal Integration Packages/Designer page paths. Adding a vanity URL does not transfer favorites or widths from a different domain.
 - Removing a custom site revokes its optional access and stops future loading there. Refresh any open page to clear already-loaded controls; its saved favorites are retained if you add it again.
 - To remove the extension, use **Remove** on the browser's extension page.

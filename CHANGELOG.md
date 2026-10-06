@@ -2,6 +2,14 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.0 — 2026-10-06
+
+- Added optional **Shared From** in Integration Packages, using pipeline names observed in Designer across environments. Unknown or conflicting sources show setup guidance; known sources show their last-checked time on hover or keyboard focus.
+- Shared From is off by default and requires accepting a notice before saving additional local metadata. Visit Designer in each source environment to populate or update it. Disabling clears only this cache, not favorites; it does not perform cross-environment polling or verify live share history.
+- Grouped width, favorites, and sharing switches under collapsible **Page Behavior**, with concise descriptions.
+- Refined the Shared Environments refresh button with a clearer circular-arrow icon and larger target.
+- Updated the README and privacy policy for the optional local cache.
+
 ## 1.18.1 — 2026-10-05
 
 - Issued the current Custom Sites fixes and settings refinements as a distinctly numbered patch release. Existing approved sites appear with Remove, and site setup finishes even if settings close.

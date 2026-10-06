@@ -1006,13 +1006,17 @@ th[data-ellucian-shared-cell] > span { font-weight: 700; }
 .ellucian-shared-outdated { color: #b42318; font-weight: 600; }
 
 /* Keep the manual refresh control compact and aligned with the native heading. */
-.ellucian-shared-refresh { display: inline-flex; vertical-align: middle; align-items: center; justify-content: center; margin-left: 8px; width: 28px; height: 28px; padding: 4px; border: 0; border-radius: 4px; color: inherit; background: transparent; cursor: pointer; }
-.ellucian-shared-refresh svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ellucian-shared-refresh { display: inline-flex; vertical-align: middle; align-items: center; justify-content: center; margin-left: 8px; width: 30px; height: 30px; padding: 4px; border: 1px solid #dce1e6; border-radius: 6px; color: inherit; background: transparent; cursor: pointer; }
+.ellucian-shared-refresh svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* Make keyboard focus, hover, and in-progress checks visible without shifting text. */
-.ellucian-shared-refresh:hover:not(:disabled) { background: rgba(0, 0, 0, 0.06); }
+.ellucian-shared-refresh:hover:not(:disabled) { background: #e8f4ed; color: #08783e; border-color: #08783e; }
 .ellucian-shared-refresh:focus-visible { outline: 2px solid #6d28d9; outline-offset: 2px; }
 .ellucian-shared-refresh:disabled { cursor: default; opacity: 0.5; }
 .ellucian-shared-refresh[aria-busy="true"] svg { animation: ellucian-shared-spin 1s linear infinite; }
 @keyframes ellucian-shared-spin { to { transform: rotate(360deg); } }
 /* Respect system motion preferences while retaining the disabled/loading state. */
 @media (prefers-reduced-motion: reduce) { .ellucian-shared-refresh[aria-busy="true"] svg { animation: none; } }
+
+/* Keep unknown source guidance discreet but discoverable by mouse or keyboard. */
+[data-ellucian-source-cell] { white-space: nowrap; }
+.ellucian-source-info { display: inline-block; margin-left: 6px; color: #5c6875; font-size: 16px; }

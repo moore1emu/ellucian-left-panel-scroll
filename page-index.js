@@ -17,6 +17,7 @@
   const sharedArtifactNames = new Map();
   let designerModules = null;
   let sharingEnabled = false;
+  let ownershipEnabled = false;
 
   // Read the React properties attached to one rendered package row.
   function getReactProperties(packageRow) {
@@ -263,7 +264,28 @@
     );
   });
 
-  // Answer optional sharing checks only when the popup setting requests them.
+  // Record Designer ownership only on explicit opt-in, using already-loaded pipeline names.
+  window.addEventListener("message", async (event) => {
+    if (event.source !== window || event.data?.source !== MESSAGE_SOURCE) return;
+    // Disabling cancels pending publication as well as preventing new label lookups.
+    if (event.data.type === "designer-ownership-setting") {
+      ownershipEnabled = event.data.enabled === true;
+      return;
+    }
+    if (!ownershipEnabled || event.data.type !== "designer-ownership-request" || !/\/data-connect-designer\/?$/iu.test(window.location.pathname)) return;
+    const requestId = normalizeText(event.data.requestId);
+    const tenantId = getCurrentTenantId();
+    const modules = getDesignerModules();
+    if (!requestId || !tenantId || typeof modules?.server.JR !== "function") return;
+    // Resolve just this Designer environment, not other environments or pipeline content.
+    const tenant = await getTenantDetails(modules.server, tenantId);
+    const environment = tenant.environment || tenant.tenantName;
+    const packages = buildSearchIndex();
+    const pipelines = [...new Set(packages.flatMap((entry) => entry.pipelines.map((pipeline) => pipeline.name)).filter(Boolean))];
+    if (!ownershipEnabled || !environment || pipelines.length > 10000 || !/\/data-connect-designer\/?$/iu.test(window.location.pathname)) return;
+    window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-response", requestId, tenantId, environment, pipelines }, window.location.origin);
+  });
+
   // Find the live Designer manager through the package row's React ancestry.
   function getDesignerManager() {
     const row = document.querySelector('li[data-level="1"]');

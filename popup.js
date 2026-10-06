@@ -10,11 +10,15 @@
   const DEFAULT_SEARCH_MODE = "box";
   const FAVORITES_ENABLED_KEY = "favoritesEnabled";
   const SHARED_VERSION_ENABLED_KEY = "sharedVersionEnabled";
+  const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
 
   // Locate the popup controls after the static popup document loads.
   const rememberWidthSwitch = document.querySelector("#remember-width");
   const favoritesEnabledSwitch = document.querySelector("#favorites-enabled");
   const sharedVersionSwitch = document.querySelector("#shared-version-enabled");
+  const sharedFromSwitch = document.querySelector("#shared-from-enabled");
+  const sharedFromConfirmation = document.querySelector("#shared-from-confirmation");
+  const sharedFromStatus = document.querySelector("#shared-from-status");
   const versionLabel = document.querySelector("#extension-version");
   const iconColorInput = document.querySelector("#icon-color");
   const iconLettersInput = document.querySelector("#icon-letters");
@@ -54,6 +58,7 @@
       [REMEMBER_WIDTH_KEY]: false,
       [FAVORITES_ENABLED_KEY]: true,
       [SHARED_VERSION_ENABLED_KEY]: false,
+      [SHARED_FROM_ENABLED_KEY]: false,
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [IconAppearance.KEY]: IconAppearance.DEFAULT,
@@ -63,6 +68,9 @@
       // Display the width preference and its explanatory status.
       rememberWidthSwitch.checked = Boolean(settings[REMEMBER_WIDTH_KEY]);
       sharedVersionSwitch.checked = settings[SHARED_VERSION_ENABLED_KEY] === true;
+      // Restore opt-in without collecting anything while the popup initializes.
+      sharedFromSwitch.checked = settings[SHARED_FROM_ENABLED_KEY] === true;
+      sharedFromSwitch.disabled = false;
 
       // Display the favorites preference, defaulting to the visible section.
       favoritesEnabledSwitch.checked =
@@ -227,6 +235,39 @@
   // Apply the selected-package search choice independently on open Designer pages.
   designerSearchModeSelect.addEventListener("change", () => {
     chrome.storage.local.set({ [DESIGNER_SEARCH_MODE_KEY]: normalizeSearchMode(designerSearchModeSelect.value) });
+  });
+
+  // Persist consent only after confirmation; the worker clears data when disabled.
+  function saveSharedFrom(enabled) {
+    sharedFromSwitch.disabled = true;
+    chrome.storage.local.set({ [SHARED_FROM_ENABLED_KEY]: enabled }, () => {
+      const failed = Boolean(chrome.runtime.lastError);
+      sharedFromSwitch.checked = failed ? !enabled : enabled;
+      sharedFromSwitch.disabled = false;
+      sharedFromStatus.textContent = failed ? "Could not save. Please try again." : enabled ? "Enabled. Visit Designer in each source environment." : "Disabled. Clearing source cache; favorites kept.";
+    });
+  }
+
+  // Opening the confirmation must not enable collection or write any ownership data.
+  sharedFromSwitch.addEventListener("change", () => {
+    sharedFromStatus.textContent = "";
+    sharedFromConfirmation.hidden = !sharedFromSwitch.checked;
+    if (sharedFromSwitch.checked) {
+      sharedFromSwitch.checked = false;
+      document.querySelector("#confirm-shared-from").focus();
+    } else saveSharedFrom(false);
+  });
+
+  // Make the explicit approval and cancellation equally accessible by keyboard.
+  document.querySelector("#confirm-shared-from").addEventListener("click", () => {
+    sharedFromConfirmation.hidden = true;
+    saveSharedFrom(true);
+    sharedFromSwitch.focus();
+  });
+  document.querySelector("#cancel-shared-from").addEventListener("click", () => {
+    sharedFromConfirmation.hidden = true;
+    sharedFromSwitch.checked = false;
+    sharedFromSwitch.focus();
   });
 
   // Read the installed manifest so the footer always shows the current version.

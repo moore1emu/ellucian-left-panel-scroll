@@ -27,6 +27,8 @@
   // Store favorites per environment and remember each section's open state.
   const FAVORITES_ENABLED_KEY = "favoritesEnabled";
   const SHARED_VERSION_ENABLED_KEY = "sharedVersionEnabled";
+  const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
+  const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
   const FAVORITES_BY_HOST_KEY = "favoritePackagesByHost";
   const FAVORITES_EXPANDED_BY_HOST_KEY = "favoritesExpandedByHost";
   const FAVORITES_HEIGHTS_BY_HOST_KEY = "favoritesHeightsByHost";
@@ -75,6 +77,12 @@
 
   // Keep optional sharing checks disabled until the user turns them on.
   let sharedVersionEnabled = false;
+  // Index locally observed Designer homes by exact name, not search text or version.
+  let sharedFromEnabled = false;
+  let ownershipByName = new Map();
+  let ownershipRequest = "";
+  let ownershipSignature = "";
+  let ownershipTimer = 0;
   let navigationSequence = 0;
   let sharedStatusRequestCounter = 0;
   const sharedStatusCache = new Map();
@@ -2594,6 +2602,131 @@
     updateSharedVersionColumn();
   }
 
+  // Index the compact local snapshots once per storage change, not once per table row.
+  function loadOwnershipCache(cache) {
+    ownershipByName = new Map();
+    if (!sharedFromEnabled) return;
+    Object.values(cache || {}).forEach((snapshot) => {
+      const environment = normalizeText(snapshot?.environment);
+      const checkedAt = Number(snapshot?.checkedAt);
+      if (!environment || !Number.isFinite(checkedAt) || !Array.isArray(snapshot?.pipelines)) return;
+      snapshot.pipelines.slice(0, 10000).forEach((name) => {
+        const cleanName = normalizeText(name);
+        if (!cleanName) return;
+        const owners = ownershipByName.get(cleanName) || [];
+        owners.push({ environment, checkedAt });
+        ownershipByName.set(cleanName, owners);
+      });
+    });
+  }
+
+  // Ask for one source snapshot after loaded Designer names change or a page is revisited.
+  function requestDesignerOwnership() {
+    if (!sharedFromEnabled || !isDesignerPackagePage() || indexState !== "ready" || ownershipRequest) return;
+    const signature = JSON.stringify([getFavoritesStorageKey(), searchIndex.map((entry) => [entry.name, entry.pipelines.map((pipeline) => pipeline.name)])]);
+    if (signature === ownershipSignature) return;
+    ownershipSignature = signature;
+    ownershipRequest = crypto.randomUUID();
+    // Give the environment-label lookup time to finish without retrying on every mutation.
+    ownershipTimer = window.setTimeout(() => { ownershipRequest = ""; }, 15000);
+    window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-request", requestId: ownershipRequest }, window.location.origin);
+  }
+
+  // Show a keyboard-accessible explanation using the same unclipped tooltip style.
+  function createOwnershipValue(label, explanation, unknown) {
+    const value = document.createElement('span');
+    value.className = 'ellucian-shared-value';
+    value.tabIndex = 0;
+    value.textContent = label;
+    value.setAttribute('aria-label', `${label}. ${explanation}`);
+    // An information icon makes the setup instructions discoverable on unpopulated rows.
+    if (unknown) {
+      const icon = document.createElement('span');
+      icon.className = 'ellucian-source-info';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = 'ⓘ';
+      value.appendChild(icon);
+    }
+    const tip = document.createElement('span');
+    tip.className = 'ellucian-shared-tooltip';
+    tip.textContent = explanation;
+    tip.setAttribute('role', 'tooltip');
+    tip.setAttribute('popover', 'manual');
+    // Position from the actual tooltip height so longer setup guidance stays in view.
+    const showTip = () => {
+      if (!tip.isConnected || typeof tip.showPopover !== 'function') return;
+      tip.showPopover();
+      const bounds = value.getBoundingClientRect();
+      tip.style.left = `${Math.max(8, Math.min(bounds.left, window.innerWidth - 280))}px`;
+      tip.style.top = `${Math.max(8, bounds.top - tip.getBoundingClientRect().height - 8)}px`;
+    };
+    const hideTip = () => { if (tip.matches(':popover-open')) tip.hidePopover(); };
+    value.addEventListener('mouseenter', showTip);
+    value.addEventListener('focus', showTip);
+    value.addEventListener('mouseleave', hideTip);
+    value.addEventListener('blur', hideTip);
+    value.addEventListener('keydown', (event) => { if (event.key === 'Escape') hideTip(); });
+    value.appendChild(tip);
+    return value;
+  }
+
+  // Add observed source information only to the native Integration Packages table.
+  function updateSharedFromColumn() {
+    // Tell the page helper to stop source lookups when the feature or route is inactive.
+    window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-ownership-setting', enabled: sharedFromEnabled && isDesignerPackagePage() }, window.location.origin);
+    if (!sharedFromEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+      document.querySelectorAll('[data-ellucian-source-cell]').forEach((cell) => cell.remove());
+      return;
+    }
+    const table = document.getElementById('packageTable-table')?.querySelector('table');
+    const headerRow = table?.querySelector('thead tr') || table?.querySelector('tr');
+    if (!headerRow) return;
+    // Locate the native Version cell, excluding our previously inserted header.
+    const nativeHeaders = Array.from(headerRow.children).filter((cell) => !cell.hasAttribute('data-ellucian-source-cell'));
+    const versionIndex = nativeHeaders.findIndex((cell) => cell.textContent.trim() === 'Version');
+    if (versionIndex < 0) return;
+    const versionHeader = nativeHeaders[versionIndex];
+    // Match native typography and keep one source header immediately after Version.
+    if (!headerRow.querySelector('[data-ellucian-source-cell]')) {
+      const header = document.createElement(versionHeader.tagName.toLowerCase());
+      header.className = versionHeader.className;
+      header.dataset.ellucianSourceCell = 'true';
+      header.scope = 'col';
+      header.style.fontWeight = '700';
+      header.textContent = 'Shared From';
+      header.title = 'Designer home observed on this browser. Visit Designer to update source information.';
+      versionHeader.after(header);
+    }
+    // Enhance only actual pipeline links, leaving placeholders and other native rows alone.
+    table.querySelectorAll('a[id^="packageTable-pipeline-button"]').forEach((link) => {
+      const row = link.closest('tr');
+      const nativeCells = Array.from(row.children).filter((cell) => !cell.hasAttribute('data-ellucian-source-cell'));
+      const versionCell = nativeCells[versionIndex];
+      if (!versionCell) return;
+      // Reuse the inserted cell across table refreshes rather than recreating unchanged rows.
+      let cell = row.querySelector('[data-ellucian-source-cell]');
+      if (!cell) {
+        cell = document.createElement('td');
+        cell.className = versionCell.className;
+        cell.dataset.ellucianSourceCell = 'true';
+        versionCell.after(cell);
+      }
+      // Do not guess a source when no snapshot exists or multiple environments claim a name.
+      const owners = ownershipByName.get(link.textContent.trim()) || [];
+      const owner = owners.length === 1 ? owners[0] : null;
+      const label = owner ? owner.environment : '—';
+      const explanation = owner
+        ? `Designer home: ${owner.environment}. Last checked: ${new Date(owner.checkedAt).toLocaleString()}. Based on locally observed Designer ownership, not a live sharing check. Revisit Designer in that environment to update.`
+        : owners.length > 1 ? 'Conflicting Designer homes were observed. Visit Integration Designer in all source environments to update the local cache.'
+        : 'Source not yet known. With Shared From enabled, visit Integration Designer in all source environments first. This browser remembers loaded pipeline names; source information may become stale.';
+      // Leave unchanged cells alone so extension tooltips do not trigger repeated rendering.
+      const summary = JSON.stringify([label, explanation]);
+      if (cell.dataset.summary === summary) return;
+      cell.dataset.summary = summary;
+      cell.replaceChildren(createOwnershipValue(label, explanation, !owner));
+    });
+  }
+
   // Add sharing information only to the rendered Designer pipeline table.
   function updateSharedVersionColumn() {
     // Tell the page helper to stop queued requests when the option is disabled.
@@ -2633,7 +2766,7 @@
       refresh.className = 'ellucian-shared-refresh';
       refresh.setAttribute('aria-label', 'Refresh shared environments');
       refresh.title = 'Refresh sharing information for displayed pipelines';
-      refresh.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/></svg>';
+      refresh.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8V3m0 5h-5M4 16v5m0-5h5M20 8a8 8 0 0 0-13-3M4 16a8 8 0 0 0 13 3"/></svg>';
       refresh.addEventListener('click', () => {
         // Only currently displayed published pipelines trigger fresh lookups.
         if (sharedVersionEnabled && !refresh.disabled) {
@@ -2744,6 +2877,7 @@
     refresh.disabled = busy || !cells.length;
     refresh.setAttribute('aria-busy', String(busy));
     refresh.setAttribute('aria-label', busy ? 'Refreshing shared environments' : 'Refresh shared environments');
+    refresh.title = busy ? 'Refreshing sharing information…' : 'Refresh sharing information for displayed pipelines';
   }
 
   // Place a package-scoped search beside the Designer Pipelines heading.
@@ -2868,6 +3002,8 @@
   function applySearchMode() {
     updateDesignerSearch();
     updateSharedVersionColumn();
+    updateSharedFromColumn();
+    requestDesignerOwnership();
     // Keep the shared Experience shell untouched outside the supported pages.
     if (!isSupportedPage()) {
       document.querySelectorAll('[data-testid="master"]').forEach((panel) => {
@@ -2959,6 +3095,19 @@
       return;
     }
 
+    // Only a pending opt-in request may persist sanitized names from the current Designer.
+    if (event.data.type === 'designer-ownership-response') {
+      if (!sharedFromEnabled || !isDesignerPackagePage() || !ownershipRequest || event.data.requestId !== ownershipRequest) return;
+      window.clearTimeout(ownershipTimer);
+      ownershipRequest = '';
+      chrome.runtime.sendMessage({ type: 'designer-ownership-save', tenantId: normalizeText(event.data.tenantId), environment: normalizeText(event.data.environment),
+        pipelines: Array.isArray(event.data.pipelines) ? event.data.pipelines.slice(0, 10001).map(normalizeText) : [] }, (result) => {
+        // Report persistence failure without dumping names or page data into the console.
+        if (chrome.runtime.lastError || result?.ok !== true) console.warn('Designer source cache could not be saved. Re-enable Shared From and revisit Designer to retry.');
+      });
+      return;
+    }
+
     // Accept sharing results only for a request created by this script.
     if (event.data.type === SHARED_STATUS_RESPONSE) {
       const pending = pendingSharedStatusRequests.get(event.data.requestId);
@@ -3014,6 +3163,7 @@
       completeSearchIndexKey = currentIndexKey;
       searchIndex = completeSearchIndex;
       indexState = "ready";
+      requestDesignerOwnership();
       refreshOpenSearchResults();
       refreshFavoritesUI();
     } else {
@@ -3026,6 +3176,8 @@
 
   // Reattach controls after restored pages, tab returns, or replaced app roots.
   function resumePageControls() {
+    // Rechecking after a genuine visit refreshes timestamps without a polling timer.
+    ownershipSignature = '';
     scheduleSearchUpdate();
     if (isSupportedPage()) requestSearchIndex();
     window.dispatchEvent(new Event(LAYOUT_REQUEST_EVENT));
@@ -3046,7 +3198,7 @@
     checkShareCompletion();
     const changed = mutations.some((mutation) => {
       const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
-      if (target?.closest('[data-ellucian-shared-cell], .ellucian-designer-search')) return false;
+      if (target?.closest('[data-ellucian-shared-cell], [data-ellucian-source-cell], .ellucian-designer-search')) return false;
       return target?.closest('table') || Array.from(mutation.addedNodes).some((node) => node instanceof Element && (node.matches('table, h2') || node.querySelector('table')));
     });
     if (changed) scheduleSearchUpdate();
@@ -3071,6 +3223,26 @@
     if (changes[SHARED_VERSION_ENABLED_KEY]) {
       sharedVersionEnabled = changes[SHARED_VERSION_ENABLED_KEY].newValue === true;
       updateSharedVersionColumn();
+    }
+
+    // Collect nothing while disabled, and discard pending results immediately on opt-out.
+    if (changes[SHARED_FROM_ENABLED_KEY]) {
+      sharedFromEnabled = changes[SHARED_FROM_ENABLED_KEY].newValue === true;
+      ownershipSignature = '';
+      ownershipRequest = '';
+      window.clearTimeout(ownershipTimer);
+      if (!sharedFromEnabled) ownershipByName.clear();
+      else chrome.storage.local.get({ [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
+        loadOwnershipCache(settings[OWNERSHIP_CACHE_KEY]);
+        updateSharedFromColumn();
+        requestSearchIndex();
+      });
+      updateSharedFromColumn();
+    }
+    // Update open Packages tabs when another environment's Designer is visited.
+    if (changes[OWNERSHIP_CACHE_KEY]) {
+      loadOwnershipCache(changes[OWNERSHIP_CACHE_KEY].newValue);
+      updateSharedFromColumn();
     }
 
     // Apply search presentation changes without requiring a page refresh.
@@ -3131,6 +3303,8 @@
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [SHARED_VERSION_ENABLED_KEY]: false,
+      [SHARED_FROM_ENABLED_KEY]: false,
+      [OWNERSHIP_CACHE_KEY]: {},
       [FAVORITES_ENABLED_KEY]: true,
       [FavoriteAppearance.KEY]: FavoriteAppearance.DEFAULT,
       [FavoriteAppearance.ICON_KEY]: null,
@@ -3150,6 +3324,8 @@
       searchMode = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
       designerSearchMode = normalizeSearchMode(settings[DESIGNER_SEARCH_MODE_KEY]);
       sharedVersionEnabled = settings[SHARED_VERSION_ENABLED_KEY] === true;
+      sharedFromEnabled = settings[SHARED_FROM_ENABLED_KEY] === true;
+      loadOwnershipCache(settings[OWNERSHIP_CACHE_KEY]);
       favoritesEnabled = settings[FAVORITES_ENABLED_KEY] !== false;
       // Apply the saved color before inserting stars, including after a page refresh.
       favoriteAppearance = FavoriteAppearance.normalize(settings[FavoriteAppearance.KEY]);
