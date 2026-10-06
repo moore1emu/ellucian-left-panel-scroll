@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.3 — 2026-10-06
+
+- Simplified the Shared Environments refresh icon and replaced the Shared From information glyph with a vector icon.
+- Matched Shared From value typography and color to Version. Shortened source tooltips and confined them to the source value/info icon, with no header tooltip.
+
 ## 1.19.2 — 2026-10-06
 
 - Fixed Shared From collection when Designer does not provide preloaded environment information. It now uses the current environment already held by the page.

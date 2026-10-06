@@ -1007,7 +1007,7 @@ th[data-ellucian-shared-cell] > span { font-weight: 700; }
 
 /* Keep the manual refresh control compact and aligned with the native heading. */
 .ellucian-shared-refresh { display: inline-flex; vertical-align: middle; align-items: center; justify-content: center; margin-left: 8px; width: 30px; height: 30px; padding: 4px; border: 1px solid #dce1e6; border-radius: 6px; color: inherit; background: transparent; cursor: pointer; }
-.ellucian-shared-refresh svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ellucian-shared-refresh svg { display: block; flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* Make keyboard focus, hover, and in-progress checks visible without shifting text. */
 .ellucian-shared-refresh:hover:not(:disabled) { background: #e8f4ed; color: #08783e; border-color: #08783e; }
 .ellucian-shared-refresh:focus-visible { outline: 2px solid #6d28d9; outline-offset: 2px; }
@@ -1019,4 +1019,9 @@ th[data-ellucian-shared-cell] > span { font-weight: 700; }
 
 /* Keep unknown source guidance discreet but discoverable by mouse or keyboard. */
 [data-ellucian-source-cell] { white-space: nowrap; }
-.ellucian-source-info { display: inline-block; margin-left: 6px; color: #5c6875; font-size: 16px; }
+/* Keep the hover target confined to the source text/icon rather than the table row. */
+[data-ellucian-source-cell] > .ellucian-shared-value { display: inline-flex; align-items: center; width: fit-content; gap: 6px; }
+/* Render the small info symbol as a sharp vector using the native value color. */
+.ellucian-source-info { display: inline-flex; flex: none; color: inherit; }
+.ellucian-source-info svg { display: block; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.ellucian-source-info-dot { fill: currentColor; stroke: none; }

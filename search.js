@@ -2659,7 +2659,8 @@
       const icon = document.createElement('span');
       icon.className = 'ellucian-source-info';
       icon.setAttribute('aria-hidden', 'true');
-      icon.textContent = 'ⓘ';
+      // Use vector geometry instead of a font glyph that varies with browser scaling.
+      icon.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6"/><path d="M8 7v4"/><circle class="ellucian-source-info-dot" cx="8" cy="4.5" r="0.75"/></svg>';
       value.appendChild(icon);
     }
     const tip = document.createElement('span');
@@ -2709,7 +2710,6 @@
       header.scope = 'col';
       header.style.fontWeight = '700';
       header.textContent = 'Shared From';
-      header.title = 'Designer home observed on this browser. Visit Designer to update source information.';
       versionHeader.after(header);
     }
     // Enhance only actual pipeline links, leaving placeholders and other native rows alone.
@@ -2731,14 +2731,20 @@
       const owner = owners.length === 1 ? owners[0] : null;
       const label = owner ? owner.environment : '—';
       const explanation = owner
-        ? `Designer home: ${owner.environment}. Last checked: ${new Date(owner.checkedAt).toLocaleString()}. Based on locally observed Designer ownership, not a live sharing check. Revisit Designer in that environment to update.`
-        : owners.length > 1 ? 'Conflicting Designer homes were observed. Visit Integration Designer in all source environments to update the local cache.'
-        : 'Source not yet known. With Shared From enabled, visit Integration Designer in all source environments first. This browser remembers loaded pipeline names; source information may become stale.';
+        ? `Last checked: ${new Date(owner.checkedAt).toLocaleString()}.`
+        : owners.length > 1 ? 'Conflicting sources. Revisit Designer in each source environment.'
+        : 'Visit Designer in each source environment to load sources.';
       // Leave unchanged cells alone so extension tooltips do not trigger repeated rendering.
       const summary = JSON.stringify([label, explanation]);
       if (cell.dataset.summary === summary) return;
       cell.dataset.summary = summary;
-      cell.replaceChildren(createOwnershipValue(label, explanation, !owner));
+      // Match the actual Version value, including native nested text styling.
+      const value = createOwnershipValue(label, explanation, !owner);
+      const nativeStyle = window.getComputedStyle(versionCell.querySelector('p, span') || versionCell);
+      ['fontFamily', 'fontSize', 'fontWeight', 'color', 'lineHeight', 'letterSpacing'].forEach((property) => {
+        value.style[property] = nativeStyle[property];
+      });
+      cell.replaceChildren(value);
     });
   }
 
@@ -2781,7 +2787,8 @@
       refresh.className = 'ellucian-shared-refresh';
       refresh.setAttribute('aria-label', 'Refresh shared environments');
       refresh.title = 'Refresh sharing information for displayed pipelines';
-      refresh.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8V3m0 5h-5M4 16v5m0-5h5M20 8a8 8 0 0 0-13-3M4 16a8 8 0 0 0 13 3"/></svg>';
+      // Keep one connected circular arrow legible at normal toolbar sizes.
+      refresh.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M20 12a8 8 0 1 1-2.34-5.66"/></svg>';
       refresh.addEventListener('click', () => {
         // Only currently displayed published pipelines trigger fresh lookups.
         if (sharedVersionEnabled && !refresh.disabled) {
