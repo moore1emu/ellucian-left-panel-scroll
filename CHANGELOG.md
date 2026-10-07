@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.1 — 2026-10-06
+
+- Automatically fits pipeline names for each selected Integration Packages package, capped to available space after Version and Shared From. Short names use a narrower column; long names use more room without wrapping. Manual resizing remains available and does not carry into another package.
+- Double-click or Enter still fits full loaded names, allowing local scrolling when necessary. Home restores automatic sizing, which responds to window resizing without overriding manual adjustments.
+- Avoids rewriting unchanged table markers, styles, and resize values. A synthetic 100-update test with 50 rows went from 5,400 redundant attribute updates to none, with no new saved data or service requests.
+- Fixed pinned pipeline badges and navigation targets remaining on an older minor/patch release after the loaded index updates. Saved pins and their major-version tracking are unchanged.
+
 ## 1.20.0 — 2026-10-06
 
 - Started the 1.20 release series with the wider, resizable pipeline-name column and double-click autofit introduced in 1.19.10. This is a version-number change only; functionality is unchanged.

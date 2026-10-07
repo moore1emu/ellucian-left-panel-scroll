@@ -48,11 +48,13 @@
   const MAX_FAVORITES_LIST_HEIGHT = 360;
   const FAVORITES_KEYBOARD_RESIZE_STEP = 16;
 
-  // Keep the name column wider than the native table, without storing more settings.
-  const DEFAULT_PIPELINE_NAME_WIDTH = 400;
+  // Keep single-line names usable while leaving automatic sizing free to fit each package.
   const MIN_PIPELINE_NAME_WIDTH = 160;
   const MAX_PIPELINE_NAME_WIDTH = 12000;
-  let packagePipelineNameWidth = DEFAULT_PIPELINE_NAME_WIDTH;
+  let packagePipelineNameWidth = MIN_PIPELINE_NAME_WIDTH;
+  // Fit each newly selected package independently, without persisting additional settings.
+  let packagePipelineWidthKey = '';
+  let packagePipelineAutoWidth = true;
   const packagePipelineTables = new WeakMap();
 
   // Hold only the sanitized names and versions returned by the page-world indexer.
@@ -1511,7 +1513,10 @@
         name: packageEntry.name,
         packagePinned: packageEntry.packagePinned,
         pipelinesExpanded: packageEntry.pipelinesExpanded,
-        pipelines: packageEntry.favoritePipelines.map(getPipelineIdentity),
+        // A newer minor/patch release must refresh both its badge and navigation target.
+        pipelines: packageEntry.favoritePipelines.map((pipeline) => [
+          getPipelineIdentity(pipeline), pipeline.name, pipeline.originalName, pipeline.version,
+        ]),
       })),
     });
     if (section.dataset.renderSignature === renderSignature) {
@@ -2886,10 +2891,12 @@
     return context.measureText(text).width + spacing * Math.max(0, text.length - 1) + padding;
   }
 
-  // Reuse one fixed name width while keeping Version and optional source columns compact.
+  // Fit each package's names while keeping Version and optional source columns compact.
   function updatePackagePipelineColumn() {
     // Remove only our presentation when a retained table belongs to another route.
     if (!/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+      // Treat a return from another page as a new package selection too.
+      packagePipelineWidthKey = '';
       document.querySelectorAll('[data-ellucian-pipeline-table]').forEach((table) => {
         table.removeAttribute('data-ellucian-pipeline-table');
         table.parentElement?.removeAttribute('data-ellucian-pipeline-scroll');
@@ -2910,6 +2917,16 @@
     const nameHeader = headerRow?.children[nameIndex];
     if (!nameHeader) return;
 
+    // Use the native package heading so rerenders and sorting do not reset a user's current resize.
+    const packageTitle = document.getElementById('packageDetails-title')?.textContent.trim()
+      || Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent.trim().startsWith('Package:'))?.textContent.trim();
+    const widthKey = packageTitle ? `${getFavoritesStorageKey()}\u0000${packageTitle}` : '';
+    const newPackage = Boolean(widthKey && widthKey !== packagePipelineWidthKey);
+    if (newPackage) {
+      packagePipelineWidthKey = widthKey;
+      packagePipelineAutoWidth = true;
+    }
+
     // Create a measurement context once per table; never poll or contact a service.
     let state = packagePipelineTables.get(table);
     if (!state) {
@@ -2918,10 +2935,14 @@
       state = { context, signature: '', compactWidth: 0, handle: null };
       packagePipelineTables.set(table, state);
     }
-    table.dataset.ellucianPipelineTable = 'true';
-    table.parentElement.dataset.ellucianPipelineScroll = 'true';
-    nameHeader.dataset.ellucianNameCell = 'true';
-    links.forEach((link) => { link.closest('td').dataset.ellucianNameCell = 'true'; });
+    // Leave existing markers untouched rather than rewriting every row on unrelated updates.
+    if (table.dataset.ellucianPipelineTable !== 'true') table.dataset.ellucianPipelineTable = 'true';
+    if (table.parentElement.dataset.ellucianPipelineScroll !== 'true') table.parentElement.dataset.ellucianPipelineScroll = 'true';
+    if (nameHeader.dataset.ellucianNameCell !== 'true') nameHeader.dataset.ellucianNameCell = 'true';
+    links.forEach((link) => {
+      const cell = link.closest('td');
+      if (cell.dataset.ellucianNameCell !== 'true') cell.dataset.ellucianNameCell = 'true';
+    });
 
     // Recalculate small columns only when their headings or displayed values change.
     const columns = Array.from(headerRow.children).map((header, index) => ({ header, index })).filter(({ index }) => index !== nameIndex);
@@ -2948,14 +2969,15 @@
     // Set CSS variables without reading layout during a drag, keeping pointer movement light.
     const setWidth = (width) => {
       packagePipelineNameWidth = Math.max(MIN_PIPELINE_NAME_WIDTH, Math.min(MAX_PIPELINE_NAME_WIDTH, Math.ceil(width)));
-      table.style.setProperty('--ellucian-pipeline-name-width', `${packagePipelineNameWidth}px`);
-      table.style.setProperty('--ellucian-pipeline-table-width', `${packagePipelineNameWidth + state.compactWidth}px`);
-      state.handle?.setAttribute('aria-valuenow', String(packagePipelineNameWidth));
+      // Avoid invalidating styles or accessibility attributes when the calculated size is unchanged.
+      const nameWidth = `${packagePipelineNameWidth}px`;
+      const tableWidth = `${packagePipelineNameWidth + state.compactWidth}px`;
+      if (table.style.getPropertyValue('--ellucian-pipeline-name-width') !== nameWidth) table.style.setProperty('--ellucian-pipeline-name-width', nameWidth);
+      if (table.style.getPropertyValue('--ellucian-pipeline-table-width') !== tableWidth) table.style.setProperty('--ellucian-pipeline-table-width', tableWidth);
+      if (state.handle?.getAttribute('aria-valuenow') !== String(packagePipelineNameWidth)) state.handle?.setAttribute('aria-valuenow', String(packagePipelineNameWidth));
     };
-    setWidth(packagePipelineNameWidth);
-
     // Fit the full names currently loaded in this package, including ellipsized link text.
-    const autoFit = () => {
+    const autoFit = (fitToPanel = false) => {
       const currentLinks = Array.from(table.querySelectorAll('a[id^="packageTable-pipeline-button"]'));
       let width = measurePackagePipelineText(nameHeader, nameHeader.querySelector('[role="button"]')?.textContent || 'Pipeline Name', state.context) + 32;
       currentLinks.forEach((link) => {
@@ -2963,8 +2985,24 @@
         const padding = (Number.parseFloat(cellStyle.paddingLeft) || 0) + (Number.parseFloat(cellStyle.paddingRight) || 0);
         width = Math.max(width, measurePackagePipelineText(link, link.textContent.trim(), state.context) + padding + 4);
       });
-      setWidth(width);
+      // Automatic sizing uses available space; explicit autofit can still scroll locally.
+      const availableWidth = Math.max(MIN_PIPELINE_NAME_WIDTH, table.parentElement.clientWidth - state.compactWidth);
+      packagePipelineAutoWidth = fitToPanel;
+      setWidth(fitToPanel ? Math.min(width, availableWidth) : width);
     };
+
+    // Reuse measured name widths on ordinary updates, rather than measuring every string again.
+    const nameSignature = JSON.stringify([widthKey, links.map((link) => link.textContent.trim())]);
+    if (newPackage || (packagePipelineAutoWidth && state.nameSignature !== nameSignature)) {
+      autoFit(true);
+      state.nameSignature = nameSignature;
+    } else if (packagePipelineAutoWidth) {
+      // Refit on a genuine geometry change, but keep unchanged views free of style writes.
+      const availableWidth = Math.max(MIN_PIPELINE_NAME_WIDTH, table.parentElement.clientWidth - state.compactWidth);
+      if (state.availableWidth !== availableWidth) autoFit(true);
+      else setWidth(packagePipelineNameWidth);
+    } else setWidth(packagePipelineNameWidth);
+    state.availableWidth = Math.max(MIN_PIPELINE_NAME_WIDTH, table.parentElement.clientWidth - state.compactWidth);
 
     // Attach one divider outside the native sort label so resizing never changes sort order.
     if (!nameHeader.querySelector('.ellucian-pipeline-column-resizer')) {
@@ -2986,6 +3024,8 @@
         event.preventDefault();
         event.stopPropagation();
         handle.focus();
+        // Manual drag sizes stay local to this package until a different package is selected.
+        packagePipelineAutoWidth = false;
         drag = { x: event.clientX, width: packagePipelineNameWidth };
         handle.setPointerCapture(event.pointerId);
         handle.dataset.dragging = 'true';
@@ -3006,8 +3046,11 @@
         event.preventDefault();
         event.stopPropagation();
         if (event.key === 'Enter') autoFit();
-        else if (event.key === 'Home') setWidth(DEFAULT_PIPELINE_NAME_WIDTH);
-        else setWidth(packagePipelineNameWidth + (event.key === 'ArrowRight' ? 16 : -16));
+        else if (event.key === 'Home') autoFit(true);
+        else {
+          packagePipelineAutoWidth = false;
+          setWidth(packagePipelineNameWidth + (event.key === 'ArrowRight' ? 16 : -16));
+        }
       });
       nameHeader.appendChild(handle);
     }
@@ -3661,6 +3704,8 @@
 
   // Re-clamp a custom height when the browser viewport becomes shorter.
   window.addEventListener("resize", () => {
+    // Keep automatic sizing inside the current viewport without overriding manual adjustments.
+    if (packagePipelineAutoWidth) scheduleSearchUpdate();
     if (favoriteListHeight !== null) {
       refreshFavoritesUI();
     }

@@ -18,7 +18,7 @@ Each delivered update receives a new version; small fixes increase the last numb
 - Adds a separate, thin scrollbar to the package list.
 - Keeps the **PACKAGES** heading visible while scrolling.
 - Lets you resize the package column.
-- Gives pipeline names more space in Integration Packages. Drag the divider beside **Pipeline Name**, or double-click it to fit the longest loaded name. Names stay on one line; wider tables scroll horizontally. This column's width lasts until the page is refreshed, then starts at 400 pixels again.
+- Automatically sizes **Pipeline Name** in Integration Packages for the selected package, within the available space after Version and Shared From. Short names use a narrower column; long names use more room, without wrapping. Drag the divider to adjust it, or double-click to fit full loaded names with local horizontal scrolling if needed. Manual adjustments stay with the current selection; switching packages calculates a fresh width. Keyboard arrows resize, Enter fits full names, and Home restores automatic sizing.
 - Searches package and pipeline names.
 - Adds a search beside **Pipelines:** in Designer for the selected package, including entries on other table pages.
 - Pins frequently used packages and pipelines to a favorites area.
