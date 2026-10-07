@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.2 — 2026-10-06
+
+- Limits Shared To history and destination-name service lookups to three simultaneous requests across all check batches. Disabling Shared To stops waiting calls; completed cached results are retained and cancelled calls can be retried when enabled again.
+- Scans already-loaded package/version data once per sharing batch instead of again for each pipeline. Exact current-version validation, same-major history matching, cache reuse, and manual/automatic refresh behavior are preserved.
+- No changes to favorites, stored data formats, settings, permissions, automatic column sizing, or independent Shared From collection. This is a processing cleanup, not a new user-facing feature.
+
 ## 1.20.1 — 2026-10-06
 
 - Automatically fits pipeline names for each selected Integration Packages package, capped to available space after Version and Shared From. Short names use a narrower column; long names use more room without wrapping. Manual resizing remains available and does not carry into another package.
