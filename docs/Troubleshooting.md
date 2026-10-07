@@ -22,7 +22,7 @@ If a search box is missing, check **Search Display**. **Icon** opens it on deman
 
 ## Shared From Is Blank or Shows a Dash
 
-Enable **Shared From**, accept its local-data notice, and visit Designer in each source environment. Let Designer finish loading before returning to Integration Packages.
+Enable **Shared From**, accept its local-data notice, and visit Designer in each source environment. Let Designer finish loading before returning to Integration Packages. Collection starts automatically; you do not need to select a package. Version 1.20.7 fixes a save rejection when entering Designer from Experience Home without refreshing.
 
 For a retry, stay in the source Designer environment and use **Page Behavior → Refresh Shared From Data**. The button collects only that environment, not every environment at once.
 

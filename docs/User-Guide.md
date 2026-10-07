@@ -56,6 +56,8 @@ This feature identifies sources from the Designer environments you have visited,
 2. Visit Designer in each source environment to collect its package and pipeline names.
 3. Return to Integration Packages to see known sources in **Shared From**.
 
+Collection starts automatically after Designer's package data loads, including when entering from Experience Home. Selecting a package is not required.
+
 Unknown or conflicting sources show a dash. Hover or focus the column heading for setup guidance. Information reflects the last successful Designer collection and can become stale; revisit that environment to update it. The extension does not contact all environments from one page.
 
 For a manual retry, open Designer in the source environment and select **Refresh Shared From Data** in settings. It refreshes only that currently open Designer environment and confirms when the data is saved.

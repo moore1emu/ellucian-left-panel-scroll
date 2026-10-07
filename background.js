@@ -70,6 +70,19 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
 // Serialize complete Designer snapshots so simultaneous tabs cannot lose each other's data.
 let pendingOwnershipUpdate = Promise.resolve();
 
+// Read the live route from the sending document; MessageSender can retain its original SPA URL.
+async function readOwnershipContext(sender) {
+  // Target only the original top-level document, never a replacement page or an embedded frame.
+  if (sender.frameId !== 0 || !Number.isInteger(sender.tab.id) || typeof sender.documentId !== "string" || !sender.documentId) throw new Error("Designer document is unavailable.");
+  const context = await chrome.tabs.sendMessage(sender.tab.id, { type: "designer-ownership-context" },
+    { frameId: 0, documentId: sender.documentId });
+  // The isolated script supplies its location; cache payloads cannot choose their own allowed origin.
+  const url = new URL(context?.url);
+  const original = new URL(sender.url);
+  if (url.origin !== original.origin || url.protocol !== "https:" || !/\/data-connect-designer\/?$/iu.test(url.pathname)) throw new Error("Not a Designer page.");
+  return { url, enabled: context.enabled === true };
+}
+
 // Preserve older observed names once, without inventing a package relationship or a newer timestamp.
 function upgradeOwnershipCache() {
   pendingOwnershipUpdate = pendingOwnershipUpdate.catch(() => {}).then(async () => {
@@ -100,11 +113,11 @@ upgradeOwnershipCache();
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.type !== "designer-ownership-save" || sender.id !== chrome.runtime.id || !sender.tab) return;
   pendingOwnershipUpdate = pendingOwnershipUpdate.catch(() => {}).then(async () => {
-    // Only accept the approved feature from an allowed HTTPS Designer page.
-    const url = new URL(sender.url || sender.tab.url);
-    if (url.protocol !== "https:" || !/\/data-connect-designer\/?$/iu.test(url.pathname)) throw new Error("Not a Designer page.");
+    // Verify the current Designer route without requesting broader tab or site permissions.
+    const context = await readOwnershipContext(sender);
+    const url = context.url;
     const settings = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
-    if (settings.sharedFromEnabled !== true) return;
+    if (settings.sharedFromEnabled !== true || !context.enabled) return;
     const builtIn = CustomSites.defaults().includes(url.origin);
     if (!builtIn && (!(await CustomSites.readSites()).includes(url.origin) || !await chrome.permissions.contains({ origins: [CustomSites.pattern(url.origin)] }))) throw new Error("Site access is not enabled.");
 
@@ -133,6 +146,11 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     const cache = { ...settings.designerOwnershipCache, [tenantId]: { environment, packages, checkedAt: Date.now() } };
     // Bound this optional cache without requesting additional storage permission.
     if (JSON.stringify(cache).length > 1000000) throw new Error("Source cache is full. Turn Shared From off to clear it.");
+    // Recheck the same document after asynchronous work so navigation or opt-out cancels the save.
+    const current = await readOwnershipContext(sender);
+    const consent = await chrome.storage.local.get({ sharedFromEnabled: false });
+    if (current.url.href !== url.href) throw new Error("Designer page changed before saving.");
+    if (!current.enabled || consent.sharedFromEnabled !== true) return;
     await chrome.storage.local.set({ designerOwnershipCache: cache });
   });
   pendingOwnershipUpdate.then(() => respond({ ok: true }), (error) => respond({ ok: false, error: error.message }));

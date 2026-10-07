@@ -2915,6 +2915,11 @@
 
   // Accept manual refresh only from this extension's settings on the current Designer page.
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
+    // Let only this extension's background verify the live route of this isolated document.
+    if (message?.type === 'designer-ownership-context' && sender.id === chrome.runtime?.id && !sender.tab) {
+      respond({ url: window.location.href, enabled: sharedFromEnabled && !ownershipExtensionDisconnected });
+      return;
+    }
     if (message?.type !== 'designer-ownership-refresh' || sender.id !== chrome.runtime?.id || sender.tab) return;
     // Do not leave a settings request waiting after this page has lost its connection.
     if (ownershipExtensionDisconnected) {

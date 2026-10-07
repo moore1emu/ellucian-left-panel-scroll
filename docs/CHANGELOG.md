@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.7 — 2026-10-07
+
+- Fixes Shared From snapshots being rejected after navigating from Experience Home into Designer without refreshing. Automatic collection does not require selecting a package; Designer's loaded package data must be ready.
+- Verifies the live Designer location through the existing extension page script, targeting the original top-level document and rechecking before saving. Navigation away, document replacement, or withdrawing consent prevents a pending save.
+- No new permissions, extra Ellucian service requests, cache-format changes, or changes to favorites. Includes regression coverage using real extension messaging and storage in a disposable browser profile.
+
 ## 1.20.6 — 2026-10-06
 
 - Pinned package and pipeline names use the browser's native tooltip only when their rendered name is cut off, following Andrew's observation of Integration Packages. Fully visible names have no tooltip; name-help timing and typography are browser-managed, with no custom wrapped bubble over the version badge. Native page names are untouched.
