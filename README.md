@@ -25,7 +25,7 @@ Each delivered update receives a new version; small fixes increase the last numb
 - Selecting a pinned package raises it in the normal list when needed to reveal its pipelines, without moving already-high packages down.
 - Lets you reorder pinned packages and pipelines by dragging their handles.
 - Keeps package names, pipeline versions, and stars neatly aligned.
-- Uses matching in-page tooltips on hover or keyboard focus; press Escape to dismiss help. Star actions use **Pin Package / Unpin Package** and **Pin Pipeline / Unpin Pipeline** in both lists.
+- Shows the browser's native full-name tooltip only when a pinned package or pipeline name is cut off. Fully visible names have no tooltip; the browser controls name-tooltip timing and appearance. Action and sharing help uses matching in-page tooltips after a two-second hover, or immediately on keyboard focus; Escape dismisses that help. Star actions use **Pin Package / Unpin Package** and **Pin Pipeline / Unpin Pipeline** in both lists.
 - Remembers favorites separately for Integration Packages and Integration Designer in Test and Production.
 - Follows your system's light or dark appearance in the settings window.
 

@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.6 — 2026-10-06
+
+- Pinned package and pipeline names use the browser's native tooltip only when their rendered name is cut off, following Andrew's observation of Integration Packages. Fully visible names have no tooltip; name-help timing and typography are browser-managed, with no custom wrapped bubble over the version badge. Native page names are untouched.
+- Delays extension-owned action/sharing tooltips for two seconds of continuous hover instead of showing instantly. Each newly hovered control starts its own delay; keyboard focus still shows that help immediately.
+- Cancels pending help on pointer exit, click/drag, Escape, scrolling, resizing, tab blur, route changes, or target removal. Uses only one on-demand timeout, with no polling or changes to favorites, settings, sharing requests, or saved data.
+
 ## 1.20.5 — 2026-10-06
 
 - Standardized extension-owned in-page help with one reusable styled tooltip for stars, favorites, search, sharing, and resize controls. Supports hover, keyboard focus, Escape, viewport-aware placement, live refresh results, and cleanup on navigation/removal; native page tooltips are untouched. Shared From guidance stays on its heading, not source values.

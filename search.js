@@ -137,8 +137,39 @@
   function initializePageTooltips() {
     let tip = null;
     let activeTarget = null;
+    let activeNameTarget = null;
+    let activeNamePageUrl = '';
+    // Native name tooltips need no custom styling or timing; measure only the requested name.
+    const nameSelector = '.ellucian-favorite-select, .ellucian-favorite-pipeline-name';
+    const updateNameTip = (name) => {
+      const fullName = name.textContent.trim();
+      const clipped = name.isConnected && name.clientWidth > 0 && name.scrollWidth > name.clientWidth + 1;
+      // Expose the full name only when ellipsis actually hides part of its rendered text.
+      if (clipped && name.getAttribute('title') !== fullName) name.setAttribute('title', fullName);
+      else if (!clipped && name.hasAttribute('title')) name.removeAttribute('title');
+      activeNameTarget = name;
+      activeNamePageUrl = window.location.href;
+    };
+    // Keep only one pending hover; keyboard focus does not need to wait.
+    const hoverDelayMs = 2000;
+    let hoverTimer = 0;
+    let pendingTarget = null;
+    let pendingPageUrl = '';
+    let pointerPressed = false;
+    const cancelPendingHover = () => {
+      if (hoverTimer) window.clearTimeout(hoverTimer);
+      hoverTimer = 0;
+      pendingTarget = null;
+      pendingPageUrl = '';
+    };
     // Remove only our description link, preserving labels supplied by the page.
     const hideTip = () => {
+      // Leaving, dismissing, or navigating must also cancel help that has not opened.
+      cancelPendingHover();
+      // Clear only our active pinned-name title; native application titles stay untouched.
+      if (activeNameTarget) activeNameTarget.removeAttribute('title');
+      activeNameTarget = null;
+      activeNamePageUrl = '';
       if (tip?.matches(':popover-open')) tip.hidePopover();
       if (activeTarget && tip) {
         const remaining = (activeTarget.getAttribute('aria-describedby') || '').split(/\s+/u).filter((id) => id && id !== tip.id);
@@ -148,6 +179,8 @@
       activeTarget = null;
     };
     const showTip = (target) => {
+      // Immediate keyboard help replaces any unfinished pointer delay.
+      cancelPendingHover();
       // Ignore native page titles, removed controls, and unrelated Experience routes.
       const explanation = target?.getAttribute('data-ellucian-tooltip');
       if (!isSupportedPage() || !target?.isConnected || !explanation) { hideTip(); return; }
@@ -182,31 +215,66 @@
     // Keep hover text current and discard help when React removes its target.
     updateActivePageTooltip = () => {
       if (!isSupportedPage()) { hideTip(); tip?.remove(); tip = null; return; }
+      // React removal or a new route must not let a stale delayed hover appear.
+      if (pendingTarget && (!pendingTarget.isConnected || pendingPageUrl !== window.location.href)) hideTip();
+      // Recheck active names after layout changes without scanning every favorite.
+      if (activeNameTarget) {
+        if (!activeNameTarget.isConnected || activeNamePageUrl !== window.location.href) hideTip();
+        else updateNameTip(activeNameTarget);
+      }
       if (activeTarget) showTip(activeTarget);
     };
     // Delegate events to existing and future controls instead of adding per-row listeners.
     document.addEventListener('pointerover', (event) => {
       if (event.buttons) return;
+      // Let the browser show its own compact name tooltip, only for clipped text.
+      const name = event.target.closest?.(nameSelector);
+      if (name && !name.contains(event.relatedTarget) && isSupportedPage()) {
+        hideTip();
+        updateNameTip(name);
+        return;
+      }
       const target = event.target.closest?.('[data-ellucian-tooltip]');
-      if (target && !target.contains(event.relatedTarget)) showTip(target);
+      if (!target || target.contains(event.relatedTarget) || !isSupportedPage()) return;
+      // Start a fresh delay for each control without polling or keeping row timers.
+      hideTip();
+      pendingTarget = target;
+      pendingPageUrl = window.location.href;
+      hoverTimer = window.setTimeout(() => {
+        const currentTarget = pendingTarget;
+        const samePage = pendingPageUrl === window.location.href;
+        cancelPendingHover();
+        // Pointer exit clears pendingTarget; also reject detached targets and changed routes.
+        if (samePage && currentTarget?.isConnected) showTip(currentTarget);
+      }, hoverDelayMs);
     }, true);
     document.addEventListener('pointerout', (event) => {
-      if (activeTarget?.contains(event.target) && !activeTarget.contains(event.relatedTarget)) hideTip();
+      const target = pendingTarget || activeTarget || activeNameTarget;
+      if (target?.contains(event.target) && !target.contains(event.relatedTarget)) hideTip();
     }, true);
     document.addEventListener('focusin', (event) => {
+      // Full names remain in accessible button text even when visual help is unnecessary.
+      const name = event.target.closest?.(nameSelector) || event.target.querySelector?.('.ellucian-favorite-pipeline-name');
+      if (name && isSupportedPage()) { hideTip(); updateNameTip(name); return; }
       const target = event.target.closest?.('[data-ellucian-tooltip]');
-      if (target) showTip(target);
+      // A mouse click must not bypass the delay through its automatic focus event.
+      if (target && !pointerPressed) showTip(target);
     });
     document.addEventListener('focusout', (event) => {
-      if (activeTarget?.contains(event.target) && !activeTarget.contains(event.relatedTarget)) hideTip();
+      const target = activeTarget || activeNameTarget?.closest('button');
+      if (target?.contains(event.target) && !target.contains(event.relatedTarget)) hideTip();
     });
     // Dismiss help before dragging, on Escape, and when scrolling changes its position.
-    document.addEventListener('pointerdown', hideTip, true);
+    document.addEventListener('pointerdown', () => { pointerPressed = true; hideTip(); }, true);
+    document.addEventListener('pointerup', () => { pointerPressed = false; }, true);
+    document.addEventListener('pointercancel', () => { pointerPressed = false; hideTip(); }, true);
     document.addEventListener('keydown', (event) => { if (event.key === 'Escape') hideTip(); }, true);
     window.addEventListener('scroll', hideTip, { capture: true, passive: true });
     window.addEventListener('resize', hideTip, { passive: true });
     window.addEventListener('popstate', hideTip);
     window.addEventListener('hashchange', hideTip);
+    // Switching tabs must not leave a pending hover or a pressed-pointer state behind.
+    window.addEventListener('blur', () => { pointerPressed = false; hideTip(); });
     window.addEventListener(DOM_CHANGE_EVENT, updateActivePageTooltip);
   }
 
@@ -1746,7 +1814,7 @@
       selectButton.type = "button";
       selectButton.className = "ellucian-favorite-select";
       selectButton.textContent = packageEntry.name;
-      selectButton.setAttribute("data-ellucian-tooltip", packageEntry.name);
+      // Hover measures this label and adds a native title only if the name is clipped.
       selectButton.addEventListener("click", (event) => {
         event.stopPropagation();
         activateSearchResult({ type: "package", packageEntry, revealPipelines: true });
@@ -1960,7 +2028,7 @@
           const pipelineButton = document.createElement("button");
           pipelineButton.type = "button";
           pipelineButton.className = "ellucian-favorite-pipeline-select";
-          pipelineButton.setAttribute("data-ellucian-tooltip", pipelineEntry.name);
+          // Keep name help on the clipped text itself, never on its version badge.
           pipelineButton.addEventListener("click", (event) => {
             // Prevent any surrounding disclosure target from seeing navigation clicks.
             event.stopPropagation();
