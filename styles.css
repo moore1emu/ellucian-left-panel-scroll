@@ -839,13 +839,13 @@ html[data-ellucian-favorites-resizing="true"] * {
 /* Keep the vector lens and handle crisp and centered inside the button. */
 .ellucian-search-icon {
   fill: none !important;
-  height: 18px !important;
+  height: 20px !important;
   pointer-events: none !important;
   stroke: currentColor !important;
   stroke-linecap: round !important;
   stroke-linejoin: round !important;
-  stroke-width: 2.25 !important;
-  width: 18px !important;
+  stroke-width: 2 !important;
+  width: 20px !important;
 }
 
 /* Highlight the compact button during mouse and keyboard interaction. */
@@ -972,7 +972,7 @@ html[data-ellucian-favorites-resizing="true"] * {
   z-index: 1500;
   bottom: calc(100% + 8px);
   left: 0;
-  max-width: 260px;
+  max-width: min(260px, calc(100vw - 16px));
   width: max-content;
   white-space: normal;
   padding: 7px 10px;
@@ -980,6 +980,10 @@ html[data-ellucian-favorites-resizing="true"] * {
   background: #272b30;
   color: #fff;
   font: 12px/1.4 Arial, sans-serif;
+  /* Long names stay bounded, and help never intercepts a click or drag. */
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  pointer-events: none;
 }
 /* Popovers escape table clipping and stacking contexts. */
 .ellucian-shared-tooltip[popover] { position: fixed; margin: 0; inset: auto; border: 0; }
@@ -1007,12 +1011,38 @@ th[data-ellucian-shared-cell] > span { font-weight: 700; }
 
 /* Keep the manual refresh control compact and aligned with the native heading. */
 .ellucian-shared-refresh { display: inline-flex; vertical-align: middle; align-items: center; justify-content: center; margin-left: 8px; width: 28px; height: 28px; padding: 4px; border: 0; border-radius: 4px; color: inherit; background: transparent; cursor: pointer; }
-.ellucian-shared-refresh svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ellucian-shared-refresh svg { display: block; flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* Make keyboard focus, hover, and in-progress checks visible without shifting text. */
-.ellucian-shared-refresh:hover:not(:disabled) { background: rgba(0, 0, 0, 0.06); }
+.ellucian-shared-refresh:hover:not(:disabled) { background: #e8f4ed; color: #08783e; }
 .ellucian-shared-refresh:focus-visible { outline: 2px solid #6d28d9; outline-offset: 2px; }
 .ellucian-shared-refresh:disabled { cursor: default; opacity: 0.5; }
 .ellucian-shared-refresh[aria-busy="true"] svg { animation: ellucian-shared-spin 1s linear infinite; }
 @keyframes ellucian-shared-spin { to { transform: rotate(360deg); } }
 /* Respect system motion preferences while retaining the disabled/loading state. */
 @media (prefers-reduced-motion: reduce) { .ellucian-shared-refresh[aria-busy="true"] svg { animation: none; } }
+
+/* Announce refresh results without adding visible text, width, or height to the heading. */
+.ellucian-shared-refresh-status { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ellucian-shared-refresh-status[hidden] { display: none; }
+/* Confine source guidance to the heading; body values remain ordinary native text. */
+[data-ellucian-source-cell] { white-space: nowrap; }
+[data-ellucian-source-cell] > .ellucian-shared-value { display: inline-block; width: fit-content; }
+
+/* Keep oversized single-line names inside a local table scrollbar, not the whole page. */
+#packageTable-table[data-ellucian-pipeline-scroll] { max-width: 100%; min-width: 0; overflow-x: auto; }
+#packageTable-table table[data-ellucian-pipeline-table] { table-layout: fixed !important; width: var(--ellucian-pipeline-table-width) !important; min-width: 0 !important; }
+/* Reserve actual name space instead of letting the extra source column consume it. */
+[data-ellucian-pipeline-table] [data-ellucian-name-cell] { box-sizing: border-box; width: var(--ellucian-pipeline-name-width) !important; max-width: var(--ellucian-pipeline-name-width) !important; white-space: nowrap !important; }
+[data-ellucian-pipeline-table] a[id^="packageTable-pipeline-button"] { display: block; max-width: 100%; overflow: hidden; white-space: nowrap !important; text-overflow: ellipsis; }
+[data-ellucian-pipeline-table] [data-ellucian-compact-column] { box-sizing: border-box; width: var(--ellucian-compact-column-width) !important; white-space: nowrap; }
+/* Use a narrow, visible divider at the column edge without covering the sort label. */
+[data-ellucian-pipeline-table] thead [data-ellucian-name-cell] { position: relative; }
+.ellucian-pipeline-column-resizer { position: absolute; top: 4px; bottom: 4px; right: 0; width: 10px; padding: 0; border: 0; color: inherit; background: transparent; cursor: col-resize; touch-action: none; }
+.ellucian-pipeline-column-resizer::after { content: ''; position: absolute; top: 2px; bottom: 2px; left: 4px; width: 1px; background: currentColor; opacity: 0.35; }
+/* Highlight dragging and keyboard focus while preserving native table typography. */
+.ellucian-pipeline-column-resizer:hover::after, .ellucian-pipeline-column-resizer[data-dragging]::after { width: 2px; opacity: 0.9; }
+.ellucian-pipeline-column-resizer:focus-visible { outline: 2px solid #6d28d9; outline-offset: -2px; }
+
+/* Align comparable action controls without changing native row or version-badge sizes. */
+:is(.ellucian-search-icon-button, .ellucian-shared-refresh, .ellucian-package-favorite-button, .ellucian-pipeline-favorite-button, .ellucian-favorite-remove, .ellucian-favorite-pipeline-remove):hover:not(:disabled) { background: #e8f4ed !important; border-radius: 4px !important; }
+:is(.ellucian-search-icon-button, .ellucian-shared-refresh, .ellucian-package-favorite-button, .ellucian-pipeline-favorite-button, .ellucian-favorite-remove, .ellucian-favorite-pipeline-remove):focus-visible { outline: 2px solid #6d28d9 !important; outline-offset: -2px !important; box-shadow: none !important; border-radius: 4px !important; }

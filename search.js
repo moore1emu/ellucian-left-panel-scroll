@@ -27,6 +27,8 @@
   // Store favorites per environment and remember each section's open state.
   const FAVORITES_ENABLED_KEY = "favoritesEnabled";
   const SHARED_VERSION_ENABLED_KEY = "sharedVersionEnabled";
+  const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
+  const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
   const FAVORITES_BY_HOST_KEY = "favoritePackagesByHost";
   const FAVORITES_EXPANDED_BY_HOST_KEY = "favoritesExpandedByHost";
   const FAVORITES_HEIGHTS_BY_HOST_KEY = "favoritesHeightsByHost";
@@ -38,10 +40,22 @@
   const MAX_PACKAGE_RESULTS = 12;
   const MAX_PIPELINE_RESULTS = 30;
   const INDEX_RESPONSE_TIMEOUT = 1200;
+  // Retry loaded-page indexing briefly after SPA entry, never poll indefinitely.
+  const OWNERSHIP_INDEX_RETRY_MS = 1500;
+  const OWNERSHIP_INDEX_ATTEMPTS = 10;
   const MIN_FAVORITES_LIST_HEIGHT = 64;
   const MAX_FAVORITES_VIEWPORT_RATIO = 0.45;
   const MAX_FAVORITES_LIST_HEIGHT = 360;
   const FAVORITES_KEYBOARD_RESIZE_STEP = 16;
+
+  // Keep single-line names usable while leaving automatic sizing free to fit each package.
+  const MIN_PIPELINE_NAME_WIDTH = 160;
+  const MAX_PIPELINE_NAME_WIDTH = 12000;
+  let packagePipelineNameWidth = MIN_PIPELINE_NAME_WIDTH;
+  // Fit each newly selected package independently, without persisting additional settings.
+  let packagePipelineWidthKey = '';
+  let packagePipelineAutoWidth = true;
+  const packagePipelineTables = new WeakMap();
 
   // Hold only the sanitized names and versions returned by the page-world indexer.
   let searchMode = DEFAULT_SEARCH_MODE;
@@ -75,6 +89,23 @@
 
   // Keep optional sharing checks disabled until the user turns them on.
   let sharedVersionEnabled = false;
+  // Index locally observed Designer homes by exact name, not search text or version.
+  let sharedFromEnabled = false;
+  let ownershipByName = new Map();
+  let ownershipRequest = "";
+  let ownershipSignature = "";
+  let ownershipTimer = 0;
+  // Require a fresh complete index for each Designer visit, not a previous page's index.
+  let ownershipPageKey = "";
+  let ownershipIndexReady = false;
+  let ownershipIndexAttempts = 0;
+  let ownershipIndexTimer = 0;
+  // Hold at most one popup reply until the requested snapshot is actually saved.
+  let ownershipManualResponse = null;
+  // A reloaded extension cannot reconnect this old page script until the page refreshes.
+  let ownershipExtensionDisconnected = false;
+  // Allow one startup retry per inventory, without background polling.
+  let ownershipAttempts = 0;
   let navigationSequence = 0;
   let sharedStatusRequestCounter = 0;
   const sharedStatusCache = new Map();
@@ -85,6 +116,8 @@
   // Preserve checkbox selections across table pages, but never across packages.
   let sharedSelectionPackage = '';
   const selectedShareRows = new Map();
+  // Refresh an open tooltip only when page controls change; never poll for help text.
+  let updateActivePageTooltip = () => {};
 
   // Accept only the three supported values from extension storage.
   function normalizeSearchMode(value) {
@@ -98,6 +131,151 @@
     return SUPPORTED_PATHS.some((supportedPath) =>
       currentPath.includes(supportedPath),
     );
+  }
+
+  // Give extension-owned page controls one lightweight hover and keyboard tooltip.
+  function initializePageTooltips() {
+    let tip = null;
+    let activeTarget = null;
+    let activeNameTarget = null;
+    let activeNamePageUrl = '';
+    // Native name tooltips need no custom styling or timing; measure only the requested name.
+    const nameSelector = '.ellucian-favorite-select, .ellucian-favorite-pipeline-name';
+    const updateNameTip = (name) => {
+      const fullName = name.textContent.trim();
+      const clipped = name.isConnected && name.clientWidth > 0 && name.scrollWidth > name.clientWidth + 1;
+      // Expose the full name only when ellipsis actually hides part of its rendered text.
+      if (clipped && name.getAttribute('title') !== fullName) name.setAttribute('title', fullName);
+      else if (!clipped && name.hasAttribute('title')) name.removeAttribute('title');
+      activeNameTarget = name;
+      activeNamePageUrl = window.location.href;
+    };
+    // Keep only one pending hover; keyboard focus does not need to wait.
+    const hoverDelayMs = 2000;
+    let hoverTimer = 0;
+    let pendingTarget = null;
+    let pendingPageUrl = '';
+    let pointerPressed = false;
+    const cancelPendingHover = () => {
+      if (hoverTimer) window.clearTimeout(hoverTimer);
+      hoverTimer = 0;
+      pendingTarget = null;
+      pendingPageUrl = '';
+    };
+    // Remove only our description link, preserving labels supplied by the page.
+    const hideTip = () => {
+      // Leaving, dismissing, or navigating must also cancel help that has not opened.
+      cancelPendingHover();
+      // Clear only our active pinned-name title; native application titles stay untouched.
+      if (activeNameTarget) activeNameTarget.removeAttribute('title');
+      activeNameTarget = null;
+      activeNamePageUrl = '';
+      if (tip?.matches(':popover-open')) tip.hidePopover();
+      if (activeTarget && tip) {
+        const remaining = (activeTarget.getAttribute('aria-describedby') || '').split(/\s+/u).filter((id) => id && id !== tip.id);
+        if (remaining.length) activeTarget.setAttribute('aria-describedby', remaining.join(' '));
+        else activeTarget.removeAttribute('aria-describedby');
+      }
+      activeTarget = null;
+    };
+    const showTip = (target) => {
+      // Immediate keyboard help replaces any unfinished pointer delay.
+      cancelPendingHover();
+      // Ignore native page titles, removed controls, and unrelated Experience routes.
+      const explanation = target?.getAttribute('data-ellucian-tooltip');
+      if (!isSupportedPage() || !target?.isConnected || !explanation) { hideTip(); return; }
+      // Create one reusable top-layer element only after help is actually requested.
+      if (!tip) {
+        tip = document.createElement('span');
+        tip.className = 'ellucian-shared-tooltip';
+        tip.id = `ellucian-page-tooltip-${crypto.randomUUID()}`;
+        tip.setAttribute('role', 'tooltip');
+        tip.setAttribute('popover', 'manual');
+        document.body.appendChild(tip);
+      }
+      if (typeof tip.showPopover !== 'function') return;
+      if (activeTarget !== target) {
+        hideTip();
+        activeTarget = target;
+        const descriptions = (target.getAttribute('aria-describedby') || '').split(/\s+/u).filter(Boolean);
+        target.setAttribute('aria-describedby', [...descriptions, tip.id].join(' '));
+      }
+      // Measure real tooltip dimensions so long guidance stays inside the viewport.
+      if (tip.textContent !== explanation) tip.textContent = explanation;
+      if (!tip.matches(':popover-open')) tip.showPopover();
+      const bounds = target.getBoundingClientRect();
+      const tipBounds = tip.getBoundingClientRect();
+      const left = Math.max(8, Math.min(bounds.left, window.innerWidth - tipBounds.width - 8));
+      const preferredTop = bounds.top - tipBounds.height - 8;
+      const top = Math.max(8, Math.min(preferredTop >= 8 ? preferredTop : bounds.bottom + 8, window.innerHeight - tipBounds.height - 8));
+      // Avoid unchanged style writes that would wake the page's layout observer.
+      if (tip.style.left !== `${left}px`) tip.style.left = `${left}px`;
+      if (tip.style.top !== `${top}px`) tip.style.top = `${top}px`;
+    };
+    // Keep hover text current and discard help when React removes its target.
+    updateActivePageTooltip = () => {
+      if (!isSupportedPage()) { hideTip(); tip?.remove(); tip = null; return; }
+      // React removal or a new route must not let a stale delayed hover appear.
+      if (pendingTarget && (!pendingTarget.isConnected || pendingPageUrl !== window.location.href)) hideTip();
+      // Recheck active names after layout changes without scanning every favorite.
+      if (activeNameTarget) {
+        if (!activeNameTarget.isConnected || activeNamePageUrl !== window.location.href) hideTip();
+        else updateNameTip(activeNameTarget);
+      }
+      if (activeTarget) showTip(activeTarget);
+    };
+    // Delegate events to existing and future controls instead of adding per-row listeners.
+    document.addEventListener('pointerover', (event) => {
+      if (event.buttons) return;
+      // Let the browser show its own compact name tooltip, only for clipped text.
+      const name = event.target.closest?.(nameSelector);
+      if (name && !name.contains(event.relatedTarget) && isSupportedPage()) {
+        hideTip();
+        updateNameTip(name);
+        return;
+      }
+      const target = event.target.closest?.('[data-ellucian-tooltip]');
+      if (!target || target.contains(event.relatedTarget) || !isSupportedPage()) return;
+      // Start a fresh delay for each control without polling or keeping row timers.
+      hideTip();
+      pendingTarget = target;
+      pendingPageUrl = window.location.href;
+      hoverTimer = window.setTimeout(() => {
+        const currentTarget = pendingTarget;
+        const samePage = pendingPageUrl === window.location.href;
+        cancelPendingHover();
+        // Pointer exit clears pendingTarget; also reject detached targets and changed routes.
+        if (samePage && currentTarget?.isConnected) showTip(currentTarget);
+      }, hoverDelayMs);
+    }, true);
+    document.addEventListener('pointerout', (event) => {
+      const target = pendingTarget || activeTarget || activeNameTarget;
+      if (target?.contains(event.target) && !target.contains(event.relatedTarget)) hideTip();
+    }, true);
+    document.addEventListener('focusin', (event) => {
+      // Full names remain in accessible button text even when visual help is unnecessary.
+      const name = event.target.closest?.(nameSelector) || event.target.querySelector?.('.ellucian-favorite-pipeline-name');
+      if (name && isSupportedPage()) { hideTip(); updateNameTip(name); return; }
+      const target = event.target.closest?.('[data-ellucian-tooltip]');
+      // A mouse click must not bypass the delay through its automatic focus event.
+      if (target && !pointerPressed) showTip(target);
+    });
+    document.addEventListener('focusout', (event) => {
+      const target = activeTarget || activeNameTarget?.closest('button');
+      if (target?.contains(event.target) && !target.contains(event.relatedTarget)) hideTip();
+    });
+    // Dismiss help before dragging, on Escape, and when scrolling changes its position.
+    document.addEventListener('pointerdown', () => { pointerPressed = true; hideTip(); }, true);
+    document.addEventListener('pointerup', () => { pointerPressed = false; }, true);
+    document.addEventListener('pointercancel', () => { pointerPressed = false; hideTip(); }, true);
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') hideTip(); }, true);
+    window.addEventListener('scroll', hideTip, { capture: true, passive: true });
+    window.addEventListener('resize', hideTip, { passive: true });
+    window.addEventListener('popstate', hideTip);
+    window.addEventListener('hashchange', hideTip);
+    // Switching tabs must not leave a pending hover or a pressed-pointer state behind.
+    window.addEventListener('blur', () => { pointerPressed = false; hideTip(); });
+    window.addEventListener(DOM_CHANGE_EVENT, updateActivePageTooltip);
   }
 
   // Limit the optional column to the Designer package table itself.
@@ -420,6 +598,8 @@
 
   // Load the correct page-specific favorites after an in-app route change.
   function loadFavoritesForCurrentPage() {
+    // An old page cannot read extension storage again after its connection is lost.
+    if (ownershipExtensionDisconnected) return;
     if (!isSupportedPage()) {
       activeFavoritesStorageKey = "";
       applySearchMode();
@@ -429,39 +609,54 @@
     const requestedStorageKey = getFavoritesStorageKey();
     activeFavoritesStorageKey = requestedStorageKey;
 
-    chrome.storage.local.get(
-      {
-        [FAVORITES_BY_HOST_KEY]: {},
-        [FAVORITES_EXPANDED_BY_HOST_KEY]: {},
-        [FAVORITES_HEIGHTS_BY_HOST_KEY]: {},
-      },
-      (settings) => {
-        // Ignore a delayed response if the user navigated again meanwhile.
-        if (
-          !isSupportedPage() ||
-          getFavoritesStorageKey() !== requestedStorageKey
-        ) {
-          return;
-        }
+    // Storage calls can throw after an extension reload even when the API still exists.
+    try {
+      const runtime = globalThis.chrome?.runtime;
+      const storage = globalThis.chrome?.storage?.local;
+      if (!runtime?.id || typeof storage?.get !== 'function') {
+        stopDisconnectedOwnership();
+        return;
+      }
+      // Read only this browser's saved navigation state, keeping existing defaults unchanged.
+      storage.get(
+        {
+          [FAVORITES_BY_HOST_KEY]: {},
+          [FAVORITES_EXPANDED_BY_HOST_KEY]: {},
+          [FAVORITES_HEIGHTS_BY_HOST_KEY]: {},
+        },
+        (settings) => {
+          // Ignore stale replies before inspecting a potentially disconnected runtime.
+          if (ownershipExtensionDisconnected || !isSupportedPage() || getFavoritesStorageKey() !== requestedStorageKey) return;
+          try {
+            const lastError = runtime.lastError;
+            if (globalThis.chrome?.runtime !== runtime || !runtime.id || /Extension context invalidated/i.test(lastError?.message || '')) {
+              stopDisconnectedOwnership();
+              return;
+            }
+            // A failed read is not an empty favorites list; never load its fallback defaults.
+            if (lastError || !settings) return;
+          } catch (_error) {
+            stopDisconnectedOwnership();
+            return;
+          }
 
-        const favoritesByHost = settings[FAVORITES_BY_HOST_KEY] ?? {};
-        const expandedByHost =
-          settings[FAVORITES_EXPANDED_BY_HOST_KEY] ?? {};
-        const heightsByHost = settings[FAVORITES_HEIGHTS_BY_HOST_KEY] ?? {};
+          // Restore the destination page's hierarchy, disclosure, and height only after a valid read.
+          const favoritesByHost = settings[FAVORITES_BY_HOST_KEY] ?? {};
+          const expandedByHost = settings[FAVORITES_EXPANDED_BY_HOST_KEY] ?? {};
+          const heightsByHost = settings[FAVORITES_HEIGHTS_BY_HOST_KEY] ?? {};
+          loadFavoriteState(favoritesByHost[requestedStorageKey]);
+          favoritesExpanded = expandedByHost[requestedStorageKey] !== false;
+          const storedHeight = Number(heightsByHost[requestedStorageKey]);
+          favoriteListHeight = Number.isFinite(storedHeight) && storedHeight > 0 ? storedHeight : null;
 
-        // Restore the destination page's hierarchy, disclosure, and height.
-        loadFavoriteState(favoritesByHost[requestedStorageKey]);
-        favoritesExpanded = expandedByHost[requestedStorageKey] !== false;
-        const storedHeight = Number(heightsByHost[requestedStorageKey]);
-        favoriteListHeight =
-          Number.isFinite(storedHeight) && storedHeight > 0
-            ? storedHeight
-            : null;
-
-        applySearchMode();
-        requestSearchIndex();
-      },
-    );
+          applySearchMode();
+          requestSearchIndex();
+        },
+      );
+    } catch (_error) {
+      // Leave saved and in-memory pins untouched; one page refresh restores a fresh connection.
+      stopDisconnectedOwnership();
+    }
   }
 
   // Use the visible package tree when private React properties are unavailable.
@@ -795,13 +990,18 @@
 
   // Persist the current page's complete favorite hierarchy without changing other pages.
   function saveFavorites() {
+    // Snapshot the originating page and pins before navigation can change either one.
+    const storageKey = getFavoritesStorageKey();
+    const favoriteState = structuredClone(serializeFavoriteState());
     chrome.storage.local.get(
       { [FAVORITES_BY_HOST_KEY]: {} },
       (settings) => {
+        // A failed read must not replace other pages' saved favorites with an empty map.
+        if (chrome.runtime.lastError) return;
         const favoritesByHost = {
           ...settings[FAVORITES_BY_HOST_KEY],
           // Preserve parent order, explicit package pins, pipeline pins, and open states.
-          [getFavoritesStorageKey()]: serializeFavoriteState(),
+          [storageKey]: favoriteState,
         };
 
         chrome.storage.local.set({
@@ -813,12 +1013,17 @@
 
   // Persist whether this environment's favorites section is expanded.
   function saveFavoritesExpandedState() {
+    // Keep a delayed disclosure save attached to the page where the click occurred.
+    const storageKey = getFavoritesStorageKey();
+    const expanded = favoritesExpanded;
     chrome.storage.local.get(
       { [FAVORITES_EXPANDED_BY_HOST_KEY]: {} },
       (settings) => {
+        // Preserve saved disclosure states if the storage read fails.
+        if (chrome.runtime.lastError) return;
         const expandedByHost = {
           ...settings[FAVORITES_EXPANDED_BY_HOST_KEY],
-          [getFavoritesStorageKey()]: favoritesExpanded,
+          [storageKey]: expanded,
         };
 
         chrome.storage.local.set({
@@ -1166,12 +1371,12 @@
     favoriteButton.setAttribute(
       "aria-label",
       isFavorite
-        ? `Remove ${packageName} from pinned packages`
-        : `Pin ${packageName}`,
+        ? `Unpin Package: ${packageName}`
+        : `Pin Package: ${packageName}`,
     );
     favoriteButton.setAttribute(
-      "title",
-      isFavorite ? "Remove from pinned packages" : "Pin package",
+      "data-ellucian-tooltip",
+      isFavorite ? "Unpin Package" : "Pin Package",
     );
   }
 
@@ -1311,12 +1516,12 @@
     favoriteButton.setAttribute(
       "aria-label",
       isFavorite
-        ? `Remove ${pipelineEntry.name} from pinned pipelines`
-        : `Pin ${pipelineEntry.name}`,
+        ? `Unpin Pipeline: ${pipelineEntry.name}`
+        : `Pin Pipeline: ${pipelineEntry.name}`,
     );
     favoriteButton.setAttribute(
-      "title",
-      isFavorite ? "Remove from pinned pipelines" : "Pin pipeline",
+      "data-ellucian-tooltip",
+      isFavorite ? "Unpin Pipeline" : "Pin Pipeline",
     );
   }
 
@@ -1455,7 +1660,10 @@
         name: packageEntry.name,
         packagePinned: packageEntry.packagePinned,
         pipelinesExpanded: packageEntry.pipelinesExpanded,
-        pipelines: packageEntry.favoritePipelines.map(getPipelineIdentity),
+        // A newer minor/patch release must refresh both its badge and navigation target.
+        pipelines: packageEntry.favoritePipelines.map((pipeline) => [
+          getPipelineIdentity(pipeline), pipeline.name, pipeline.originalName, pipeline.version,
+        ]),
       })),
     });
     if (section.dataset.renderSignature === renderSignature) {
@@ -1512,7 +1720,7 @@
         `Reorder ${packageEntry.name}. Use the up and down arrow keys.`,
       );
       dragHandle.setAttribute(
-        "title",
+        "data-ellucian-tooltip",
         "Drag to reorder, or use Up and Down when focused",
       );
 
@@ -1606,7 +1814,7 @@
       selectButton.type = "button";
       selectButton.className = "ellucian-favorite-select";
       selectButton.textContent = packageEntry.name;
-      selectButton.setAttribute("title", packageEntry.name);
+      // Hover measures this label and adds a native title only if the name is clipped.
       selectButton.addEventListener("click", (event) => {
         event.stopPropagation();
         activateSearchResult({ type: "package", packageEntry, revealPipelines: true });
@@ -1632,7 +1840,7 @@
         "aria-label",
         `${packageEntry.pipelinesExpanded ? "Collapse" : "Expand"} pinned pipelines for ${packageEntry.name}`,
       );
-      disclosureButton.setAttribute("title", "Show or hide pinned pipelines");
+      disclosureButton.setAttribute("data-ellucian-tooltip", `${packageEntry.pipelinesExpanded ? 'Collapse' : 'Expand'} pinned pipelines`);
       disclosureButton.addEventListener("click", (event) => {
         event.stopPropagation();
         setFavoritePipelinesExpanded(
@@ -1653,12 +1861,12 @@
       packageButton.setAttribute(
         "aria-label",
         packageEntry.packagePinned
-          ? `Remove ${packageEntry.name} package pin`
-          : `Pin ${packageEntry.name} package`,
+          ? `Unpin Package: ${packageEntry.name}`
+          : `Pin Package: ${packageEntry.name}`,
       );
       packageButton.setAttribute(
-        "title",
-        packageEntry.packagePinned ? "Unpin package" : "Pin package",
+        "data-ellucian-tooltip",
+        packageEntry.packagePinned ? "Unpin Package" : "Pin Package",
       );
       packageButton.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -1709,7 +1917,7 @@
             `Reorder ${pipelineEntry.name}. Use the up and down arrow keys.`,
           );
           pipelineDragHandle.setAttribute(
-            "title",
+            "data-ellucian-tooltip",
             "Drag to reorder within this package, or use Up and Down when focused",
           );
 
@@ -1820,7 +2028,7 @@
           const pipelineButton = document.createElement("button");
           pipelineButton.type = "button";
           pipelineButton.className = "ellucian-favorite-pipeline-select";
-          pipelineButton.setAttribute("title", pipelineEntry.name);
+          // Keep name help on the clipped text itself, never on its version badge.
           pipelineButton.addEventListener("click", (event) => {
             // Prevent any surrounding disclosure target from seeing navigation clicks.
             event.stopPropagation();
@@ -1851,9 +2059,9 @@
           pipelineRemoveButton.setAttribute("aria-pressed", "true");
           pipelineRemoveButton.setAttribute(
             "aria-label",
-            `Remove ${pipelineEntry.name} from pinned pipelines`,
+            `Unpin Pipeline: ${pipelineEntry.name}`,
           );
-          pipelineRemoveButton.setAttribute("title", "Unpin pipeline");
+          pipelineRemoveButton.setAttribute("data-ellucian-tooltip", "Unpin Pipeline");
           pipelineRemoveButton.addEventListener("click", (event) => {
             // Unpin only this child without toggling the package disclosure state.
             event.stopPropagation();
@@ -1896,7 +2104,7 @@
     );
     resizeHandle.setAttribute("tabindex", "0");
     resizeHandle.setAttribute(
-      "title",
+      "data-ellucian-tooltip",
       "Drag up or down to resize pinned packages",
     );
 
@@ -2266,7 +2474,7 @@
     iconButton.type = "button";
     iconButton.className = "ellucian-search-icon-button";
     iconButton.setAttribute("aria-label", "Open package and pipeline search");
-    iconButton.setAttribute("title", "Search packages and pipelines");
+    iconButton.setAttribute("data-ellucian-tooltip", "Search packages and pipelines");
 
     // Draw a single scalable vector icon so the lens and handle stay aligned.
     const searchIcon = document.createElementNS(
@@ -2594,6 +2802,389 @@
     updateSharedVersionColumn();
   }
 
+  // Index the compact local snapshots once per storage change, not once per table row.
+  function loadOwnershipCache(cache) {
+    ownershipByName = new Map();
+    if (!sharedFromEnabled) return;
+    Object.values(cache || {}).forEach((snapshot) => {
+      const environment = normalizeText(snapshot?.environment);
+      const checkedAt = Number(snapshot?.checkedAt);
+      if (!environment || !Number.isFinite(checkedAt) || !Array.isArray(snapshot?.packages)) return;
+      const seenNames = new Set();
+      // Build the same fast name lookup from groups, with no duplicate persisted flat list.
+      snapshot.packages.slice(0, 10000).forEach((entry) => {
+        if (!Array.isArray(entry?.pipelines)) return;
+        entry.pipelines.slice(0, 10000).forEach((name) => {
+          const cleanName = normalizeText(name);
+          // Multiple versions or package rows in one environment must not look like multiple sources.
+          if (!cleanName || seenNames.has(cleanName)) return;
+          seenNames.add(cleanName);
+          const owners = ownershipByName.get(cleanName) || [];
+          owners.push({ environment, checkedAt });
+          ownershipByName.set(cleanName, owners);
+        });
+      });
+    });
+  }
+
+  // Complete a manual refresh only after persistence, cancellation, or a bounded failure.
+  function finishOwnershipRefresh(result) {
+    const respond = ownershipManualResponse;
+    ownershipManualResponse = null;
+    // Closing settings must not cancel collection or create a console error.
+    if (respond) {
+      try { respond(result); } catch (_error) { /* The popup may already be closed. */ }
+    }
+  }
+
+  // Discard the previous visit's requests without clearing saved sources or favorites.
+  function resetDesignerOwnership(reason) {
+    window.clearTimeout(ownershipTimer);
+    window.clearTimeout(ownershipIndexTimer);
+    ownershipTimer = 0;
+    ownershipIndexTimer = 0;
+    ownershipRequest = "";
+    ownershipSignature = "";
+    ownershipAttempts = 0;
+    ownershipIndexReady = false;
+    ownershipIndexAttempts = 0;
+    finishOwnershipRefresh({ ok: false, reason });
+  }
+
+  // Stop this old script's source checks without changing saved cache, favorites, or consent.
+  function stopDisconnectedOwnership() {
+    if (ownershipExtensionDisconnected) return;
+    ownershipExtensionDisconnected = true;
+    resetDesignerOwnership('extension-reloaded');
+    // Give one recovery hint rather than throwing or repeatedly retrying a missing connection.
+    console.info('Integration Navigator connection unavailable. Refresh this page after reloading the extension.');
+  }
+
+  // Wait for React's complete package data using bounded local messages, not server polling.
+  function requestDesignerOwnershipIndex() {
+    if (ownershipExtensionDisconnected || !sharedFromEnabled || !isDesignerPackagePage() || ownershipIndexReady || ownershipIndexTimer) return;
+    if (ownershipIndexAttempts >= OWNERSHIP_INDEX_ATTEMPTS) {
+      finishOwnershipRefresh({ ok: false, reason: 'not-ready' });
+      return;
+    }
+    ownershipIndexAttempts += 1;
+    requestSearchIndex();
+    // A successful complete-index response cancels this timer before any further checks.
+    ownershipIndexTimer = window.setTimeout(() => {
+      ownershipIndexTimer = 0;
+      requestDesignerOwnershipIndex();
+    }, OWNERSHIP_INDEX_RETRY_MS);
+  }
+
+  // Recognize SPA entry and exit even when the browser emits no pageshow or popstate.
+  function updateDesignerOwnershipVisit(force = false) {
+    const pageKey = sharedFromEnabled && isDesignerPackagePage() ? getFavoritesStorageKey() : '';
+    if (!force && pageKey === ownershipPageKey) return;
+    resetDesignerOwnership(sharedFromEnabled ? 'left-designer' : 'disabled');
+    ownershipPageKey = pageKey;
+    if (pageKey) requestDesignerOwnershipIndex();
+  }
+
+  // Ask for one source snapshot only after this visit's loaded Designer index is ready.
+  function requestDesignerOwnership() {
+    if (ownershipExtensionDisconnected || !sharedFromEnabled || !isDesignerPackagePage() || !ownershipIndexReady || indexState !== "ready" || ownershipRequest) return;
+    const signature = JSON.stringify([getFavoritesStorageKey(), searchIndex.map((entry) => [entry.name, entry.pipelines.map((pipeline) => pipeline.name)])]);
+    // A changed inventory gets its own bounded attempt budget.
+    if (signature !== ownershipSignature) {
+      ownershipSignature = signature;
+      ownershipAttempts = 0;
+    }
+    if (ownershipAttempts >= 2) return;
+    ownershipAttempts += 1;
+    ownershipRequest = crypto.randomUUID();
+    // Retry a missed or not-yet-ready lookup once, then wait for a genuine revisit.
+    ownershipTimer = window.setTimeout(() => {
+      ownershipRequest = "";
+      // Leaving Designer or disabling the option must not restart collection.
+      if (!sharedFromEnabled || !isDesignerPackagePage()) return;
+      if (ownershipAttempts < 2) requestDesignerOwnership();
+      else {
+        console.warn('Designer source cache lookup did not finish. Revisit Designer to retry.');
+        finishOwnershipRefresh({ ok: false, reason: 'lookup-failed' });
+      }
+    }, 15000);
+    // Repeat the opt-in handshake in case the page helper loaded after settings did.
+    window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-setting", enabled: true }, window.location.origin);
+    window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-request", requestId: ownershipRequest }, window.location.origin);
+  }
+
+  // Accept manual refresh only from this extension's settings on the current Designer page.
+  chrome.runtime.onMessage.addListener((message, sender, respond) => {
+    if (message?.type !== 'designer-ownership-refresh' || sender.id !== chrome.runtime?.id || sender.tab) return;
+    // Do not leave a settings request waiting after this page has lost its connection.
+    if (ownershipExtensionDisconnected) {
+      respond({ ok: false, reason: 'extension-reloaded' });
+      return;
+    }
+    if (!sharedFromEnabled || !isDesignerPackagePage()) {
+      respond({ ok: false, reason: sharedFromEnabled ? 'open-designer' : 'disabled' });
+      return;
+    }
+    // Prevent repeated settings clicks from launching overlapping manual lookups.
+    if (ownershipManualResponse) {
+      respond({ ok: false, reason: 'busy' });
+      return;
+    }
+    resetDesignerOwnership('restarted');
+    ownershipPageKey = getFavoritesStorageKey();
+    ownershipManualResponse = respond;
+    requestDesignerOwnershipIndex();
+    return true;
+  });
+
+  // Confine source-cache guidance to the keyboard-accessible column heading.
+  function createOwnershipHeading() {
+    const label = 'Shared From';
+    const explanation = 'Cached Designer sources. Visit Designer in each environment to update.';
+    const value = document.createElement('span');
+    value.className = 'ellucian-shared-value';
+    value.tabIndex = 0;
+    value.textContent = label;
+    value.setAttribute('aria-label', `${label}. ${explanation}`);
+    // The shared delegated tooltip keeps setup guidance on the heading only.
+    value.setAttribute('data-ellucian-tooltip', explanation);
+    return value;
+  }
+
+  // Add observed source information only to the native Integration Packages table.
+  function updateSharedFromColumn() {
+    // Tell the page helper to stop source lookups when the feature or route is inactive.
+    window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-ownership-setting', enabled: sharedFromEnabled && isDesignerPackagePage() }, window.location.origin);
+    if (!sharedFromEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+      document.querySelectorAll('[data-ellucian-source-cell]').forEach((cell) => cell.remove());
+      return;
+    }
+    const table = document.getElementById('packageTable-table')?.querySelector('table');
+    const headerRow = table?.querySelector('thead tr') || table?.querySelector('tr');
+    if (!headerRow) return;
+    // Locate the native Version cell, excluding our previously inserted header.
+    const nativeHeaders = Array.from(headerRow.children).filter((cell) => !cell.hasAttribute('data-ellucian-source-cell'));
+    const versionIndex = nativeHeaders.findIndex((cell) => cell.textContent.trim() === 'Version');
+    if (versionIndex < 0) return;
+    const versionHeader = nativeHeaders[versionIndex];
+    // Match native typography and keep one source header immediately after Version.
+    if (!headerRow.querySelector('[data-ellucian-source-cell]')) {
+      const header = document.createElement(versionHeader.tagName.toLowerCase());
+      header.className = versionHeader.className;
+      header.dataset.ellucianSourceCell = 'true';
+      header.scope = 'col';
+      header.style.fontWeight = '700';
+      header.appendChild(createOwnershipHeading());
+      versionHeader.after(header);
+    }
+    // Enhance only actual pipeline links, leaving placeholders and other native rows alone.
+    table.querySelectorAll('a[id^="packageTable-pipeline-button"]').forEach((link) => {
+      const row = link.closest('tr');
+      const nativeCells = Array.from(row.children).filter((cell) => !cell.hasAttribute('data-ellucian-source-cell'));
+      const versionCell = nativeCells[versionIndex];
+      if (!versionCell) return;
+      // Reuse the inserted cell across table refreshes rather than recreating unchanged rows.
+      let cell = row.querySelector('[data-ellucian-source-cell]');
+      if (!cell) {
+        cell = document.createElement('td');
+        cell.className = versionCell.className;
+        cell.dataset.ellucianSourceCell = 'true';
+        versionCell.after(cell);
+      }
+      // Do not guess a source when no snapshot exists or multiple environments claim a name.
+      const owners = ownershipByName.get(link.textContent.trim()) || [];
+      const owner = owners.length === 1 ? owners[0] : null;
+      const label = owner ? owner.environment : '—';
+      // Plain source values have no hover target, icon, or redundant tab stop.
+      const summary = label;
+      if (cell.dataset.summary === summary) return;
+      cell.dataset.summary = summary;
+      // Match the actual Version value, including native nested text styling.
+      const value = document.createElement('span');
+      value.className = 'ellucian-source-value';
+      value.textContent = label;
+      const nativeStyle = window.getComputedStyle(versionCell.querySelector('p, span') || versionCell);
+      ['fontFamily', 'fontSize', 'fontWeight', 'color', 'lineHeight', 'letterSpacing'].forEach((property) => {
+        value.style[property] = nativeStyle[property];
+      });
+      cell.replaceChildren(value);
+    });
+  }
+
+  // Measure complete text without changing the native link or creating hidden DOM rows.
+  function measurePackagePipelineText(element, text, context) {
+    const style = window.getComputedStyle(element);
+    context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const spacing = Number.parseFloat(style.letterSpacing) || 0;
+    const padding = (Number.parseFloat(style.paddingLeft) || 0) + (Number.parseFloat(style.paddingRight) || 0);
+    return context.measureText(text).width + spacing * Math.max(0, text.length - 1) + padding;
+  }
+
+  // Fit each package's names while keeping Version and optional source columns compact.
+  function updatePackagePipelineColumn() {
+    // Remove only our presentation when a retained table belongs to another route.
+    if (!/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+      // Treat a return from another page as a new package selection too.
+      packagePipelineWidthKey = '';
+      document.querySelectorAll('[data-ellucian-pipeline-table]').forEach((table) => {
+        table.removeAttribute('data-ellucian-pipeline-table');
+        table.parentElement?.removeAttribute('data-ellucian-pipeline-scroll');
+        table.querySelectorAll('[data-ellucian-name-cell], [data-ellucian-compact-column]').forEach((cell) => {
+          cell.removeAttribute('data-ellucian-name-cell');
+          cell.removeAttribute('data-ellucian-compact-column');
+        });
+        table.querySelector('.ellucian-pipeline-column-resizer')?.remove();
+        packagePipelineTables.delete(table);
+      });
+      return;
+    }
+    // Identify the column from a real native pipeline link, not an assumed table order.
+    const table = document.getElementById('packageTable-table')?.querySelector('table');
+    const links = table ? Array.from(table.querySelectorAll('a[id^="packageTable-pipeline-button"]')) : [];
+    const headerRow = table?.querySelector('thead tr');
+    const nameIndex = links[0]?.closest('td')?.cellIndex;
+    const nameHeader = headerRow?.children[nameIndex];
+    if (!nameHeader) return;
+
+    // Use the native package heading so rerenders and sorting do not reset a user's current resize.
+    const packageTitle = document.getElementById('packageDetails-title')?.textContent.trim()
+      || Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent.trim().startsWith('Package:'))?.textContent.trim();
+    const widthKey = packageTitle ? `${getFavoritesStorageKey()}\u0000${packageTitle}` : '';
+    const newPackage = Boolean(widthKey && widthKey !== packagePipelineWidthKey);
+    if (newPackage) {
+      packagePipelineWidthKey = widthKey;
+      packagePipelineAutoWidth = true;
+    }
+
+    // Create a measurement context once per table; never poll or contact a service.
+    let state = packagePipelineTables.get(table);
+    if (!state) {
+      const context = document.createElement('canvas').getContext('2d');
+      if (!context) return;
+      state = { context, signature: '', compactWidth: 0, handle: null };
+      packagePipelineTables.set(table, state);
+    }
+    // Leave existing markers untouched rather than rewriting every row on unrelated updates.
+    if (table.dataset.ellucianPipelineTable !== 'true') table.dataset.ellucianPipelineTable = 'true';
+    if (table.parentElement.dataset.ellucianPipelineScroll !== 'true') table.parentElement.dataset.ellucianPipelineScroll = 'true';
+    if (nameHeader.dataset.ellucianNameCell !== 'true') nameHeader.dataset.ellucianNameCell = 'true';
+    links.forEach((link) => {
+      const cell = link.closest('td');
+      if (cell.dataset.ellucianNameCell !== 'true') cell.dataset.ellucianNameCell = 'true';
+    });
+
+    // Recalculate small columns only when their headings or displayed values change.
+    const columns = Array.from(headerRow.children).map((header, index) => ({ header, index })).filter(({ index }) => index !== nameIndex);
+    const rows = Array.from(new Set(links.map((link) => link.closest('tr'))));
+    const labels = columns.map(({ header }) => header.querySelector('.ellucian-shared-value')?.firstChild?.textContent || header.textContent.trim());
+    const signature = JSON.stringify([labels, rows.map((row) => columns.map(({ index }) => row.children[index]?.textContent.trim() || ''))]);
+    if (signature !== state.signature || columns.some(({ header }, index) => header !== state.headers?.[index])) {
+      state.signature = signature;
+      state.headers = columns.map(({ header }) => header);
+      state.compactWidth = 0;
+      columns.forEach(({ header, index }, column) => {
+        let width = Math.max(80, measurePackagePipelineText(header, labels[column], state.context) + 4);
+        rows.forEach((row) => {
+          const cell = row.children[index];
+          if (cell) width = Math.max(width, measurePackagePipelineText(cell, cell.textContent.trim(), state.context) + 4);
+        });
+        // Set widths only on headers; the fixed table aligns every corresponding body cell.
+        header.dataset.ellucianCompactColumn = 'true';
+        header.style.setProperty('--ellucian-compact-column-width', `${Math.ceil(width)}px`);
+        state.compactWidth += Math.ceil(width);
+      });
+    }
+
+    // Set CSS variables without reading layout during a drag, keeping pointer movement light.
+    const setWidth = (width) => {
+      packagePipelineNameWidth = Math.max(MIN_PIPELINE_NAME_WIDTH, Math.min(MAX_PIPELINE_NAME_WIDTH, Math.ceil(width)));
+      // Avoid invalidating styles or accessibility attributes when the calculated size is unchanged.
+      const nameWidth = `${packagePipelineNameWidth}px`;
+      const tableWidth = `${packagePipelineNameWidth + state.compactWidth}px`;
+      if (table.style.getPropertyValue('--ellucian-pipeline-name-width') !== nameWidth) table.style.setProperty('--ellucian-pipeline-name-width', nameWidth);
+      if (table.style.getPropertyValue('--ellucian-pipeline-table-width') !== tableWidth) table.style.setProperty('--ellucian-pipeline-table-width', tableWidth);
+      if (state.handle?.getAttribute('aria-valuenow') !== String(packagePipelineNameWidth)) state.handle?.setAttribute('aria-valuenow', String(packagePipelineNameWidth));
+    };
+    // Fit the full names currently loaded in this package, including ellipsized link text.
+    const autoFit = (fitToPanel = false) => {
+      const currentLinks = Array.from(table.querySelectorAll('a[id^="packageTable-pipeline-button"]'));
+      let width = measurePackagePipelineText(nameHeader, nameHeader.querySelector('[role="button"]')?.textContent || 'Pipeline Name', state.context) + 32;
+      currentLinks.forEach((link) => {
+        const cellStyle = window.getComputedStyle(link.closest('td'));
+        const padding = (Number.parseFloat(cellStyle.paddingLeft) || 0) + (Number.parseFloat(cellStyle.paddingRight) || 0);
+        width = Math.max(width, measurePackagePipelineText(link, link.textContent.trim(), state.context) + padding + 4);
+      });
+      // Automatic sizing uses available space; explicit autofit can still scroll locally.
+      const availableWidth = Math.max(MIN_PIPELINE_NAME_WIDTH, table.parentElement.clientWidth - state.compactWidth);
+      packagePipelineAutoWidth = fitToPanel;
+      setWidth(fitToPanel ? Math.min(width, availableWidth) : width);
+    };
+
+    // Reuse measured name widths on ordinary updates, rather than measuring every string again.
+    const nameSignature = JSON.stringify([widthKey, links.map((link) => link.textContent.trim())]);
+    if (newPackage || (packagePipelineAutoWidth && state.nameSignature !== nameSignature)) {
+      autoFit(true);
+      state.nameSignature = nameSignature;
+    } else if (packagePipelineAutoWidth) {
+      // Refit on a genuine geometry change, but keep unchanged views free of style writes.
+      const availableWidth = Math.max(MIN_PIPELINE_NAME_WIDTH, table.parentElement.clientWidth - state.compactWidth);
+      if (state.availableWidth !== availableWidth) autoFit(true);
+      else setWidth(packagePipelineNameWidth);
+    } else setWidth(packagePipelineNameWidth);
+    state.availableWidth = Math.max(MIN_PIPELINE_NAME_WIDTH, table.parentElement.clientWidth - state.compactWidth);
+
+    // Attach one divider outside the native sort label so resizing never changes sort order.
+    if (!nameHeader.querySelector('.ellucian-pipeline-column-resizer')) {
+      const handle = document.createElement('button');
+      handle.type = 'button';
+      handle.className = 'ellucian-pipeline-column-resizer';
+      handle.setAttribute('role', 'separator');
+      handle.setAttribute('aria-label', 'Resize Pipeline Name column');
+      handle.setAttribute('aria-orientation', 'vertical');
+      handle.setAttribute('aria-valuemin', String(MIN_PIPELINE_NAME_WIDTH));
+      handle.setAttribute('aria-valuemax', String(MAX_PIPELINE_NAME_WIDTH));
+      handle.setAttribute('aria-valuenow', String(packagePipelineNameWidth));
+      handle.setAttribute('data-ellucian-tooltip', 'Drag to resize. Double-click or press Enter to fit pipeline names.');
+      state.handle = handle;
+      let drag = null;
+      // Capture only this divider's pointer, with no permanent document-wide drag listeners.
+      handle.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        handle.focus();
+        // Manual drag sizes stay local to this package until a different package is selected.
+        packagePipelineAutoWidth = false;
+        drag = { x: event.clientX, width: packagePipelineNameWidth };
+        handle.setPointerCapture(event.pointerId);
+        handle.dataset.dragging = 'true';
+      });
+      handle.addEventListener('pointermove', (event) => {
+        if (drag && table.isConnected && /\/data-connect\/home\/?$/iu.test(window.location.pathname)) setWidth(drag.width + event.clientX - drag.x);
+      });
+      // Release capture after either a completed drag or cancellation.
+      const stopDrag = () => { drag = null; delete handle.dataset.dragging; };
+      handle.addEventListener('pointerup', stopDrag);
+      handle.addEventListener('pointercancel', stopDrag);
+      handle.addEventListener('lostpointercapture', stopDrag);
+      handle.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); });
+      handle.addEventListener('dblclick', (event) => { event.preventDefault(); event.stopPropagation(); autoFit(); });
+      // Offer the same resize and autofit behavior without requiring a mouse.
+      handle.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Enter', 'Home'].includes(event.key)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.key === 'Enter') autoFit();
+        else if (event.key === 'Home') autoFit(true);
+        else {
+          packagePipelineAutoWidth = false;
+          setWidth(packagePipelineNameWidth + (event.key === 'ArrowRight' ? 16 : -16));
+        }
+      });
+      nameHeader.appendChild(handle);
+    }
+  }
+
   // Add sharing information only to the rendered Designer pipeline table.
   function updateSharedVersionColumn() {
     // Tell the page helper to stop queued requests when the option is disabled.
@@ -2625,22 +3216,33 @@
       // Explicitly match the bold table headings instead of the wrapper's weight.
       label.style.fontWeight = '700';
       label.style.fontSize = nativeStyle.fontSize;
-      label.textContent = 'Shared Environments';
+      // Pair destination wording with the source column's Shared From label.
+      label.textContent = 'Shared To';
       header.appendChild(label);
       // Provide an accessible manual retry without refreshing the whole page.
       const refresh = document.createElement('button');
       refresh.type = 'button';
       refresh.className = 'ellucian-shared-refresh';
-      refresh.setAttribute('aria-label', 'Refresh shared environments');
-      refresh.title = 'Refresh sharing information for displayed pipelines';
-      refresh.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/></svg>';
+      refresh.setAttribute('aria-label', 'Refresh Shared To information');
+      refresh.setAttribute('data-ellucian-tooltip', 'Refresh Shared To information for displayed pipelines');
+      // Restore the original two-arrow design with scalable, rounded vector strokes.
+      refresh.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/></svg>';
       refresh.addEventListener('click', () => {
         // Only currently displayed published pipelines trigger fresh lookups.
         if (sharedVersionEnabled && !refresh.disabled) {
+          // Request feedback even when there are no published versions to look up.
+          header.dataset.manualRefresh = 'true';
           refreshSharedPipelines(Array.from(table.querySelectorAll('td[data-shared-name]'), (cell) => cell.dataset.sharedName));
+          updateSharedVersionColumn();
         }
       });
       header.appendChild(refresh);
+      // Announce results to screen readers without adding visible text to the heading.
+      const feedback = document.createElement('span');
+      feedback.className = 'ellucian-shared-refresh-status';
+      feedback.setAttribute('role', 'status');
+      feedback.hidden = true;
+      header.appendChild(feedback);
       statusHeader.after(header);
     }
 
@@ -2668,6 +3270,9 @@
         entries.push({ key, name, version });
       }
       const result = sharedStatusCache.get(key);
+      // A pending check is not an empty result or a failed lookup.
+      const rowBusy = String(published && result?.pending === true);
+      if (cell.getAttribute('aria-busy') !== rowBusy) cell.setAttribute('aria-busy', rowBusy);
       const destinations = result?.destinations || [];
       const entriesToShow = published && result?.shared && !result.error ? destinations.map((destination) => ({
         label: destination.environment || destination.tenantName || destination.tenantId,
@@ -2691,30 +3296,8 @@
         value.tabIndex = 0;
         value.textContent = label;
         value.setAttribute('aria-label', `${label}. ${tooltip}`);
-        const tip = document.createElement('span');
-        tip.className = 'ellucian-shared-tooltip';
-        tip.textContent = tooltip;
-        tip.setAttribute('role', 'tooltip');
-        // Use the browser's top layer so preceding rows cannot cover the tooltip.
-        tip.setAttribute('popover', 'manual');
-        const showTip = () => {
-          if (!tip.isConnected || typeof tip.showPopover !== 'function') return;
-          const bounds = value.getBoundingClientRect();
-          tip.style.left = `${Math.max(8, Math.min(bounds.left, window.innerWidth - 280))}px`;
-          tip.style.top = `${Math.max(8, bounds.top - 60)}px`;
-          tip.showPopover();
-        };
-        const hideTip = () => {
-          if (tip.matches(':popover-open')) tip.hidePopover();
-        };
-        value.addEventListener('mouseenter', showTip);
-        value.addEventListener('focus', showTip);
-        value.addEventListener('mouseleave', hideTip);
-        value.addEventListener('blur', hideTip);
-        value.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') hideTip();
-        });
-        value.appendChild(tip);
+        // Reuse the same top-layer tooltip as refresh, search, and favorites controls.
+        value.setAttribute('data-ellucian-tooltip', tooltip);
         cell.appendChild(value);
         });
       }
@@ -2741,9 +3324,36 @@
     const refresh = table.querySelector('.ellucian-shared-refresh');
     const cells = Array.from(table.querySelectorAll('td[data-shared-name]')).filter((cell) => cell.dataset.sharedName);
     const busy = cells.some((cell) => sharedStatusCache.get(cell.dataset.sharedKey)?.pending);
-    refresh.disabled = busy || !cells.length;
+    refresh.disabled = busy;
     refresh.setAttribute('aria-busy', String(busy));
-    refresh.setAttribute('aria-label', busy ? 'Refreshing shared environments' : 'Refresh shared environments');
+    refresh.setAttribute('aria-label', busy ? 'Refreshing Shared To information' : 'Refresh Shared To information');
+    // Reset manual feedback when React reuses the table for another package.
+    const header = refresh.closest('th');
+    const packageScope = Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim().startsWith('Package:'))?.textContent.trim() || window.location.pathname;
+    if (header.dataset.packageScope !== packageScope) {
+      header.dataset.packageScope = packageScope;
+      delete header.dataset.manualRefresh;
+    }
+    const feedback = header.querySelector('.ellucian-shared-refresh-status');
+    feedback.hidden = header.dataset.manualRefresh !== 'true';
+    // Errors remain distinct from a successful lookup that found no shares.
+    if (!feedback.hidden) {
+      const results = cells.map((cell) => sharedStatusCache.get(cell.dataset.sharedKey));
+      const message = busy ? 'Refreshing Shared To information…'
+        : results.some((result) => result?.error) ? 'Shared To information unavailable. Try again.'
+        : results.some((result) => result?.shared) ? 'Shared To information refreshed.'
+        : 'No shared pipelines in this package view.';
+      // Avoid repeating the same live-region announcement during unrelated mutations.
+      if (feedback.textContent !== message) feedback.textContent = message;
+    }
+    // Show the latest manual result only on the refresh button's hover text.
+    const refreshDescription = !feedback.hidden ? feedback.textContent
+      : busy ? 'Refreshing Shared To information…' : 'Refresh Shared To information for displayed pipelines';
+    refresh.setAttribute('data-ellucian-tooltip', refreshDescription);
+    // Keep keyboard and assistive-technology descriptions equivalent to the hover text.
+    refresh.setAttribute('aria-description', refreshDescription);
+    // Update a tooltip already open while a manual check completes.
+    updateActivePageTooltip();
   }
 
   // Place a package-scoped search beside the Designer Pipelines heading.
@@ -2774,7 +3384,7 @@
     iconButton.type = 'button';
     iconButton.className = 'ellucian-search-icon-button';
     iconButton.setAttribute('aria-label', 'Open pipeline search in this package');
-    iconButton.title = 'Search pipelines in this package';
+    iconButton.setAttribute('data-ellucian-tooltip', 'Search pipelines in this package');
     iconButton.setAttribute('aria-expanded', 'false');
     iconButton.innerHTML = '<svg class="ellucian-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="M14.5 14.5L20 20"/></svg>';
     const input = document.createElement('input');
@@ -2866,8 +3476,14 @@
   });
 
   function applySearchMode() {
+    // Begin or cancel source collection before applying controls for the current route.
+    updateDesignerOwnershipVisit();
     updateDesignerSearch();
     updateSharedVersionColumn();
+    updateSharedFromColumn();
+    // Keep table resizing independent of whether the optional source column is enabled.
+    updatePackagePipelineColumn();
+    requestDesignerOwnership();
     // Keep the shared Experience shell untouched outside the supported pages.
     if (!isSupportedPage()) {
       document.querySelectorAll('[data-testid="master"]').forEach((panel) => {
@@ -2910,6 +3526,8 @@
 
     pendingSearchFrame = window.requestAnimationFrame(() => {
       pendingSearchFrame = 0;
+      // Route changes need their own source refresh even when the inventory is unchanged.
+      updateDesignerOwnershipVisit();
 
       // Load the destination page's saved state after internal navigation.
       const currentStorageKey = isSupportedPage()
@@ -2955,6 +3573,60 @@
     if (event.data.type === INDEX_READY) {
       if (isSupportedPage()) {
         requestSearchIndex();
+      }
+      return;
+    }
+
+    // Only a pending opt-in request may persist sanitized names from the current Designer.
+    if (event.data.type === 'designer-ownership-response') {
+      if (!sharedFromEnabled || !isDesignerPackagePage() || !ownershipRequest || event.data.requestId !== ownershipRequest) return;
+      // Keep this request pending until the background confirms the cache write.
+      const requestId = ownershipRequest;
+      // Extension reloads can remove the API or make an existing API throw synchronously.
+      try {
+        const runtime = globalThis.chrome?.runtime;
+        if (!runtime?.id || typeof runtime.sendMessage !== 'function') {
+          stopDisconnectedOwnership();
+          return;
+        }
+        // Send only the current sanitized source snapshot, never page content or credentials.
+        runtime.sendMessage({ type: 'designer-ownership-save', tenantId: normalizeText(event.data.tenantId), environment: normalizeText(event.data.environment),
+          // Preserve group membership while rejecting incomplete arrays instead of clearing saved names.
+          packages: Array.isArray(event.data.packages) ? event.data.packages.slice(0, 10001).map((entry) => ({
+            name: normalizeText(entry?.name),
+            pipelines: Array.isArray(entry?.pipelines) ? entry.pipelines.slice(0, 10001).map(normalizeText) : null,
+          })) : null }, (result) => {
+          // Ignore a late callback after opt-out, navigation, or a replacement request.
+          if (ownershipRequest !== requestId) return;
+          let saveFailed;
+          // The extension can also disappear between sending and receiving the reply.
+          try {
+            const lastError = runtime.lastError;
+            if (globalThis.chrome?.runtime !== runtime || !runtime.id || /Extension context invalidated/i.test(lastError?.message || '')) {
+              stopDisconnectedOwnership();
+              return;
+            }
+            saveFailed = Boolean(lastError) || result?.ok !== true;
+          } catch (_error) {
+            stopDisconnectedOwnership();
+            return;
+          }
+          // Clear the pending lookup only after the runtime reply can safely be inspected.
+          window.clearTimeout(ownershipTimer);
+          ownershipRequest = '';
+          // Ordinary persistence failures retain the existing single retry budget.
+          if (saveFailed) {
+            console.warn('Designer source cache could not be saved. Revisit Designer to retry.');
+            if (ownershipAttempts < 2) requestDesignerOwnership();
+            else finishOwnershipRefresh({ ok: false, reason: 'save-failed' });
+          } else {
+            // A successful snapshot needs no mutation-driven follow-up request.
+            ownershipAttempts = 2;
+            finishOwnershipRefresh({ ok: true });
+          }
+        });
+      } catch (_error) {
+        stopDisconnectedOwnership();
       }
       return;
     }
@@ -3014,6 +3686,13 @@
       completeSearchIndexKey = currentIndexKey;
       searchIndex = completeSearchIndex;
       indexState = "ready";
+      // Only a complete response for the current Designer visit permits source collection.
+      if (sharedFromEnabled && isDesignerPackagePage() && ownershipPageKey === getFavoritesStorageKey()) {
+        ownershipIndexReady = true;
+        window.clearTimeout(ownershipIndexTimer);
+        ownershipIndexTimer = 0;
+      }
+      requestDesignerOwnership();
       refreshOpenSearchResults();
       refreshFavoritesUI();
     } else {
@@ -3026,6 +3705,8 @@
 
   // Reattach controls after restored pages, tab returns, or replaced app roots.
   function resumePageControls() {
+    // Rechecking after a genuine visit refreshes timestamps without a polling timer.
+    updateDesignerOwnershipVisit(true);
     scheduleSearchUpdate();
     if (isSupportedPage()) requestSearchIndex();
     window.dispatchEvent(new Event(LAYOUT_REQUEST_EVENT));
@@ -3046,7 +3727,7 @@
     checkShareCompletion();
     const changed = mutations.some((mutation) => {
       const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
-      if (target?.closest('[data-ellucian-shared-cell], .ellucian-designer-search')) return false;
+      if (target?.closest('[data-ellucian-shared-cell], [data-ellucian-source-cell], .ellucian-designer-search')) return false;
       return target?.closest('table') || Array.from(mutation.addedNodes).some((node) => node instanceof Element && (node.matches('table, h2') || node.querySelector('table')));
     });
     if (changed) scheduleSearchUpdate();
@@ -3071,6 +3752,26 @@
     if (changes[SHARED_VERSION_ENABLED_KEY]) {
       sharedVersionEnabled = changes[SHARED_VERSION_ENABLED_KEY].newValue === true;
       updateSharedVersionColumn();
+    }
+
+    // Collect nothing while disabled, and discard pending results immediately on opt-out.
+    if (changes[SHARED_FROM_ENABLED_KEY]) {
+      sharedFromEnabled = changes[SHARED_FROM_ENABLED_KEY].newValue === true;
+      updateDesignerOwnershipVisit(true);
+      if (!sharedFromEnabled) ownershipByName.clear();
+      else chrome.storage.local.get({ [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
+        loadOwnershipCache(settings[OWNERSHIP_CACHE_KEY]);
+        updateSharedFromColumn();
+        requestSearchIndex();
+      });
+      updateSharedFromColumn();
+    }
+    // Update open Packages tabs when another environment's Designer is visited.
+    if (changes[OWNERSHIP_CACHE_KEY]) {
+      loadOwnershipCache(changes[OWNERSHIP_CACHE_KEY].newValue);
+      updateSharedFromColumn();
+      // Give newly received environment labels enough space in the compact source column.
+      scheduleSearchUpdate();
     }
 
     // Apply search presentation changes without requiring a page refresh.
@@ -3120,10 +3821,15 @@
 
   // Re-clamp a custom height when the browser viewport becomes shorter.
   window.addEventListener("resize", () => {
+    // Keep automatic sizing inside the current viewport without overriding manual adjustments.
+    if (packagePipelineAutoWidth) scheduleSearchUpdate();
     if (favoriteListHeight !== null) {
       refreshFavoritesUI();
     }
   }, { passive: true });
+
+  // Install help once for controls on either page, including the sidebar's resize handle.
+  initializePageTooltips();
 
   // Load search and favorites preferences before inserting the first controls.
   chrome.storage.local.get(
@@ -3131,6 +3837,8 @@
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [SHARED_VERSION_ENABLED_KEY]: false,
+      [SHARED_FROM_ENABLED_KEY]: false,
+      [OWNERSHIP_CACHE_KEY]: {},
       [FAVORITES_ENABLED_KEY]: true,
       [FavoriteAppearance.KEY]: FavoriteAppearance.DEFAULT,
       [FavoriteAppearance.ICON_KEY]: null,
@@ -3150,6 +3858,8 @@
       searchMode = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
       designerSearchMode = normalizeSearchMode(settings[DESIGNER_SEARCH_MODE_KEY]);
       sharedVersionEnabled = settings[SHARED_VERSION_ENABLED_KEY] === true;
+      sharedFromEnabled = settings[SHARED_FROM_ENABLED_KEY] === true;
+      loadOwnershipCache(settings[OWNERSHIP_CACHE_KEY]);
       favoritesEnabled = settings[FAVORITES_ENABLED_KEY] !== false;
       // Apply the saved color before inserting stars, including after a page refresh.
       favoriteAppearance = FavoriteAppearance.normalize(settings[FavoriteAppearance.KEY]);

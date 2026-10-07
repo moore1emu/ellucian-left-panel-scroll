@@ -10,11 +10,18 @@
   const DEFAULT_SEARCH_MODE = "box";
   const FAVORITES_ENABLED_KEY = "favoritesEnabled";
   const SHARED_VERSION_ENABLED_KEY = "sharedVersionEnabled";
+  const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
+  const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
 
   // Locate the popup controls after the static popup document loads.
   const rememberWidthSwitch = document.querySelector("#remember-width");
   const favoritesEnabledSwitch = document.querySelector("#favorites-enabled");
   const sharedVersionSwitch = document.querySelector("#shared-version-enabled");
+  const sharedFromSwitch = document.querySelector("#shared-from-enabled");
+  const sharedFromConfirmation = document.querySelector("#shared-from-confirmation");
+  const sharedFromStatus = document.querySelector("#shared-from-status");
+  const exportSharedFromButton = document.querySelector("#export-shared-from");
+  const refreshSharedFromButton = document.querySelector("#refresh-shared-from");
   const versionLabel = document.querySelector("#extension-version");
   const iconColorInput = document.querySelector("#icon-color");
   const iconLettersInput = document.querySelector("#icon-letters");
@@ -54,6 +61,7 @@
       [REMEMBER_WIDTH_KEY]: false,
       [FAVORITES_ENABLED_KEY]: true,
       [SHARED_VERSION_ENABLED_KEY]: false,
+      [SHARED_FROM_ENABLED_KEY]: false,
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [IconAppearance.KEY]: IconAppearance.DEFAULT,
@@ -63,6 +71,10 @@
       // Display the width preference and its explanatory status.
       rememberWidthSwitch.checked = Boolean(settings[REMEMBER_WIDTH_KEY]);
       sharedVersionSwitch.checked = settings[SHARED_VERSION_ENABLED_KEY] === true;
+      // Restore opt-in without collecting anything while the popup initializes.
+      sharedFromSwitch.checked = settings[SHARED_FROM_ENABLED_KEY] === true;
+      sharedFromSwitch.disabled = false;
+      refreshSharedFromButton.disabled = false;
 
       // Display the favorites preference, defaulting to the visible section.
       favoritesEnabledSwitch.checked =
@@ -227,6 +239,137 @@
   // Apply the selected-package search choice independently on open Designer pages.
   designerSearchModeSelect.addEventListener("change", () => {
     chrome.storage.local.set({ [DESIGNER_SEARCH_MODE_KEY]: normalizeSearchMode(designerSearchModeSelect.value) });
+  });
+
+  // Persist consent only after confirmation; the worker clears data when disabled.
+  function saveSharedFrom(enabled) {
+    sharedFromSwitch.disabled = true;
+    // Distinguish saving consent from a setting that is simply unavailable.
+    sharedFromSwitch.setAttribute('aria-busy', 'true');
+    chrome.storage.local.set({ [SHARED_FROM_ENABLED_KEY]: enabled }, () => {
+      const failed = Boolean(chrome.runtime.lastError);
+      sharedFromSwitch.checked = failed ? !enabled : enabled;
+      sharedFromSwitch.disabled = false;
+      sharedFromSwitch.setAttribute('aria-busy', 'false');
+      sharedFromStatus.textContent = failed ? "Could not save. Please try again." : enabled ? "Enabled. Visit Designer in each source environment." : "Disabled. Clearing source cache; favorites kept.";
+    });
+  }
+
+  // Opening the confirmation must not enable collection or write any ownership data.
+  sharedFromSwitch.addEventListener("change", () => {
+    sharedFromStatus.textContent = "";
+    sharedFromConfirmation.hidden = !sharedFromSwitch.checked;
+    if (sharedFromSwitch.checked) {
+      sharedFromSwitch.checked = false;
+      document.querySelector("#confirm-shared-from").focus();
+    } else saveSharedFrom(false);
+  });
+
+  // Make the explicit approval and cancellation equally accessible by keyboard.
+  document.querySelector("#confirm-shared-from").addEventListener("click", () => {
+    sharedFromConfirmation.hidden = true;
+    saveSharedFrom(true);
+    sharedFromSwitch.focus();
+  });
+  document.querySelector("#cancel-shared-from").addEventListener("click", () => {
+    sharedFromConfirmation.hidden = true;
+    sharedFromSwitch.checked = false;
+    sharedFromSwitch.focus();
+  });
+
+  // Ask only the active tab to recollect its own Designer sources, without extra permissions.
+  refreshSharedFromButton.addEventListener('click', async () => {
+    if (!sharedFromSwitch.checked) {
+      sharedFromStatus.textContent = 'Enable Shared From first.';
+      return;
+    }
+    refreshSharedFromButton.disabled = true;
+    // Mark actual work separately from controls disabled by setup or preferences.
+    refreshSharedFromButton.setAttribute('aria-busy', 'true');
+    sharedFromStatus.textContent = 'Refreshing Shared From data…';
+    try {
+      // Read the active tab's identifier only; do not scan other tabs or their URLs.
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!Number.isInteger(tab?.id)) throw new Error('No active tab.');
+      const result = await chrome.tabs.sendMessage(tab.id, { type: 'designer-ownership-refresh' });
+      // Report completion only after the page confirms that the source cache was saved.
+      const guidance = {
+        disabled: 'Enable Shared From first.',
+        'open-designer': 'Open Designer in the source environment, then try again.',
+        'left-designer': 'Refresh stopped because you left Designer.',
+        'not-ready': 'Designer is still loading. Try again shortly.',
+        'extension-reloaded': 'Refresh this page after reloading the extension, then try again.',
+        busy: 'A refresh is already running.',
+      };
+      sharedFromStatus.textContent = result?.ok === true ? 'Shared From data refreshed.'
+        : guidance[result?.reason] || 'Could not refresh Shared From data. Please try again.';
+    } catch (_error) {
+      // Unsupported tabs and pages not refreshed after an extension reload have no receiver.
+      sharedFromStatus.textContent = 'Open Designer on an enabled site, then try again. If already open, refresh that page once.';
+    } finally {
+      refreshSharedFromButton.disabled = false;
+      refreshSharedFromButton.setAttribute('aria-busy', 'false');
+    }
+  });
+
+  // Read a fresh snapshot on demand, without collecting data or changing opt-in.
+  exportSharedFromButton.addEventListener("click", () => {
+    exportSharedFromButton.disabled = true;
+    // Expose the export's busy state without hiding its eventual error or setup guidance.
+    exportSharedFromButton.setAttribute('aria-busy', 'true');
+    sharedFromStatus.textContent = "";
+    chrome.storage.local.get({ [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
+      try {
+        // Report failed reads instead of downloading an empty or misleading file.
+        if (chrome.runtime.lastError) throw new Error("Cache read failed.");
+        const cache = settings[OWNERSHIP_CACHE_KEY];
+        // Export only the documented source fields, with human-readable timestamps.
+        const environments = Object.entries(cache || {}).flatMap(([environmentId, entry]) => {
+          const checkedAt = Number(entry?.checkedAt);
+          if (typeof entry?.environment !== "string" || !Array.isArray(entry?.packages) || !Number.isFinite(checkedAt) || !Number.isFinite(new Date(checkedAt).getTime())) return [];
+          // Export only grouped names, distinguishing preserved names whose package is still unknown.
+          const packages = entry.packages.flatMap((group) => {
+            if ((group?.name !== null && typeof group?.name !== 'string') || !Array.isArray(group?.pipelines)) return [];
+            const names = group.pipelines.filter((name) => typeof name === 'string');
+            return [group.name === null
+              ? { name: 'Package Not Yet Recorded', packageNameRecorded: false, pipelines: names }
+              : { name: group.name, pipelines: names }];
+          });
+          return [{ environmentId, environment: entry.environment, lastCheckedAt: new Date(checkedAt).toISOString(),
+            packages }];
+        });
+        // Guide users to populate the cache before requesting another export.
+        if (!environments.length) {
+          sharedFromStatus.textContent = "No saved sources. Enable Shared From and visit Designer first.";
+          return;
+        }
+        const exportedAt = new Date().toISOString();
+        const snapshot = { extensionVersion: chrome.runtime.getManifest().version, exportedAt,
+          note: "Observed Designer ownership, not live sharing history. This file is a snapshot and does not update automatically.", environments };
+        // Use a local JSON download without new permissions or any network upload.
+        const file = new Blob([JSON.stringify(snapshot, null, 2) + "\r\n"], { type: "application/json" });
+        const url = URL.createObjectURL(file);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `integration-navigator-shared-from-${exportedAt.slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        try {
+          // Let the browser choose the destination using normal download preferences.
+          link.click();
+          sharedFromStatus.textContent = "Download requested. Exported files do not update automatically.";
+        } finally {
+          // Remove temporary controls and release the buffer after browser hand-off.
+          link.remove();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+      } catch (_error) {
+        sharedFromStatus.textContent = "Could not export. Please try again.";
+      } finally {
+        // Allow retries after an empty cache, cancelled download, or temporary failure.
+        exportSharedFromButton.disabled = false;
+        exportSharedFromButton.setAttribute('aria-busy', 'false');
+      }
+    });
   });
 
   // Read the installed manifest so the footer always shows the current version.

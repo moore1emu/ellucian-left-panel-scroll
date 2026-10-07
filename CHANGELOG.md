@@ -2,6 +2,109 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.6 — 2026-10-06
+
+- Pinned package and pipeline names use the browser's native tooltip only when their rendered name is cut off, following Andrew's observation of Integration Packages. Fully visible names have no tooltip; name-help timing and typography are browser-managed, with no custom wrapped bubble over the version badge. Native page names are untouched.
+- Delays extension-owned action/sharing tooltips for two seconds of continuous hover instead of showing instantly. Each newly hovered control starts its own delay; keyboard focus still shows that help immediately.
+- Cancels pending help on pointer exit, click/drag, Escape, scrolling, resizing, tab blur, route changes, or target removal. Uses only one on-demand timeout, with no polling or changes to favorites, settings, sharing requests, or saved data.
+
+## 1.20.5 — 2026-10-06
+
+- Standardized extension-owned in-page help with one reusable styled tooltip for stars, favorites, search, sharing, and resize controls. Supports hover, keyboard focus, Escape, viewport-aware placement, live refresh results, and cleanup on navigation/removal; native page tooltips are untouched. Shared From guidance stays on its heading, not source values.
+- Uses Pin Package / Unpin Package and Pin Pipeline / Unpin Pipeline consistently in the normal and pinned lists, with named accessible labels.
+- Keeps routine page refresh feedback out of headings while leaving settings errors, permission/setup instructions, and empty-list/search guidance visible. Refresh wording is consistent; pending sharing checks remain distinct from empty or unavailable results.
+- Distinguishes disabled controls from active work using explicit busy states. Waiting cursors appear only during source refresh/export/saving or custom-site work. Standardized comparable hover/focus styling and search/refresh vector metrics while preserving native row typography, badge sizing, and custom star colors.
+- No changes to favorites, saved formats, permissions, sharing cache behavior, six-request limit, or pipeline navigation.
+
+## 1.20.4 — 2026-10-06
+
+- Moved manual Shared To refresh feedback, including the no-shared-pipelines message, into the refresh icon's hover text instead of displaying it beneath the heading. Retains screen-reader announcements without changing header size.
+- Keeps the six-request limit, caching, refresh behavior, favorites, and saved data unchanged.
+
+## 1.20.3 — 2026-10-06
+
+- Raised the global Shared To service-request limit from three to six at Andrew's request, including when checking a single package batch. Keeps the one-scan-per-batch cleanup, existing caching, cancellation, and refresh behavior.
+- No changes to favorites, saved data, settings, permissions, column sizing, or Shared From collection.
+
+## 1.20.2 — 2026-10-06
+
+- Limits Shared To history and destination-name service lookups to three simultaneous requests across all check batches. Disabling Shared To stops waiting calls; completed cached results are retained and cancelled calls can be retried when enabled again.
+- Scans already-loaded package/version data once per sharing batch instead of again for each pipeline. Exact current-version validation, same-major history matching, cache reuse, and manual/automatic refresh behavior are preserved.
+- No changes to favorites, stored data formats, settings, permissions, automatic column sizing, or independent Shared From collection. This is a processing cleanup, not a new user-facing feature.
+
+## 1.20.1 — 2026-10-06
+
+- Automatically fits pipeline names for each selected Integration Packages package, capped to available space after Version and Shared From. Short names use a narrower column; long names use more room without wrapping. Manual resizing remains available and does not carry into another package.
+- Double-click or Enter still fits full loaded names, allowing local scrolling when necessary. Home restores automatic sizing, which responds to window resizing without overriding manual adjustments.
+- Avoids rewriting unchanged table markers, styles, and resize values. A synthetic 100-update test with 50 rows went from 5,400 redundant attribute updates to none, with no new saved data or service requests.
+- Fixed pinned pipeline badges and navigation targets remaining on an older minor/patch release after the loaded index updates. Saved pins and their major-version tracking are unchanged.
+
+## 1.20.0 — 2026-10-06
+
+- Started the 1.20 release series with the wider, resizable pipeline-name column and double-click autofit introduced in 1.19.10. This is a version-number change only; functionality is unchanged.
+
+## 1.19.10 — 2026-10-06
+
+- Gave pipeline names a wider 400-pixel starting column in Integration Packages, independently of Shared From. Names stay on one line; Version and source columns stay compact.
+- Added a draggable divider beside **Pipeline Name**. Double-click it to fit the longest loaded name; keyboard arrows resize, Enter autofits, and Home restores the default. Oversized tables scroll within the package detail area, without widening the page.
+- Keeps the chosen width during in-app package changes, resetting on a page refresh. No new saved data, permissions, or service requests; favorites and existing panel-width settings are unchanged.
+
+## 1.19.9 — 2026-10-06
+
+- Grouped saved and exported Shared From data by environment, package, and pipeline name. Package relationships come from already-loaded Designer data; no additional service requests or duplicate flat pipeline list are needed.
+- Kept the fast pipeline-name lookup, bounded storage, current-environment refresh, and existing privacy controls. Package and pipeline names are sorted and duplicate versions are combined within each package.
+- Preserved previously saved pipeline names under **Package Not Yet Recorded** until Designer is refreshed in that source environment. Their original last-checked times remain unchanged, and actual package groups replace the placeholder on refresh. Favorites and other settings are untouched.
+
+## 1.19.8 — 2026-10-06
+
+- Renamed Shared Environments to **Shared To** in the Designer column, settings, refresh-button labels, and current user documentation to pair with **Shared From**. Existing settings and sharing behavior are unchanged.
+
+## 1.19.7 — 2026-10-06
+
+- Protected favorites loading during in-app navigation after an extension reload, including missing storage APIs, synchronous context errors, and delayed replies after disconnection.
+- Failed favorites reads no longer restore empty defaults. Disconnected checks stop with a page-refresh hint; saved favorites, settings, and Shared From sources are not cleared.
+
+## 1.19.6 — 2026-10-06
+
+- Prevented Shared From cache saves from throwing when an extension reload disconnects an already-open page. Source checks stop safely and give a page-refresh hint, without clearing saved sources, favorites, or settings.
+- Covered missing messaging APIs, invalidated connections, and reloads while a save reply is pending. Normal save failures still have one retry; successful refresh behavior is unchanged.
+
+## 1.19.5 — 2026-10-06
+
+- Fixed Shared From collection when entering or revisiting Designer through Experience without a full refresh. Each visit waits for a fresh, complete package index, with bounded local readiness checks and no continuous polling.
+- Added **Refresh Shared From Data** under **Page Behavior**, beside **Export JSON**. It refreshes only the active Designer environment and reports success after the cache is saved.
+- Manual refresh gives guidance when disabled, on another page, still loading, or unable to complete. Leaving Designer or disabling Shared From cancels pending checks; closing settings does not cancel an active collection. Favorites and permissions are unchanged.
+
+## 1.19.4 — 2026-10-06
+
+- Fixed a delayed favorites save that could write one page's pins into the other page after navigation. Saves now retain their original page and pin snapshot; failed reads do not overwrite saved lists.
+- Restored the original borderless, two-arrow Shared Environments refresh design with stronger vector strokes.
+- Moved Shared From guidance to the heading only. Source values match Version and have no individual tooltips or information icons.
+- Kept refresh available when no shares or published rows are displayed. Manual checks show checking, success, no-shares, or failure feedback for the current package view, without extra requests for draft-only rows.
+
+## 1.19.3 — 2026-10-06
+
+- Simplified the Shared Environments refresh icon and replaced the Shared From information glyph with a vector icon.
+- Matched Shared From value typography and color to Version. Shortened source tooltips and confined them to the source value/info icon, with no header tooltip.
+
+## 1.19.2 — 2026-10-06
+
+- Fixed Shared From collection when Designer does not provide preloaded environment information. It now uses the current environment already held by the page.
+- Repeats the opt-in handshake at collection time and retries a missed startup lookup once. Successful snapshots are not repeatedly requested; temporary environment lookup failures can recover.
+
+## 1.19.1 — 2026-10-06
+
+- Added **Export Shared From JSON** under **Page Behavior** to download a readable snapshot of cached source environments, pipeline names, and last-checked times.
+- Export uses normal browser download handling, requires no additional permissions, and does not change the live cache or upload data. Exported files do not update automatically and remain after the browser cache is cleared.
+
+## 1.19.0 — 2026-10-06
+
+- Added optional **Shared From** in Integration Packages, using pipeline names observed in Designer across environments. Unknown or conflicting sources show setup guidance; known sources show their last-checked time on hover or keyboard focus.
+- Shared From is off by default and requires accepting a notice before saving additional local metadata. Visit Designer in each source environment to populate or update it. Disabling clears only this cache, not favorites; it does not perform cross-environment polling or verify live share history.
+- Grouped width, favorites, and sharing switches under collapsible **Page Behavior**, with concise descriptions.
+- Refined the Shared Environments refresh button with a clearer circular-arrow icon and larger target.
+- Updated the README and privacy policy for the optional local cache.
+
 ## 1.18.1 — 2026-10-05
 
 - Issued the current Custom Sites fixes and settings refinements as a distinctly numbered patch release. Existing approved sites appear with Remove, and site setup finishes even if settings close.

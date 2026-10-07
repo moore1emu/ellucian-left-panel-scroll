@@ -17,60 +17,88 @@
         </div>
       </header>
 
-      <!-- Group the width preference into a standard settings card. -->
-      <section class="settings-card" aria-labelledby="width-setting-title">
-        <label class="setting-row" for="remember-width">
-          <span class="setting-copy">
-            <span class="setting-title" id="width-setting-title">
-              Remember Resized Width
+      <!-- Keep everyday page options together in the same compact disclosure style. -->
+      <details class="settings-card page-behavior-card" open>
+        <summary>Page Behavior</summary>
+        <div aria-labelledby="width-setting-title">
+          <label class="setting-row" for="remember-width">
+            <span class="setting-copy">
+              <span class="setting-title" id="width-setting-title">
+                Remember Resized Width
+              </span>
+              <span class="setting-description">
+                Keep panel width after refresh.
+              </span>
             </span>
-            <span class="setting-description">
-              Keep panel width after refresh.
-            </span>
-          </span>
 
-          <!-- Keep the native checkbox accessible beneath the visual switch. -->
+            <!-- Keep the native checkbox accessible beneath the visual switch. -->
+            <span class="switch">
+              <input id="remember-width" type="checkbox" />
+              <span class="switch-track" aria-hidden="true"></span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Allow the remembered pinned-packages section to be hidden entirely. -->
+        <div aria-labelledby="favorites-setting-title">
+          <label class="setting-row" for="favorites-enabled">
+            <span class="setting-copy">
+              <span class="setting-title" id="favorites-setting-title">
+                Pinned Packages
+              </span>
+              <span class="setting-description">
+                Show pinned packages and pipelines.
+              </span>
+            </span>
+
+            <!-- Keep the native checkbox accessible beneath the visual switch. -->
+            <span class="switch">
+              <input id="favorites-enabled" type="checkbox" />
+              <span class="switch-track" aria-hidden="true"></span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Keep destination sharing details an opt-in named to match Shared From. -->
+        <div>
+          <label class="setting-row" for="shared-version-enabled">
+            <span class="setting-copy">
+              <span class="setting-title">Shared To</span>
+              <span class="setting-description">Show sharing details in Designer.</span>
+            </span>
+            <span class="switch">
+              <input id="shared-version-enabled" type="checkbox" />
+              <span class="switch-track" aria-hidden="true"></span>
+            </span>
+          </label>
+        </div>
+        <!-- Ownership collection stays off until the user accepts its local-data notice. -->
+        <label class="setting-row" for="shared-from-enabled">
+          <span class="setting-copy">
+            <span class="setting-title">Shared From</span>
+            <span class="setting-description">Remember Designer sources.</span>
+          </span>
           <span class="switch">
-            <input id="remember-width" type="checkbox" />
+            <input id="shared-from-enabled" type="checkbox" disabled aria-describedby="shared-from-help" />
             <span class="switch-track" aria-hidden="true"></span>
           </span>
         </label>
-
-      </section>
-
-      <!-- Allow the remembered pinned-packages section to be hidden entirely. -->
-      <section class="settings-card" aria-labelledby="favorites-setting-title">
-        <label class="setting-row" for="favorites-enabled">
-          <span class="setting-copy">
-            <span class="setting-title" id="favorites-setting-title">
-              Pinned Packages
-            </span>
-            <span class="setting-description">
-              Show pinned packages and pipelines.
-            </span>
-          </span>
-
-          <!-- Keep the native checkbox accessible beneath the visual switch. -->
-          <span class="switch">
-            <input id="favorites-enabled" type="checkbox" />
-            <span class="switch-track" aria-hidden="true"></span>
-          </span>
-        </label>
-      </section>
-
-      <!-- Keep network-backed sharing details an explicit opt-in. -->
-      <section class="settings-card">
-        <label class="setting-row" for="shared-version-enabled">
-          <span class="setting-copy">
-            <span class="setting-title">Shared Environments</span>
-            <span class="setting-description">Show sharing details in Designer.</span>
-          </span>
-          <span class="switch">
-            <input id="shared-version-enabled" type="checkbox" />
-            <span class="switch-track" aria-hidden="true"></span>
-          </span>
-        </label>
-      </section>
+        <!-- Explain the extra storage before allowing the new feature to start. -->
+        <div id="shared-from-confirmation" class="local-data-notice" role="group" aria-labelledby="shared-from-confirm-title" hidden>
+          <strong id="shared-from-confirm-title">Store Additional Local Data?</strong>
+          <p>Save package and pipeline names, Designer environment identifiers and labels, and last-checked times on this browser? No pipeline contents or credentials are saved.</p>
+          <p>Visit Integration Designer in each source environment first. Information can become stale. Turning this off clears its cache, not your favorites.</p>
+          <button id="confirm-shared-from" type="button">Enable Shared From</button>
+          <button id="cancel-shared-from" type="button">Cancel</button>
+        </div>
+        <p id="shared-from-help" class="card-description">Packages only. Visit Designer in each source environment first.</p>
+        <!-- Keep manual collection and snapshot export together without adding a settings card. -->
+        <div class="shared-from-actions">
+          <button id="refresh-shared-from" type="button" disabled title="Update sources from the current Designer environment">Refresh Shared From Data</button>
+          <button id="export-shared-from" type="button" aria-label="Export Shared From JSON" title="Download a snapshot of saved Designer sources">Export JSON</button>
+        </div>
+        <p id="shared-from-status" class="icon-status" role="status" aria-live="polite"></p>
+      </details>
 
       <!-- Keep search choices available in a compact, keyboard-accessible disclosure. -->
       <details class="settings-card search-display-card">
