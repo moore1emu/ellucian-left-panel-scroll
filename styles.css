@@ -1023,3 +1023,18 @@ th[data-ellucian-shared-cell] > span { font-weight: 700; }
 /* Confine source guidance to the heading; body values remain ordinary native text. */
 [data-ellucian-source-cell] { white-space: nowrap; }
 [data-ellucian-source-cell] > .ellucian-shared-value { display: inline-block; width: fit-content; }
+
+/* Keep oversized single-line names inside a local table scrollbar, not the whole page. */
+#packageTable-table[data-ellucian-pipeline-scroll] { max-width: 100%; min-width: 0; overflow-x: auto; }
+#packageTable-table table[data-ellucian-pipeline-table] { table-layout: fixed !important; width: var(--ellucian-pipeline-table-width) !important; min-width: 0 !important; }
+/* Reserve actual name space instead of letting the extra source column consume it. */
+[data-ellucian-pipeline-table] [data-ellucian-name-cell] { box-sizing: border-box; width: var(--ellucian-pipeline-name-width) !important; max-width: var(--ellucian-pipeline-name-width) !important; white-space: nowrap !important; }
+[data-ellucian-pipeline-table] a[id^="packageTable-pipeline-button"] { display: block; max-width: 100%; overflow: hidden; white-space: nowrap !important; text-overflow: ellipsis; }
+[data-ellucian-pipeline-table] [data-ellucian-compact-column] { box-sizing: border-box; width: var(--ellucian-compact-column-width) !important; white-space: nowrap; }
+/* Use a narrow, visible divider at the column edge without covering the sort label. */
+[data-ellucian-pipeline-table] thead [data-ellucian-name-cell] { position: relative; }
+.ellucian-pipeline-column-resizer { position: absolute; top: 4px; bottom: 4px; right: 0; width: 10px; padding: 0; border: 0; color: inherit; background: transparent; cursor: col-resize; touch-action: none; }
+.ellucian-pipeline-column-resizer::after { content: ''; position: absolute; top: 2px; bottom: 2px; left: 4px; width: 1px; background: currentColor; opacity: 0.35; }
+/* Highlight dragging and keyboard focus while preserving native table typography. */
+.ellucian-pipeline-column-resizer:hover::after, .ellucian-pipeline-column-resizer[data-dragging]::after { width: 2px; opacity: 0.9; }
+.ellucian-pipeline-column-resizer:focus-visible { outline: 2px solid #6d28d9; outline-offset: -2px; }

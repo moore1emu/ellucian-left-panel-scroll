@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.19.10 — 2026-10-06
+
+- Gave pipeline names a wider 400-pixel starting column in Integration Packages, independently of Shared From. Names stay on one line; Version and source columns stay compact.
+- Added a draggable divider beside **Pipeline Name**. Double-click it to fit the longest loaded name; keyboard arrows resize, Enter autofits, and Home restores the default. Oversized tables scroll within the package detail area, without widening the page.
+- Keeps the chosen width during in-app package changes, resetting on a page refresh. No new saved data, permissions, or service requests; favorites and existing panel-width settings are unchanged.
+
 ## 1.19.9 — 2026-10-06
 
 - Grouped saved and exported Shared From data by environment, package, and pipeline name. Package relationships come from already-loaded Designer data; no additional service requests or duplicate flat pipeline list are needed.

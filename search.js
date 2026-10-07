@@ -48,6 +48,13 @@
   const MAX_FAVORITES_LIST_HEIGHT = 360;
   const FAVORITES_KEYBOARD_RESIZE_STEP = 16;
 
+  // Keep the name column wider than the native table, without storing more settings.
+  const DEFAULT_PIPELINE_NAME_WIDTH = 400;
+  const MIN_PIPELINE_NAME_WIDTH = 160;
+  const MAX_PIPELINE_NAME_WIDTH = 12000;
+  let packagePipelineNameWidth = DEFAULT_PIPELINE_NAME_WIDTH;
+  const packagePipelineTables = new WeakMap();
+
   // Hold only the sanitized names and versions returned by the page-world indexer.
   let searchMode = DEFAULT_SEARCH_MODE;
   let designerSearchMode = DEFAULT_SEARCH_MODE;
@@ -2870,6 +2877,142 @@
     });
   }
 
+  // Measure complete text without changing the native link or creating hidden DOM rows.
+  function measurePackagePipelineText(element, text, context) {
+    const style = window.getComputedStyle(element);
+    context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const spacing = Number.parseFloat(style.letterSpacing) || 0;
+    const padding = (Number.parseFloat(style.paddingLeft) || 0) + (Number.parseFloat(style.paddingRight) || 0);
+    return context.measureText(text).width + spacing * Math.max(0, text.length - 1) + padding;
+  }
+
+  // Reuse one fixed name width while keeping Version and optional source columns compact.
+  function updatePackagePipelineColumn() {
+    // Remove only our presentation when a retained table belongs to another route.
+    if (!/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+      document.querySelectorAll('[data-ellucian-pipeline-table]').forEach((table) => {
+        table.removeAttribute('data-ellucian-pipeline-table');
+        table.parentElement?.removeAttribute('data-ellucian-pipeline-scroll');
+        table.querySelectorAll('[data-ellucian-name-cell], [data-ellucian-compact-column]').forEach((cell) => {
+          cell.removeAttribute('data-ellucian-name-cell');
+          cell.removeAttribute('data-ellucian-compact-column');
+        });
+        table.querySelector('.ellucian-pipeline-column-resizer')?.remove();
+        packagePipelineTables.delete(table);
+      });
+      return;
+    }
+    // Identify the column from a real native pipeline link, not an assumed table order.
+    const table = document.getElementById('packageTable-table')?.querySelector('table');
+    const links = table ? Array.from(table.querySelectorAll('a[id^="packageTable-pipeline-button"]')) : [];
+    const headerRow = table?.querySelector('thead tr');
+    const nameIndex = links[0]?.closest('td')?.cellIndex;
+    const nameHeader = headerRow?.children[nameIndex];
+    if (!nameHeader) return;
+
+    // Create a measurement context once per table; never poll or contact a service.
+    let state = packagePipelineTables.get(table);
+    if (!state) {
+      const context = document.createElement('canvas').getContext('2d');
+      if (!context) return;
+      state = { context, signature: '', compactWidth: 0, handle: null };
+      packagePipelineTables.set(table, state);
+    }
+    table.dataset.ellucianPipelineTable = 'true';
+    table.parentElement.dataset.ellucianPipelineScroll = 'true';
+    nameHeader.dataset.ellucianNameCell = 'true';
+    links.forEach((link) => { link.closest('td').dataset.ellucianNameCell = 'true'; });
+
+    // Recalculate small columns only when their headings or displayed values change.
+    const columns = Array.from(headerRow.children).map((header, index) => ({ header, index })).filter(({ index }) => index !== nameIndex);
+    const rows = Array.from(new Set(links.map((link) => link.closest('tr'))));
+    const labels = columns.map(({ header }) => header.querySelector('.ellucian-shared-value')?.firstChild?.textContent || header.textContent.trim());
+    const signature = JSON.stringify([labels, rows.map((row) => columns.map(({ index }) => row.children[index]?.textContent.trim() || ''))]);
+    if (signature !== state.signature || columns.some(({ header }, index) => header !== state.headers?.[index])) {
+      state.signature = signature;
+      state.headers = columns.map(({ header }) => header);
+      state.compactWidth = 0;
+      columns.forEach(({ header, index }, column) => {
+        let width = Math.max(80, measurePackagePipelineText(header, labels[column], state.context) + 4);
+        rows.forEach((row) => {
+          const cell = row.children[index];
+          if (cell) width = Math.max(width, measurePackagePipelineText(cell, cell.textContent.trim(), state.context) + 4);
+        });
+        // Set widths only on headers; the fixed table aligns every corresponding body cell.
+        header.dataset.ellucianCompactColumn = 'true';
+        header.style.setProperty('--ellucian-compact-column-width', `${Math.ceil(width)}px`);
+        state.compactWidth += Math.ceil(width);
+      });
+    }
+
+    // Set CSS variables without reading layout during a drag, keeping pointer movement light.
+    const setWidth = (width) => {
+      packagePipelineNameWidth = Math.max(MIN_PIPELINE_NAME_WIDTH, Math.min(MAX_PIPELINE_NAME_WIDTH, Math.ceil(width)));
+      table.style.setProperty('--ellucian-pipeline-name-width', `${packagePipelineNameWidth}px`);
+      table.style.setProperty('--ellucian-pipeline-table-width', `${packagePipelineNameWidth + state.compactWidth}px`);
+      state.handle?.setAttribute('aria-valuenow', String(packagePipelineNameWidth));
+    };
+    setWidth(packagePipelineNameWidth);
+
+    // Fit the full names currently loaded in this package, including ellipsized link text.
+    const autoFit = () => {
+      const currentLinks = Array.from(table.querySelectorAll('a[id^="packageTable-pipeline-button"]'));
+      let width = measurePackagePipelineText(nameHeader, nameHeader.querySelector('[role="button"]')?.textContent || 'Pipeline Name', state.context) + 32;
+      currentLinks.forEach((link) => {
+        const cellStyle = window.getComputedStyle(link.closest('td'));
+        const padding = (Number.parseFloat(cellStyle.paddingLeft) || 0) + (Number.parseFloat(cellStyle.paddingRight) || 0);
+        width = Math.max(width, measurePackagePipelineText(link, link.textContent.trim(), state.context) + padding + 4);
+      });
+      setWidth(width);
+    };
+
+    // Attach one divider outside the native sort label so resizing never changes sort order.
+    if (!nameHeader.querySelector('.ellucian-pipeline-column-resizer')) {
+      const handle = document.createElement('button');
+      handle.type = 'button';
+      handle.className = 'ellucian-pipeline-column-resizer';
+      handle.setAttribute('role', 'separator');
+      handle.setAttribute('aria-label', 'Resize Pipeline Name column');
+      handle.setAttribute('aria-orientation', 'vertical');
+      handle.setAttribute('aria-valuemin', String(MIN_PIPELINE_NAME_WIDTH));
+      handle.setAttribute('aria-valuemax', String(MAX_PIPELINE_NAME_WIDTH));
+      handle.setAttribute('aria-valuenow', String(packagePipelineNameWidth));
+      handle.title = 'Drag to resize. Double-click or press Enter to fit pipeline names.';
+      state.handle = handle;
+      let drag = null;
+      // Capture only this divider's pointer, with no permanent document-wide drag listeners.
+      handle.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        handle.focus();
+        drag = { x: event.clientX, width: packagePipelineNameWidth };
+        handle.setPointerCapture(event.pointerId);
+        handle.dataset.dragging = 'true';
+      });
+      handle.addEventListener('pointermove', (event) => {
+        if (drag && table.isConnected && /\/data-connect\/home\/?$/iu.test(window.location.pathname)) setWidth(drag.width + event.clientX - drag.x);
+      });
+      // Release capture after either a completed drag or cancellation.
+      const stopDrag = () => { drag = null; delete handle.dataset.dragging; };
+      handle.addEventListener('pointerup', stopDrag);
+      handle.addEventListener('pointercancel', stopDrag);
+      handle.addEventListener('lostpointercapture', stopDrag);
+      handle.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); });
+      handle.addEventListener('dblclick', (event) => { event.preventDefault(); event.stopPropagation(); autoFit(); });
+      // Offer the same resize and autofit behavior without requiring a mouse.
+      handle.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Enter', 'Home'].includes(event.key)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.key === 'Enter') autoFit();
+        else if (event.key === 'Home') setWidth(DEFAULT_PIPELINE_NAME_WIDTH);
+        else setWidth(packagePipelineNameWidth + (event.key === 'ArrowRight' ? 16 : -16));
+      });
+      nameHeader.appendChild(handle);
+    }
+  }
+
   // Add sharing information only to the rendered Designer pipeline table.
   function updateSharedVersionColumn() {
     // Tell the page helper to stop queued requests when the option is disabled.
@@ -3178,6 +3321,8 @@
     updateDesignerSearch();
     updateSharedVersionColumn();
     updateSharedFromColumn();
+    // Keep table resizing independent of whether the optional source column is enabled.
+    updatePackagePipelineColumn();
     requestDesignerOwnership();
     // Keep the shared Experience shell untouched outside the supported pages.
     if (!isSupportedPage()) {
@@ -3465,6 +3610,8 @@
     if (changes[OWNERSHIP_CACHE_KEY]) {
       loadOwnershipCache(changes[OWNERSHIP_CACHE_KEY].newValue);
       updateSharedFromColumn();
+      // Give newly received environment labels enough space in the compact source column.
+      scheduleSearchUpdate();
     }
 
     // Apply search presentation changes without requiring a page refresh.
