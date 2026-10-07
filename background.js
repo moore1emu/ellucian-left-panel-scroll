@@ -112,16 +112,21 @@ function upgradeOwnershipCache() {
 upgradeOwnershipCache();
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.type !== "designer-ownership-save" || sender.id !== chrome.runtime.id || !sender.tab) return;
+  // Identify the failed step without retaining or logging the source names or page URL.
+  let failureStage = 'document-unavailable';
   pendingOwnershipUpdate = pendingOwnershipUpdate.catch(() => {}).then(async () => {
     // Verify the current Designer route without requesting broader tab or site permissions.
     const context = await readOwnershipContext(sender);
     const url = context.url;
+    failureStage = 'storage-read';
     const settings = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
     if (settings.sharedFromEnabled !== true || !context.enabled) return;
+    failureStage = 'site-access';
     const builtIn = CustomSites.defaults().includes(url.origin);
     if (!builtIn && (!(await CustomSites.readSites()).includes(url.origin) || !await chrome.permissions.contains({ origins: [CustomSites.pattern(url.origin)] }))) throw new Error("Site access is not enabled.");
 
     // Keep only bounded names and environment labels; never save page state or payloads.
+    failureStage = 'incomplete-data';
     const clean = (value) => typeof value === "string" ? value.trim().slice(0, 500) : "";
     const tenantId = clean(message.tenantId);
     const environment = clean(message.environment);
@@ -147,13 +152,32 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     // Bound this optional cache without requesting additional storage permission.
     if (JSON.stringify(cache).length > 1000000) throw new Error("Source cache is full. Turn Shared From off to clear it.");
     // Recheck the same document after asynchronous work so navigation or opt-out cancels the save.
+    failureStage = 'document-unavailable';
     const current = await readOwnershipContext(sender);
+    failureStage = 'storage-read';
     const consent = await chrome.storage.local.get({ sharedFromEnabled: false });
     if (current.url.href !== url.href) throw new Error("Designer page changed before saving.");
     if (!current.enabled || consent.sharedFromEnabled !== true) return;
+    failureStage = 'storage-write';
     await chrome.storage.local.set({ designerOwnershipCache: cache });
   });
-  pendingOwnershipUpdate.then(() => respond({ ok: true }), (error) => respond({ ok: false, error: error.message }));
+  pendingOwnershipUpdate.then(() => respond({ ok: true }), (error) => {
+    // Recognize only our own fixed validation messages; unknown service errors stay private.
+    const knownFailures = {
+      'Designer document is unavailable.': 'document-unavailable',
+      'Not a Designer page.': 'left-designer',
+      'Site access is not enabled.': 'site-access',
+      'Incomplete Designer source information.': 'incomplete-data',
+      'Incomplete Designer package information.': 'incomplete-data',
+      'Too many Designer pipeline names.': 'source-limit',
+      'Source cache is full. Turn Shared From off to clear it.': 'cache-full',
+      'Designer page changed before saving.': 'left-designer',
+    };
+    const reason = Object.hasOwn(knownFailures, error?.message) ? knownFailures[error.message] : failureStage;
+    console.warn(`Integration Navigator: Shared From save failed (${reason}).`);
+    // Do not transmit raw exception messages to the page or store them in the cache.
+    respond({ ok: false, reason });
+  });
   return true;
 });
 

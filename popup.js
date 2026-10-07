@@ -300,6 +300,15 @@
         'not-ready': 'Designer is still loading. Try again shortly.',
         'extension-reloaded': 'Refresh this page after reloading the extension, then try again.',
         busy: 'A refresh is already running.',
+        'lookup-failed': 'Designer sources did not respond. Refresh the page, then try again.',
+        'document-unavailable': 'The Designer connection was lost. Refresh the page, then try again.',
+        'storage-read': 'Could not read saved sources. Check the extension errors, then try again.',
+        'storage-write': 'Could not save Designer sources. Check the extension errors, then try again.',
+        'site-access': 'Allow extension access to this site, refresh Designer, then try again.',
+        'incomplete-data': 'Designer source data is incomplete. Let it load, then try again.',
+        'source-limit': 'Designer exceeds the supported source-data limit. Report this issue on GitHub.',
+        'cache-full': 'Saved source data is full. Export it before clearing Shared From data.',
+        'save-failed': 'Could not save Designer sources. Check the extension errors, then try again.',
       };
       sharedFromStatus.textContent = result?.ok === true ? 'Shared From data refreshed.'
         : guidance[result?.reason] || 'Could not refresh Shared From data. Please try again.';

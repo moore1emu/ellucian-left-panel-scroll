@@ -197,7 +197,12 @@
           <span class="footer-separator" aria-hidden="true">•</span>
           <span>Test &amp; Production</span>
         </div>
-        <span id="extension-version"></span>
+        <!-- Share the existing version row so support does not make settings taller. -->
+        <div class="footer-version">
+          <span id="extension-version"></span>
+          <!-- Open a public bug form only on request; never attach local data automatically. -->
+          <a class="report-bug-link" href="https://github.com/moore1emu/ellucian-left-panel-scroll/issues/new?template=bug_report.md" target="_blank" rel="noopener noreferrer" title="Opens a public GitHub report. Do not include confidential information.">Report Bug</a>
+        </div>
         <p class="affiliation-notice">
           This extension is not affiliated with or supported by Ellucian.
         </p>

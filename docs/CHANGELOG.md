@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.9 — 2026-10-07
+
+- Designer pipeline search displays 20 matches initially, with **Show More** adding 20 at a time and a total count. All loaded matches remain accessible beyond the previous 100-result cutoff, without new Ellucian requests.
+- Shared To updates each completed pipeline without waiting for its entire batch. The 30-second service deadline starts when the request begins, not while queued. Timed-out native calls retain their slot until they finish; identical pending calls are reused and actual traffic remains limited to six requests.
+- Adds **Report Bug** beside the settings version, opening a public GitHub report template without uploading local data. No diagnostic button is added.
+- Shared From failures now distinguish incomplete/loading data, lost page connections, site access, storage read/write failures, and cache limits. Basic console warnings contain fixed failure codes only, not raw exceptions, URLs, source names, or pipeline contents. Existing source data and favorites are preserved on failures.
+
 ## 1.20.8 — 2026-10-07
 
 - Adds a spinning working circle to **Refresh Shared From Data** in settings. It stays visible while the current Designer environment is collected and saved, then stops on success or failure.

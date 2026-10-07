@@ -2831,6 +2831,10 @@
   function finishOwnershipRefresh(result) {
     const respond = ownershipManualResponse;
     ownershipManualResponse = null;
+    // Log only actionable fixed codes, not routine cancellation, names, or API payloads.
+    const failureCodes = ['not-ready', 'lookup-failed', 'save-failed', 'storage-read', 'storage-write',
+      'site-access', 'incomplete-data', 'source-limit', 'cache-full', 'document-unavailable'];
+    if (result?.ok === false && failureCodes.includes(result.reason)) console.warn(`Integration Navigator: Shared From refresh failed (${result.reason}).`);
     // Closing settings must not cancel collection or create a console error.
     if (respond) {
       try { respond(result); } catch (_error) { /* The popup may already be closed. */ }
@@ -3195,6 +3199,14 @@
     // Tell the page helper to stop queued requests when the option is disabled.
     window.postMessage({ source: MESSAGE_SOURCE, type: 'shared-status-setting', enabled: sharedVersionEnabled && isDesignerPackagePage() }, window.location.origin);
     if (!sharedVersionEnabled || !isDesignerPackagePage()) {
+      // Release old reply state on opt-out/navigation without deleting completed cache entries.
+      for (const [requestId, pending] of pendingSharedStatusRequests) {
+        window.clearTimeout(pending.timer);
+        pending.batch.forEach(({ key }) => {
+          if (sharedStatusCache.get(key)?.requestId === requestId) sharedStatusCache.delete(key);
+        });
+      }
+      pendingSharedStatusRequests.clear();
       document.querySelectorAll('[data-ellucian-shared-cell]').forEach((cell) => cell.remove());
       return;
     }
@@ -3285,7 +3297,7 @@
         outdated: destination.outdated,
       })) : [{
         label: !published ? '—' : result?.pending ? '…' : result?.error ? 'Unavailable' : '—',
-        tooltip: !published ? 'Draft pipelines cannot be shared.' : result?.pending ? 'Checking sharing history…' : result?.error ? 'Sharing history could not be checked. Use the header refresh button to retry.' : 'No shared releases in this major version.',
+        tooltip: !published ? 'Draft pipelines cannot be shared.' : result?.pending ? 'Checking sharing history…' : result?.error ? result.reason || 'Sharing history could not be checked. Use the header refresh button to retry.' : 'No shared releases in this major version.',
       }];
       const summary = JSON.stringify(entriesToShow);
       // Avoid rewriting unchanged cells and retriggering the page observer.
@@ -3314,15 +3326,20 @@
       const requestId = `shared-${++sharedStatusRequestCounter}`;
       // Tag pending results so an older response cannot overwrite a fresh check.
       batch.forEach(({ key }) => sharedStatusCache.set(key, { pending: true, requestId }));
+      // Bound only message delivery; acknowledged queue time is not a network timeout.
       const timer = window.setTimeout(() => {
         if (!pendingSharedStatusRequests.has(requestId)) return;
         pendingSharedStatusRequests.delete(requestId);
         batch.forEach(({ key }) => {
-          if (sharedStatusCache.get(key)?.requestId === requestId) sharedStatusCache.set(key, { error: true });
+          if (sharedStatusCache.get(key)?.requestId === requestId) sharedStatusCache.set(key, {
+            error: true, reason: 'Designer did not respond. Refresh this page, then try again.',
+          });
         });
+        // Log a short fixed code only, with no names, environment identifiers, or payloads.
+        console.warn('Integration Navigator: Shared To check failed (connection-timeout).');
         updateSharedVersionColumn();
-      }, 30000);
-      pendingSharedStatusRequests.set(requestId, { timer, batch });
+      }, 5000);
+      pendingSharedStatusRequests.set(requestId, { timer, batch, loggedCodes: new Set() });
       window.postMessage({ source: MESSAGE_SOURCE, type: SHARED_STATUS_REQUEST, requestId, entries: batch }, window.location.origin);
     }
     // Disable repeated refresh clicks only while displayed rows are being checked.
@@ -3345,7 +3362,7 @@
     if (!feedback.hidden) {
       const results = cells.map((cell) => sharedStatusCache.get(cell.dataset.sharedKey));
       const message = busy ? 'Refreshing Shared To information…'
-        : results.some((result) => result?.error) ? 'Shared To information unavailable. Try again.'
+        : results.some((result) => result?.error) ? results.find((result) => result?.error)?.reason || 'Shared To information unavailable. Try again.'
         : results.some((result) => result?.shared) ? 'Shared To information refreshed.'
         : 'No shared pipelines in this package view.';
       // Avoid repeating the same live-region announcement during unrelated mutations.
@@ -3408,10 +3425,21 @@
     input.setAttribute('aria-expanded', 'false');
     iconButton.setAttribute('aria-controls', results.id);
     let timer;
+    // Keep each query's paging state on this control, not in extension storage.
+    control.requestDesignerResults = (offset = 0) => {
+      control.dataset.request = `designer-${crypto.randomUUID()}`;
+      control.dataset.offset = String(offset);
+      window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-search', requestId: control.dataset.request,
+        query: input.value, offset }, window.location.origin);
+    };
     // Invalidate delayed results as well as closing the visible overlay.
     const closeResults = (collapseIcon = false) => {
       window.clearTimeout(timer);
       control.removeAttribute('data-request');
+      // A changed query, package, or closed overlay cannot append an older result page.
+      control.removeAttribute('data-offset');
+      results.replaceChildren();
+      results.dataset.count = '0';
       results.hidden = true;
       input.setAttribute('aria-expanded', 'false');
       if (collapseIcon) {
@@ -3439,8 +3467,7 @@
       closeResults();
       if (!input.value.trim()) return;
       timer = window.setTimeout(() => {
-        control.dataset.request = `designer-${Date.now()}`;
-        window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-search', requestId: control.dataset.request, query: input.value }, window.location.origin);
+        control.requestDesignerResults();
       }, 150);
     });
     input.addEventListener('keydown', (event) => {
@@ -3449,6 +3476,14 @@
         if (designerSearchMode === 'icon') iconButton.focus();
       }
       if (event.key === 'ArrowDown') results.querySelector('button')?.focus();
+    });
+    // Escape must also close the expanded list after keyboard activation of Show More.
+    results.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      closeResults(true);
+      if (designerSearchMode === 'icon') iconButton.focus();
+      else input.focus();
     });
     control.append(iconButton, input, results);
     // Align siblings without moving React-owned nodes out of their native parent.
@@ -3463,10 +3498,20 @@
     const control = document.querySelector('.ellucian-designer-search');
     if (!control || control.dataset.request !== event.data.requestId) return;
     const results = control.querySelector('.ellucian-designer-results');
-    results.replaceChildren();
-    const matches = Array.isArray(event.data.results) ? event.data.results.slice(0, 100) : [];
+    // Append only the next requested 20 matches; reject skipped or stale result pages.
+    const offset = Number(event.data.offset);
+    if (!Number.isInteger(offset) || offset !== Number(control.dataset.offset) || (offset > 0 && offset !== Number(results.dataset.count))) return;
+    if (offset === 0) results.replaceChildren();
+    results.querySelector('.ellucian-designer-results-footer')?.remove();
+    const matches = Array.isArray(event.data.results) ? event.data.results.slice(0, 20) : [];
+    // Refresh the first local page if native inventory changed while paging, rather than strand Show More.
+    if (offset > 0 && !matches.length) {
+      control.closeDesignerSearch();
+      control.requestDesignerResults();
+      return;
+    }
     if (!matches.length) results.textContent = event.data.available ? 'No matching pipelines' : 'Pipeline search is not ready. Try again after the package loads.';
-    matches.forEach((pipeline) => {
+    matches.forEach((pipeline, index) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = `${normalizeText(pipeline.name)} · ${normalizeText(pipeline.version) || 'Draft'}`;
@@ -3475,7 +3520,34 @@
         control.closeDesignerSearch(true);
       });
       results.appendChild(button);
+      // Preserve keyboard position when Show More removes its old focused button.
+      if (offset > 0 && index === 0) button.focus();
     });
+    const shown = offset + matches.length;
+    results.dataset.count = String(shown);
+    const total = Number.isInteger(event.data.total) ? Math.max(shown, event.data.total) : shown;
+    // A compact count and Show More appear only when the query has additional matches.
+    if (total > 20 && matches.length) {
+      const footer = document.createElement('span');
+      footer.className = 'ellucian-designer-results-footer';
+      const count = document.createElement('span');
+      count.textContent = `Showing ${shown} of ${total}`;
+      footer.appendChild(count);
+      if (shown < total) {
+        const more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'ellucian-designer-show-more';
+        more.textContent = 'Show More';
+        more.addEventListener('click', () => {
+          if (control.dataset.request !== event.data.requestId) return;
+          more.disabled = true;
+          more.setAttribute('aria-busy', 'true');
+          control.requestDesignerResults(shown);
+        });
+        footer.appendChild(more);
+      }
+      results.appendChild(footer);
+    }
     results.hidden = false;
     control.querySelector('input').setAttribute('aria-expanded', 'true');
   });
@@ -3604,6 +3676,7 @@
           // Ignore a late callback after opt-out, navigation, or a replacement request.
           if (ownershipRequest !== requestId) return;
           let saveFailed;
+          let failureReason = 'save-failed';
           // The extension can also disappear between sending and receiving the reply.
           try {
             const lastError = runtime.lastError;
@@ -3612,6 +3685,10 @@
               return;
             }
             saveFailed = Boolean(lastError) || result?.ok !== true;
+            // Preserve known worker failure categories without accepting raw page error text.
+            const knownReasons = ['storage-read', 'storage-write', 'site-access', 'incomplete-data',
+              'source-limit', 'cache-full', 'document-unavailable', 'left-designer'];
+            if (knownReasons.includes(result?.reason)) failureReason = result.reason;
           } catch (_error) {
             stopDisconnectedOwnership();
             return;
@@ -3621,9 +3698,9 @@
           ownershipRequest = '';
           // Ordinary persistence failures retain the existing single retry budget.
           if (saveFailed) {
-            console.warn('Designer source cache could not be saved. Revisit Designer to retry.');
+            console.warn(`Integration Navigator: Shared From save attempt failed (${failureReason}).`);
             if (ownershipAttempts < 2) requestDesignerOwnership();
-            else finishOwnershipRefresh({ ok: false, reason: 'save-failed' });
+            else finishOwnershipRefresh({ ok: false, reason: failureReason });
           } else {
             // A successful snapshot needs no mutation-driven follow-up request.
             ownershipAttempts = 2;
@@ -3640,13 +3717,24 @@
     if (event.data.type === SHARED_STATUS_RESPONSE) {
       const pending = pendingSharedStatusRequests.get(event.data.requestId);
       if (!pending) return;
+      // Only the new bounded streaming protocol can acknowledge this request.
+      if (typeof event.data.complete !== 'boolean' || !Array.isArray(event.data.results)) return;
       window.clearTimeout(pending.timer);
-      pendingSharedStatusRequests.delete(event.data.requestId);
-      const results = Array.isArray(event.data.results) ? event.data.results : [];
+      const results = event.data.results.slice(0, 25);
       pending.batch.forEach(({ key }) => {
         // Ignore responses superseded by manual refresh or a completed share.
         if (sharedStatusCache.get(key)?.requestId !== event.data.requestId) return;
         const result = results.find((item) => item?.key === key);
+        // An acknowledgement or another pipeline's update must leave this row pending.
+        if (!result && !event.data.complete) return;
+        // Deduplicate fixed failure codes within this batch; do not log page-supplied text.
+        if (result?.error && pending.loggedCodes) {
+          const code = ['request-timeout', 'requests-stalled', 'lookup-failed'].includes(result.code) ? result.code : 'lookup-failed';
+          if (!pending.loggedCodes.has(code)) {
+            pending.loggedCodes.add(code);
+            console.warn(`Integration Navigator: Shared To check failed (${code}).`);
+          }
+        }
         sharedStatusCache.set(key, result ? {
           error: result.error === true,
           reason: normalizeText(result.reason),
@@ -3658,8 +3746,10 @@
             version: normalizeText(destination?.version),
             outdated: destination?.outdated === true,
           })) : [],
-        } : { error: true });
+        } : { error: true, reason: 'This pipeline is no longer in the loaded Designer inventory. Reload the package and try again.' });
       });
+      // The final marker releases only this batch; already completed row results remain intact.
+      if (event.data.complete) pendingSharedStatusRequests.delete(event.data.requestId);
       updateSharedVersionColumn();
       return;
     }

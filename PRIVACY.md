@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Integration Navigator · Updated October 6, 2026
+Integration Navigator · Updated October 7, 2026
 
 Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
@@ -37,6 +37,8 @@ The extension has no analytics, advertising, or publisher-operated data collecti
 Optional sharing lookups communicate with Ellucian using your existing session. Ellucian and your institution manage their own services and privacy practices; this policy covers the extension, not those services. Hosting providers and browser stores may process ordinary website visits or installation information under their own policies.
 
 If you email support, the publisher receives the information you choose to include in that email. Please do not send passwords, tokens, student records, or other confidential information.
+
+**Report Bug** opens a public GitHub issue form only when selected. The extension does not attach data or submit a report for you. Sharing-related failure warnings use fixed step/error codes in browser consoles; they do not include raw service exceptions, URLs, environment identifiers, package/pipeline names or contents, credentials, or student records. No persistent diagnostic log or automatic log upload is added. You control what you post, and should review all screenshots, console text, and exported files before sharing them; other page or browser logs are outside this extension's control.
 
 ## Your controls
 

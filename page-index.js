@@ -17,10 +17,16 @@
   const sharedArtifactNames = new Map();
   // Give larger packages more capacity while keeping one global sharing budget.
   const SHARING_REQUEST_LIMIT = 6;
+  // Start the deadline only when an actual sharing service call starts, not in its queue.
+  const SHARING_REQUEST_TIMEOUT = 30000;
   // Share one request budget across batches, including destination-name lookups.
   const sharingRequestQueue = [];
   const sharingCancelledError = new Error('Sharing checks were disabled.');
-  let activeSharingRequests = 0;
+  // Keep timed-out native calls in the real six-slot budget until they settle.
+  const activeSharingJobs = new Set();
+  const sharingServiceRequests = new Map();
+  const sharingTimeoutError = Object.assign(new Error('Sharing service timed out.'), { code: 'request-timeout' });
+  const sharingBlockedError = Object.assign(new Error('Earlier sharing calls are still running.'), { code: 'requests-stalled' });
   let designerModules = null;
   let sharingEnabled = false;
   let ownershipEnabled = false;
@@ -125,33 +131,62 @@
   }
 
   // Start at most six sharing service requests across the entire page.
+  function rejectWaitingSharingRequests(error) {
+    // Discard only queued work; never pretend that a running native request was cancelled.
+    sharingRequestQueue.splice(0).forEach((request) => {
+      if (sharingServiceRequests.get(request.key) === request.promise) sharingServiceRequests.delete(request.key);
+      request.reject(error);
+    });
+  }
+
+  // Free capacity only when the underlying service really finishes.
   function drainSharingRequests() {
     // Disabling rejects waiting work without interrupting already-started requests.
     if (!sharingEnabled) {
-      sharingRequestQueue.splice(0).forEach((request) => request.reject(sharingCancelledError));
+      rejectWaitingSharingRequests(sharingCancelledError);
       return;
     }
-    while (activeSharingRequests < SHARING_REQUEST_LIMIT && sharingRequestQueue.length) {
+    // Six genuinely stalled calls cannot make progress; explain this instead of waiting forever.
+    if (activeSharingJobs.size === SHARING_REQUEST_LIMIT && [...activeSharingJobs].every((request) => request.timedOut)) {
+      rejectWaitingSharingRequests(sharingBlockedError);
+      return;
+    }
+    while (activeSharingJobs.size < SHARING_REQUEST_LIMIT && sharingRequestQueue.length) {
       const request = sharingRequestQueue.shift();
-      activeSharingRequests += 1;
+      activeSharingJobs.add(request);
       // Recheck opt-in before calling the service, even if it changed this turn.
       Promise.resolve().then(() => {
         if (!sharingEnabled) throw sharingCancelledError;
+        // An expired caller gets a failure, but its native call still occupies this slot.
+        request.timer = window.setTimeout(() => {
+          request.timedOut = true;
+          request.reject(sharingTimeoutError);
+          drainSharingRequests();
+        }, SHARING_REQUEST_TIMEOUT);
         return request.run();
       }).then(request.resolve, request.reject).finally(() => {
         // Always free the slot after success, rejection, or a synchronous service error.
-        activeSharingRequests -= 1;
+        window.clearTimeout(request.timer);
+        activeSharingJobs.delete(request);
+        if (sharingServiceRequests.get(request.key) === request.promise) sharingServiceRequests.delete(request.key);
         drainSharingRequests();
       });
     }
   }
 
   // Queue only new service calls; callers continue to reuse their cached promises.
-  function queueSharingRequest(run) {
-    return new Promise((resolve, reject) => {
-      sharingRequestQueue.push({ run, resolve, reject });
-      drainSharingRequests();
+  function queueSharingRequest(run, key) {
+    // Refreshing after a timeout must not duplicate an identical call still on the wire.
+    if (sharingServiceRequests.has(key)) return sharingServiceRequests.get(key);
+    let request;
+    const promise = new Promise((resolve, reject) => {
+      request = { run, resolve, reject, key, timedOut: false, timer: 0 };
     });
+    request.promise = promise;
+    sharingServiceRequests.set(key, promise);
+    sharingRequestQueue.push(request);
+    drainSharingRequests();
+    return promise;
   }
 
   // Resolve one destination once, keeping independent ownership refreshes unchanged.
@@ -161,7 +196,7 @@
     }
 
     // Only sharing destinations enter this queue; Shared From uses its existing flow.
-    const lookup = sharingLookup ? queueSharingRequest(() => server.JR(tenantId)) : server.JR(tenantId);
+    const lookup = sharingLookup ? queueSharingRequest(() => server.JR(tenantId), JSON.stringify(['destination', tenantId])) : server.JR(tenantId);
     const tenantPromise = lookup
       .then((tenant) => ({
         accountName: normalizeText(tenant?.accountId),
@@ -169,10 +204,12 @@
         tenantId,
         tenantName: normalizeText(tenant?.name),
       }))
-      .catch(() => {
+      .catch((error) => {
         // A temporary lookup failure must not poison the bounded startup retry.
         // A cancelled older lookup must not remove a newer cached promise.
         if (tenantDetailsCache.get(tenantId) === tenantPromise) tenantDetailsCache.delete(tenantId);
+        // Sharing failures must remain failures, not an apparently complete unnamed destination.
+        if (sharingLookup) throw error;
         return { tenantId };
       });
     tenantDetailsCache.set(tenantId, tenantPromise);
@@ -240,9 +277,9 @@
         if (!sharingEnabled) return { key: entry.key, error: true };
         const cacheKey = JSON.stringify([tenantId, artifactName, version]);
         if (!sharedReleaseCache.has(cacheKey)) {
-          const releasePromise = queueSharingRequest(() => modules.server.hL(tenantId, 'pipeline', artifactName, version)).catch((error) => {
+          const releasePromise = queueSharingRequest(() => modules.server.hL(tenantId, 'pipeline', artifactName, version), JSON.stringify(['history', cacheKey])).catch((error) => {
             // A cancelled queued call has no result to cache; allow a later opt-in retry.
-            if (error === sharingCancelledError && sharedReleaseCache.get(cacheKey) === releasePromise) sharedReleaseCache.delete(cacheKey);
+            if (sharedReleaseCache.get(cacheKey) === releasePromise) sharedReleaseCache.delete(cacheKey);
             throw error;
           });
           sharedReleaseCache.set(cacheKey, releasePromise);
@@ -265,13 +302,18 @@
         destinations,
         shared: destinations.length > 0,
       };
-    } catch (_error) {
-      return { key: entry.key, error: true, reason: 'Designer sharing lookup failed. Try opening the native Share pipeline page.' };
+    } catch (error) {
+      // Return only known failure codes and plain guidance, never raw server errors or URLs.
+      const code = error === sharingTimeoutError ? 'request-timeout' : error === sharingBlockedError ? 'requests-stalled' : 'lookup-failed';
+      const reason = code === 'request-timeout' ? 'The sharing service took too long to respond. Try again shortly.'
+        : code === 'requests-stalled' ? 'Earlier sharing requests are still running. Wait, or refresh this page before retrying.'
+        : 'Designer sharing lookup failed. Try opening the native Share pipeline page.';
+      return { key: entry.key, error: true, code, reason };
     }
   }
 
   // Keep batch processing small; the shared service queue enforces the global limit.
-  async function getSharedStatuses(entries, inventory) {
+  async function getSharedStatuses(entries, inventory, onResult) {
     const results = new Array(entries.length);
     let nextIndex = 0;
 
@@ -282,6 +324,8 @@
         const currentIndex = nextIndex;
         nextIndex += 1;
         results[currentIndex] = await getSharedStatus(entries[currentIndex], inventory);
+        // Publish each completed pipeline immediately, even when another pipeline is slow.
+        onResult(results[currentIndex]);
       }
     }
 
@@ -398,9 +442,14 @@
       // Ignore separators and case so camel case, hyphens, and spaces match alike.
       const fold = (value) => normalizeText(value).toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
       const query = fold(event.data.query);
+      // Page only the already-loaded matches; Show More never contacts another environment.
+      const matches = pipelines.filter((pipeline) => fold(pipeline.name).includes(query));
+      // Echo the requested page even if the native inventory shrank between clicks.
+      const offset = Number.isInteger(event.data.offset) && event.data.offset >= 0 ? event.data.offset : 0;
       window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-results', requestId: event.data.requestId,
         packageName: normalizeText(selectedPackage?.name), available: Boolean(manager),
-        results: pipelines.filter((pipeline) => fold(pipeline.name).includes(query)).slice(0, 100).map((pipeline) => ({
+        offset, total: matches.length,
+        results: matches.slice(offset, offset + 20).map((pipeline) => ({
           name: normalizeText(pipeline.name), version: normalizeText(pipeline.version), status: normalizeText(pipeline.status),
         })) }, window.location.origin);
       return;
@@ -449,20 +498,25 @@
           return key && name && version ? [{ key, name, version }] : [];
         })
       : [];
-    // Only query names and versions already present in this page's package data.
-    const inventory = entries.length ? buildSharingInventory(entries) : null;
-    const validEntries = entries.filter((entry) => inventory.currentVersions.get(entry.name)?.has(entry.version.replace(/^v/u, '')));
-    const results = validEntries.length ? await getSharedStatuses(validEntries, inventory) : [];
-
-    window.postMessage(
-      {
-        source: MESSAGE_SOURCE,
-        type: SHARED_STATUS_RESPONSE,
-        requestId: normalizeText(event.data.requestId),
-        results,
-      },
-      window.location.origin,
-    );
+    // Acknowledge delivery before waiting in the queue so the UI's connection timer can stop.
+    const requestId = normalizeText(event.data.requestId);
+    const report = (results, complete = false) => window.postMessage({
+      source: MESSAGE_SOURCE, type: SHARED_STATUS_RESPONSE, requestId, results, complete,
+    }, window.location.origin);
+    report([]);
+    try {
+      // Only query names and versions already present in this page's package data.
+      const inventory = entries.length ? buildSharingInventory(entries) : null;
+      const validEntries = entries.filter((entry) => inventory.currentVersions.get(entry.name)?.has(entry.version.replace(/^v/u, '')));
+      if (validEntries.length) await getSharedStatuses(validEntries, inventory, (result) => report([result]));
+    } catch (_error) {
+      // A changed/unreadable native component must not strand an acknowledged UI request.
+      report(entries.map(({ key }) => ({ key, error: true, code: 'lookup-failed',
+        reason: 'Designer sharing data could not be read. Reload the package, then try again.' })));
+    } finally {
+      // Completed rows were already delivered; the final marker carries no duplicate row data.
+      report([], true);
+    }
   });
 
   // Announce readiness so the isolated script can request data after either load order.

@@ -995,6 +995,10 @@ html[data-ellucian-favorites-resizing="true"] * {
 .ellucian-designer-results[hidden] { display: none; }
 .ellucian-designer-results button { display: block; width: 100%; padding: 9px; text-align: left; border: 0; background: transparent; color: inherit; cursor: pointer; }
 .ellucian-designer-results button:hover, .ellucian-designer-results button:focus-visible { background: #e8f4ed; }
+/* Keep larger searches compact while exposing their complete local match count. */
+.ellucian-designer-results-footer { align-items: center; border-top: 1px solid #b6c2d0; display: flex; font-size: 12px; gap: 8px; justify-content: space-between; padding: 6px 9px; }
+.ellucian-designer-results-footer .ellucian-designer-show-more { color: #08783e; font: inherit; width: auto; }
+.ellucian-designer-results-footer button[aria-busy="true"] { cursor: wait; opacity: 0.6; }
 /* Keep the heading and its search adjacent while preserving the native add control. */
 .ellucian-pipeline-heading-group { display: flex !important; align-items: center !important; justify-content: flex-start !important; flex-wrap: wrap; gap: 12px; }
 .ellucian-pipeline-heading-group > .ellucian-pipeline-heading { flex: 0 0 auto !important; width: auto !important; margin-right: 0 !important; }

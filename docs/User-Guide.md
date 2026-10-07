@@ -28,6 +28,8 @@ Pipeline favorites follow the newest available release within their pinned **maj
 
 The sidebar search finds package and pipeline names. Designer also has a pipeline search inside the selected package, including entries on other table pages.
 
+Designer pipeline search shows the first 20 matches and a count when there are more. Select **Show More** to add the next 20. It searches all loaded entries without additional Ellucian requests.
+
 Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
 
 In Integration Packages, **Pipeline Name** automatically fits each selected package within the available space. Names stay on one line. Drag the divider to adjust it or double-click to fit full loaded names, using local horizontal scrolling if needed. Switching packages calculates a fresh width. With the divider focused, arrow keys resize, Enter fits names, and Home restores automatic sizing.
@@ -47,6 +49,8 @@ Turn width memory, pinned favorites, **Shared To**, and **Shared From** on or of
 Enable **Shared To** to show destination environments beside published pipelines. Hover or focus a destination to see its newest shared version. Red means that version differs from the published row within the same major version.
 
 Information refreshes when you return from either share flow, even after cancelling. Use the refresh icon beside **Shared To** to recheck the current package view. Hover over the icon for the result, including when no shares are found or a check fails. Completed results are otherwise cached to limit repeated requests; sharing lookups use at most six simultaneous service requests.
+
+Pipelines update individually as their checks finish. Queue waiting does not count toward a service call's 30-second deadline. A timed-out call retains its slot until it actually ends; retries cannot increase traffic beyond six calls. If earlier calls remain stalled, wait or refresh the page before retrying.
 
 ### Shared From — Integration Packages
 
@@ -103,5 +107,7 @@ Settings, favorites, and optional Shared From sources stay in local browser stor
 To uninstall, select **Remove** on the browser's extensions page. Exported JSON files are not removed with the extension.
 
 Support: [moore.life@gmail.com](mailto:moore.life@gmail.com). Please do not send passwords, tokens, student records, or confidential pipeline details.
+
+**Report Bug** beside the settings version opens a public GitHub form. Nothing is attached or uploaded automatically. Include the version, browser, steps, and a short error message or failure code if available. See [checking errors](Troubleshooting.md#checking-errors-and-reporting-a-bug) before sharing console text or screenshots. There is no diagnostic button.
 
 This extension is not affiliated with or supported by Ellucian.
