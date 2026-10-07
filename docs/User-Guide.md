@@ -60,7 +60,7 @@ Collection starts automatically after Designer's package data loads, including w
 
 Unknown or conflicting sources show a dash. Hover or focus the column heading for setup guidance. Information reflects the last successful Designer collection and can become stale; revisit that environment to update it. The extension does not contact all environments from one page.
 
-For a manual retry, open Designer in the source environment and select **Refresh Shared From Data** in settings. It refreshes only that currently open Designer environment and confirms when the data is saved.
+For a manual retry, open Designer in the source environment and select **Refresh Shared From Data** in settings. It refreshes only that currently open Designer environment. A working circle stays visible until collection and saving finish, or a failure is reported.
 
 **Export JSON** downloads a snapshot grouped by **Environment → Package → Pipelines**, with last-checked times. Older names without a recorded package appear under **Package Not Yet Recorded** until that Designer environment is refreshed. Nothing is uploaded, and export does not change favorites or settings. Exported files may contain institution-specific names; review them before sharing.
 

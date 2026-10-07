@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.8 — 2026-10-07
+
+- Adds a spinning working circle to **Refresh Shared From Data** in settings. It stays visible while the current Designer environment is collected and saved, then stops on success or failure.
+- Keeps the existing completion messages, disabled button, and accessible busy state. Supports reduced-motion preferences without adding requests, polling, permissions, or changes to saved data.
+
 ## 1.20.7 — 2026-10-07
 
 - Fixes Shared From snapshots being rejected after navigating from Experience Home into Designer without refreshing. Automatic collection does not require selecting a package; Designer's loaded package data must be ready.

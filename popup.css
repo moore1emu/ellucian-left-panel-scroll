@@ -220,6 +220,19 @@ h1 {
 .shared-from-actions button:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
 .shared-from-actions button:disabled { cursor: default; opacity: 0.6; }
 
+/* Draw a lightweight working circle only while the saved-result reply is pending. */
+#refresh-shared-from { align-items: center; display: inline-flex; gap: 6px; }
+#refresh-shared-from::after { content: ""; display: none; flex: 0 0 12px; height: 12px; width: 12px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; }
+#refresh-shared-from[aria-busy="true"]::after { display: inline-block; animation: shared-from-refresh-spin 800ms linear infinite; }
+
+/* Animate only the visible circle, with no script timers or additional requests. */
+@keyframes shared-from-refresh-spin { to { transform: rotate(360deg); } }
+
+/* Keep a visible busy marker and the existing status text without unwanted motion. */
+@media (prefers-reduced-motion: reduce) {
+  #refresh-shared-from[aria-busy="true"]::after { animation: none; }
+}
+
 /* Match the other compact disclosure cards without changing the radio choices. */
 .search-display-card {
   flex-shrink: 0;

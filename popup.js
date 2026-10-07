@@ -284,7 +284,7 @@
       return;
     }
     refreshSharedFromButton.disabled = true;
-    // Mark actual work separately from controls disabled by setup or preferences.
+    // Show the CSS working circle until collection and persistence return a result.
     refreshSharedFromButton.setAttribute('aria-busy', 'true');
     sharedFromStatus.textContent = 'Refreshing Shared From data…';
     try {
@@ -307,6 +307,7 @@
       // Unsupported tabs and pages not refreshed after an extension reload have no receiver.
       sharedFromStatus.textContent = 'Open Designer on an enabled site, then try again. If already open, refresh that page once.';
     } finally {
+      // Stop the working circle on success, failure, or a lost page connection.
       refreshSharedFromButton.disabled = false;
       refreshSharedFromButton.setAttribute('aria-busy', 'false');
     }
