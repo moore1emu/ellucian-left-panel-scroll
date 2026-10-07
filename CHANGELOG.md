@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.4 — 2026-10-06
+
+- Moved manual Shared To refresh feedback, including the no-shared-pipelines message, into the refresh icon's hover text instead of displaying it beneath the heading. Retains screen-reader announcements without changing header size.
+- Keeps the six-request limit, caching, refresh behavior, favorites, and saved data unchanged.
+
 ## 1.20.3 — 2026-10-06
 
 - Raised the global Shared To service-request limit from three to six at Andrew's request, including when checking a single package batch. Keeps the one-scan-per-batch cleanup, existing caching, cancellation, and refresh behavior.

@@ -3108,7 +3108,7 @@
         }
       });
       header.appendChild(refresh);
-      // Announce manual results without adding hover text to unrelated table values.
+      // Announce results to screen readers without adding visible text to the heading.
       const feedback = document.createElement('span');
       feedback.className = 'ellucian-shared-refresh-status';
       feedback.setAttribute('role', 'status');
@@ -3217,7 +3217,6 @@
     refresh.disabled = busy;
     refresh.setAttribute('aria-busy', String(busy));
     refresh.setAttribute('aria-label', busy ? 'Refreshing Shared To information' : 'Refresh Shared To information');
-    refresh.title = busy ? 'Refreshing Shared To information…' : 'Refresh Shared To information for displayed pipelines';
     // Reset manual feedback when React reuses the table for another package.
     const header = refresh.closest('th');
     const packageScope = Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim().startsWith('Package:'))?.textContent.trim() || window.location.pathname;
@@ -3237,6 +3236,12 @@
       // Avoid repeating the same live-region announcement during unrelated mutations.
       if (feedback.textContent !== message) feedback.textContent = message;
     }
+    // Show the latest manual result only on the refresh button's hover text.
+    const refreshDescription = !feedback.hidden ? feedback.textContent
+      : busy ? 'Refreshing Shared To information…' : 'Refresh Shared To information for displayed pipelines';
+    refresh.title = refreshDescription;
+    // Keep keyboard and assistive-technology descriptions equivalent to the hover text.
+    refresh.setAttribute('aria-description', refreshDescription);
   }
 
   // Place a package-scoped search beside the Designer Pipelines heading.

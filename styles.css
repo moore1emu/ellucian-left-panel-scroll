@@ -1017,8 +1017,8 @@ th[data-ellucian-shared-cell] > span { font-weight: 700; }
 /* Respect system motion preferences while retaining the disabled/loading state. */
 @media (prefers-reduced-motion: reduce) { .ellucian-shared-refresh[aria-busy="true"] svg { animation: none; } }
 
-/* Keep manual feedback compact and readable without changing the native heading. */
-.ellucian-shared-refresh-status { display: block; max-width: 240px; white-space: normal; font-size: 12px; font-weight: 400; line-height: 1.4; }
+/* Announce refresh results without adding visible text, width, or height to the heading. */
+.ellucian-shared-refresh-status { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .ellucian-shared-refresh-status[hidden] { display: none; }
 /* Confine source guidance to the heading; body values remain ordinary native text. */
 [data-ellucian-source-cell] { white-space: nowrap; }
