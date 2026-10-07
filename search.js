@@ -116,6 +116,8 @@
   // Preserve checkbox selections across table pages, but never across packages.
   let sharedSelectionPackage = '';
   const selectedShareRows = new Map();
+  // Refresh an open tooltip only when page controls change; never poll for help text.
+  let updateActivePageTooltip = () => {};
 
   // Accept only the three supported values from extension storage.
   function normalizeSearchMode(value) {
@@ -129,6 +131,83 @@
     return SUPPORTED_PATHS.some((supportedPath) =>
       currentPath.includes(supportedPath),
     );
+  }
+
+  // Give extension-owned page controls one lightweight hover and keyboard tooltip.
+  function initializePageTooltips() {
+    let tip = null;
+    let activeTarget = null;
+    // Remove only our description link, preserving labels supplied by the page.
+    const hideTip = () => {
+      if (tip?.matches(':popover-open')) tip.hidePopover();
+      if (activeTarget && tip) {
+        const remaining = (activeTarget.getAttribute('aria-describedby') || '').split(/\s+/u).filter((id) => id && id !== tip.id);
+        if (remaining.length) activeTarget.setAttribute('aria-describedby', remaining.join(' '));
+        else activeTarget.removeAttribute('aria-describedby');
+      }
+      activeTarget = null;
+    };
+    const showTip = (target) => {
+      // Ignore native page titles, removed controls, and unrelated Experience routes.
+      const explanation = target?.getAttribute('data-ellucian-tooltip');
+      if (!isSupportedPage() || !target?.isConnected || !explanation) { hideTip(); return; }
+      // Create one reusable top-layer element only after help is actually requested.
+      if (!tip) {
+        tip = document.createElement('span');
+        tip.className = 'ellucian-shared-tooltip';
+        tip.id = `ellucian-page-tooltip-${crypto.randomUUID()}`;
+        tip.setAttribute('role', 'tooltip');
+        tip.setAttribute('popover', 'manual');
+        document.body.appendChild(tip);
+      }
+      if (typeof tip.showPopover !== 'function') return;
+      if (activeTarget !== target) {
+        hideTip();
+        activeTarget = target;
+        const descriptions = (target.getAttribute('aria-describedby') || '').split(/\s+/u).filter(Boolean);
+        target.setAttribute('aria-describedby', [...descriptions, tip.id].join(' '));
+      }
+      // Measure real tooltip dimensions so long guidance stays inside the viewport.
+      if (tip.textContent !== explanation) tip.textContent = explanation;
+      if (!tip.matches(':popover-open')) tip.showPopover();
+      const bounds = target.getBoundingClientRect();
+      const tipBounds = tip.getBoundingClientRect();
+      const left = Math.max(8, Math.min(bounds.left, window.innerWidth - tipBounds.width - 8));
+      const preferredTop = bounds.top - tipBounds.height - 8;
+      const top = Math.max(8, Math.min(preferredTop >= 8 ? preferredTop : bounds.bottom + 8, window.innerHeight - tipBounds.height - 8));
+      // Avoid unchanged style writes that would wake the page's layout observer.
+      if (tip.style.left !== `${left}px`) tip.style.left = `${left}px`;
+      if (tip.style.top !== `${top}px`) tip.style.top = `${top}px`;
+    };
+    // Keep hover text current and discard help when React removes its target.
+    updateActivePageTooltip = () => {
+      if (!isSupportedPage()) { hideTip(); tip?.remove(); tip = null; return; }
+      if (activeTarget) showTip(activeTarget);
+    };
+    // Delegate events to existing and future controls instead of adding per-row listeners.
+    document.addEventListener('pointerover', (event) => {
+      if (event.buttons) return;
+      const target = event.target.closest?.('[data-ellucian-tooltip]');
+      if (target && !target.contains(event.relatedTarget)) showTip(target);
+    }, true);
+    document.addEventListener('pointerout', (event) => {
+      if (activeTarget?.contains(event.target) && !activeTarget.contains(event.relatedTarget)) hideTip();
+    }, true);
+    document.addEventListener('focusin', (event) => {
+      const target = event.target.closest?.('[data-ellucian-tooltip]');
+      if (target) showTip(target);
+    });
+    document.addEventListener('focusout', (event) => {
+      if (activeTarget?.contains(event.target) && !activeTarget.contains(event.relatedTarget)) hideTip();
+    });
+    // Dismiss help before dragging, on Escape, and when scrolling changes its position.
+    document.addEventListener('pointerdown', hideTip, true);
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') hideTip(); }, true);
+    window.addEventListener('scroll', hideTip, { capture: true, passive: true });
+    window.addEventListener('resize', hideTip, { passive: true });
+    window.addEventListener('popstate', hideTip);
+    window.addEventListener('hashchange', hideTip);
+    window.addEventListener(DOM_CHANGE_EVENT, updateActivePageTooltip);
   }
 
   // Limit the optional column to the Designer package table itself.
@@ -1224,12 +1303,12 @@
     favoriteButton.setAttribute(
       "aria-label",
       isFavorite
-        ? `Remove ${packageName} from pinned packages`
-        : `Pin ${packageName}`,
+        ? `Unpin Package: ${packageName}`
+        : `Pin Package: ${packageName}`,
     );
     favoriteButton.setAttribute(
-      "title",
-      isFavorite ? "Remove from pinned packages" : "Pin package",
+      "data-ellucian-tooltip",
+      isFavorite ? "Unpin Package" : "Pin Package",
     );
   }
 
@@ -1369,12 +1448,12 @@
     favoriteButton.setAttribute(
       "aria-label",
       isFavorite
-        ? `Remove ${pipelineEntry.name} from pinned pipelines`
-        : `Pin ${pipelineEntry.name}`,
+        ? `Unpin Pipeline: ${pipelineEntry.name}`
+        : `Pin Pipeline: ${pipelineEntry.name}`,
     );
     favoriteButton.setAttribute(
-      "title",
-      isFavorite ? "Remove from pinned pipelines" : "Pin pipeline",
+      "data-ellucian-tooltip",
+      isFavorite ? "Unpin Pipeline" : "Pin Pipeline",
     );
   }
 
@@ -1573,7 +1652,7 @@
         `Reorder ${packageEntry.name}. Use the up and down arrow keys.`,
       );
       dragHandle.setAttribute(
-        "title",
+        "data-ellucian-tooltip",
         "Drag to reorder, or use Up and Down when focused",
       );
 
@@ -1667,7 +1746,7 @@
       selectButton.type = "button";
       selectButton.className = "ellucian-favorite-select";
       selectButton.textContent = packageEntry.name;
-      selectButton.setAttribute("title", packageEntry.name);
+      selectButton.setAttribute("data-ellucian-tooltip", packageEntry.name);
       selectButton.addEventListener("click", (event) => {
         event.stopPropagation();
         activateSearchResult({ type: "package", packageEntry, revealPipelines: true });
@@ -1693,7 +1772,7 @@
         "aria-label",
         `${packageEntry.pipelinesExpanded ? "Collapse" : "Expand"} pinned pipelines for ${packageEntry.name}`,
       );
-      disclosureButton.setAttribute("title", "Show or hide pinned pipelines");
+      disclosureButton.setAttribute("data-ellucian-tooltip", `${packageEntry.pipelinesExpanded ? 'Collapse' : 'Expand'} pinned pipelines`);
       disclosureButton.addEventListener("click", (event) => {
         event.stopPropagation();
         setFavoritePipelinesExpanded(
@@ -1714,12 +1793,12 @@
       packageButton.setAttribute(
         "aria-label",
         packageEntry.packagePinned
-          ? `Remove ${packageEntry.name} package pin`
-          : `Pin ${packageEntry.name} package`,
+          ? `Unpin Package: ${packageEntry.name}`
+          : `Pin Package: ${packageEntry.name}`,
       );
       packageButton.setAttribute(
-        "title",
-        packageEntry.packagePinned ? "Unpin package" : "Pin package",
+        "data-ellucian-tooltip",
+        packageEntry.packagePinned ? "Unpin Package" : "Pin Package",
       );
       packageButton.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -1770,7 +1849,7 @@
             `Reorder ${pipelineEntry.name}. Use the up and down arrow keys.`,
           );
           pipelineDragHandle.setAttribute(
-            "title",
+            "data-ellucian-tooltip",
             "Drag to reorder within this package, or use Up and Down when focused",
           );
 
@@ -1881,7 +1960,7 @@
           const pipelineButton = document.createElement("button");
           pipelineButton.type = "button";
           pipelineButton.className = "ellucian-favorite-pipeline-select";
-          pipelineButton.setAttribute("title", pipelineEntry.name);
+          pipelineButton.setAttribute("data-ellucian-tooltip", pipelineEntry.name);
           pipelineButton.addEventListener("click", (event) => {
             // Prevent any surrounding disclosure target from seeing navigation clicks.
             event.stopPropagation();
@@ -1912,9 +1991,9 @@
           pipelineRemoveButton.setAttribute("aria-pressed", "true");
           pipelineRemoveButton.setAttribute(
             "aria-label",
-            `Remove ${pipelineEntry.name} from pinned pipelines`,
+            `Unpin Pipeline: ${pipelineEntry.name}`,
           );
-          pipelineRemoveButton.setAttribute("title", "Unpin pipeline");
+          pipelineRemoveButton.setAttribute("data-ellucian-tooltip", "Unpin Pipeline");
           pipelineRemoveButton.addEventListener("click", (event) => {
             // Unpin only this child without toggling the package disclosure state.
             event.stopPropagation();
@@ -1957,7 +2036,7 @@
     );
     resizeHandle.setAttribute("tabindex", "0");
     resizeHandle.setAttribute(
-      "title",
+      "data-ellucian-tooltip",
       "Drag up or down to resize pinned packages",
     );
 
@@ -2327,7 +2406,7 @@
     iconButton.type = "button";
     iconButton.className = "ellucian-search-icon-button";
     iconButton.setAttribute("aria-label", "Open package and pipeline search");
-    iconButton.setAttribute("title", "Search packages and pipelines");
+    iconButton.setAttribute("data-ellucian-tooltip", "Search packages and pipelines");
 
     // Draw a single scalable vector icon so the lens and handle stay aligned.
     const searchIcon = document.createElementNS(
@@ -2799,26 +2878,8 @@
     value.tabIndex = 0;
     value.textContent = label;
     value.setAttribute('aria-label', `${label}. ${explanation}`);
-    const tip = document.createElement('span');
-    tip.className = 'ellucian-shared-tooltip';
-    tip.textContent = explanation;
-    tip.setAttribute('role', 'tooltip');
-    tip.setAttribute('popover', 'manual');
-    // Position from the actual tooltip height so longer setup guidance stays in view.
-    const showTip = () => {
-      if (!tip.isConnected || typeof tip.showPopover !== 'function') return;
-      tip.showPopover();
-      const bounds = value.getBoundingClientRect();
-      tip.style.left = `${Math.max(8, Math.min(bounds.left, window.innerWidth - 280))}px`;
-      tip.style.top = `${Math.max(8, bounds.top - tip.getBoundingClientRect().height - 8)}px`;
-    };
-    const hideTip = () => { if (tip.matches(':popover-open')) tip.hidePopover(); };
-    value.addEventListener('mouseenter', showTip);
-    value.addEventListener('focus', showTip);
-    value.addEventListener('mouseleave', hideTip);
-    value.addEventListener('blur', hideTip);
-    value.addEventListener('keydown', (event) => { if (event.key === 'Escape') hideTip(); });
-    value.appendChild(tip);
+    // The shared delegated tooltip keeps setup guidance on the heading only.
+    value.setAttribute('data-ellucian-tooltip', explanation);
     return value;
   }
 
@@ -3015,7 +3076,7 @@
       handle.setAttribute('aria-valuemin', String(MIN_PIPELINE_NAME_WIDTH));
       handle.setAttribute('aria-valuemax', String(MAX_PIPELINE_NAME_WIDTH));
       handle.setAttribute('aria-valuenow', String(packagePipelineNameWidth));
-      handle.title = 'Drag to resize. Double-click or press Enter to fit pipeline names.';
+      handle.setAttribute('data-ellucian-tooltip', 'Drag to resize. Double-click or press Enter to fit pipeline names.');
       state.handle = handle;
       let drag = null;
       // Capture only this divider's pointer, with no permanent document-wide drag listeners.
@@ -3095,7 +3156,7 @@
       refresh.type = 'button';
       refresh.className = 'ellucian-shared-refresh';
       refresh.setAttribute('aria-label', 'Refresh Shared To information');
-      refresh.title = 'Refresh Shared To information for displayed pipelines';
+      refresh.setAttribute('data-ellucian-tooltip', 'Refresh Shared To information for displayed pipelines');
       // Restore the original two-arrow design with scalable, rounded vector strokes.
       refresh.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/></svg>';
       refresh.addEventListener('click', () => {
@@ -3141,6 +3202,9 @@
         entries.push({ key, name, version });
       }
       const result = sharedStatusCache.get(key);
+      // A pending check is not an empty result or a failed lookup.
+      const rowBusy = String(published && result?.pending === true);
+      if (cell.getAttribute('aria-busy') !== rowBusy) cell.setAttribute('aria-busy', rowBusy);
       const destinations = result?.destinations || [];
       const entriesToShow = published && result?.shared && !result.error ? destinations.map((destination) => ({
         label: destination.environment || destination.tenantName || destination.tenantId,
@@ -3164,30 +3228,8 @@
         value.tabIndex = 0;
         value.textContent = label;
         value.setAttribute('aria-label', `${label}. ${tooltip}`);
-        const tip = document.createElement('span');
-        tip.className = 'ellucian-shared-tooltip';
-        tip.textContent = tooltip;
-        tip.setAttribute('role', 'tooltip');
-        // Use the browser's top layer so preceding rows cannot cover the tooltip.
-        tip.setAttribute('popover', 'manual');
-        const showTip = () => {
-          if (!tip.isConnected || typeof tip.showPopover !== 'function') return;
-          const bounds = value.getBoundingClientRect();
-          tip.style.left = `${Math.max(8, Math.min(bounds.left, window.innerWidth - 280))}px`;
-          tip.style.top = `${Math.max(8, bounds.top - 60)}px`;
-          tip.showPopover();
-        };
-        const hideTip = () => {
-          if (tip.matches(':popover-open')) tip.hidePopover();
-        };
-        value.addEventListener('mouseenter', showTip);
-        value.addEventListener('focus', showTip);
-        value.addEventListener('mouseleave', hideTip);
-        value.addEventListener('blur', hideTip);
-        value.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') hideTip();
-        });
-        value.appendChild(tip);
+        // Reuse the same top-layer tooltip as refresh, search, and favorites controls.
+        value.setAttribute('data-ellucian-tooltip', tooltip);
         cell.appendChild(value);
         });
       }
@@ -3229,9 +3271,9 @@
     // Errors remain distinct from a successful lookup that found no shares.
     if (!feedback.hidden) {
       const results = cells.map((cell) => sharedStatusCache.get(cell.dataset.sharedKey));
-      const message = busy ? 'Checking sharing information…'
-        : results.some((result) => result?.error) ? 'Sharing info unavailable. Try again.'
-        : results.some((result) => result?.shared) ? 'Sharing info refreshed.'
+      const message = busy ? 'Refreshing Shared To information…'
+        : results.some((result) => result?.error) ? 'Shared To information unavailable. Try again.'
+        : results.some((result) => result?.shared) ? 'Shared To information refreshed.'
         : 'No shared pipelines in this package view.';
       // Avoid repeating the same live-region announcement during unrelated mutations.
       if (feedback.textContent !== message) feedback.textContent = message;
@@ -3239,9 +3281,11 @@
     // Show the latest manual result only on the refresh button's hover text.
     const refreshDescription = !feedback.hidden ? feedback.textContent
       : busy ? 'Refreshing Shared To information…' : 'Refresh Shared To information for displayed pipelines';
-    refresh.title = refreshDescription;
+    refresh.setAttribute('data-ellucian-tooltip', refreshDescription);
     // Keep keyboard and assistive-technology descriptions equivalent to the hover text.
     refresh.setAttribute('aria-description', refreshDescription);
+    // Update a tooltip already open while a manual check completes.
+    updateActivePageTooltip();
   }
 
   // Place a package-scoped search beside the Designer Pipelines heading.
@@ -3272,7 +3316,7 @@
     iconButton.type = 'button';
     iconButton.className = 'ellucian-search-icon-button';
     iconButton.setAttribute('aria-label', 'Open pipeline search in this package');
-    iconButton.title = 'Search pipelines in this package';
+    iconButton.setAttribute('data-ellucian-tooltip', 'Search pipelines in this package');
     iconButton.setAttribute('aria-expanded', 'false');
     iconButton.innerHTML = '<svg class="ellucian-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="M14.5 14.5L20 20"/></svg>';
     const input = document.createElement('input');
@@ -3715,6 +3759,9 @@
       refreshFavoritesUI();
     }
   }, { passive: true });
+
+  // Install help once for controls on either page, including the sidebar's resize handle.
+  initializePageTooltips();
 
   // Load search and favorites preferences before inserting the first controls.
   chrome.storage.local.get(

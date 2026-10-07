@@ -839,13 +839,13 @@ html[data-ellucian-favorites-resizing="true"] * {
 /* Keep the vector lens and handle crisp and centered inside the button. */
 .ellucian-search-icon {
   fill: none !important;
-  height: 18px !important;
+  height: 20px !important;
   pointer-events: none !important;
   stroke: currentColor !important;
   stroke-linecap: round !important;
   stroke-linejoin: round !important;
-  stroke-width: 2.25 !important;
-  width: 18px !important;
+  stroke-width: 2 !important;
+  width: 20px !important;
 }
 
 /* Highlight the compact button during mouse and keyboard interaction. */
@@ -972,7 +972,7 @@ html[data-ellucian-favorites-resizing="true"] * {
   z-index: 1500;
   bottom: calc(100% + 8px);
   left: 0;
-  max-width: 260px;
+  max-width: min(260px, calc(100vw - 16px));
   width: max-content;
   white-space: normal;
   padding: 7px 10px;
@@ -980,6 +980,10 @@ html[data-ellucian-favorites-resizing="true"] * {
   background: #272b30;
   color: #fff;
   font: 12px/1.4 Arial, sans-serif;
+  /* Long names stay bounded, and help never intercepts a click or drag. */
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  pointer-events: none;
 }
 /* Popovers escape table clipping and stacking contexts. */
 .ellucian-shared-tooltip[popover] { position: fixed; margin: 0; inset: auto; border: 0; }
@@ -1038,3 +1042,7 @@ th[data-ellucian-shared-cell] > span { font-weight: 700; }
 /* Highlight dragging and keyboard focus while preserving native table typography. */
 .ellucian-pipeline-column-resizer:hover::after, .ellucian-pipeline-column-resizer[data-dragging]::after { width: 2px; opacity: 0.9; }
 .ellucian-pipeline-column-resizer:focus-visible { outline: 2px solid #6d28d9; outline-offset: -2px; }
+
+/* Align comparable action controls without changing native row or version-badge sizes. */
+:is(.ellucian-search-icon-button, .ellucian-shared-refresh, .ellucian-package-favorite-button, .ellucian-pipeline-favorite-button, .ellucian-favorite-remove, .ellucian-favorite-pipeline-remove):hover:not(:disabled) { background: #e8f4ed !important; border-radius: 4px !important; }
+:is(.ellucian-search-icon-button, .ellucian-shared-refresh, .ellucian-package-favorite-button, .ellucian-pipeline-favorite-button, .ellucian-favorite-remove, .ellucian-favorite-pipeline-remove):focus-visible { outline: 2px solid #6d28d9 !important; outline-offset: -2px !important; box-shadow: none !important; border-radius: 4px !important; }

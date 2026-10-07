@@ -178,7 +178,7 @@
       : "The width resets when the page reloads.";
 
     resizeHandle.setAttribute(
-      "title",
+      "data-ellucian-tooltip",
       `Drag to resize the package column. ${persistenceMessage}`,
     );
   }

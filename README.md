@@ -25,6 +25,7 @@ Each delivered update receives a new version; small fixes increase the last numb
 - Selecting a pinned package raises it in the normal list when needed to reveal its pipelines, without moving already-high packages down.
 - Lets you reorder pinned packages and pipelines by dragging their handles.
 - Keeps package names, pipeline versions, and stars neatly aligned.
+- Uses matching in-page tooltips on hover or keyboard focus; press Escape to dismiss help. Star actions use **Pin Package / Unpin Package** and **Pin Pipeline / Unpin Pipeline** in both lists.
 - Remembers favorites separately for Integration Packages and Integration Designer in Test and Production.
 - Follows your system's light or dark appearance in the settings window.
 
@@ -46,6 +47,8 @@ Select the extension icon in the browser toolbar to:
 - Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
 
 Shared From sources refresh automatically when you enter Designer through Experience, after its package data is ready. For a manual retry, open Designer in the source environment and select **Page Behavior → Refresh Shared From Data**. It updates only that environment and confirms when the cache is saved; it does not contact other environments or change favorites.
+
+Routine page refresh feedback stays in tooltips rather than expanding table headings. Settings errors, setup instructions, and empty-search guidance remain visible. Disabled options look inactive; only actions actually running show a waiting cursor. Checking, no results, and unavailable information remain distinct.
 
 After reloading the extension, refresh any already-open Experience page once. If its old connection is unavailable, Shared From checks and favorites loading stop safely until you refresh; saved sources and favorites remain untouched. A failed favorites read is not treated as an empty list.
 

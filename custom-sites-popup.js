@@ -12,7 +12,11 @@
   // Prevent overlapping permission requests and storage writes in this popup.
   function setBusy(value) {
     busy = value;
-    card.querySelectorAll("input, button").forEach((control) => { control.disabled = value; });
+    card.querySelectorAll("input, button").forEach((control) => {
+      control.disabled = value;
+      // Use the waiting appearance only while site setup or list loading is running.
+      control.setAttribute('aria-busy', String(value));
+    });
   }
 
   // Wait for the worker to activate the latest list before reporting success.

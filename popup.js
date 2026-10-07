@@ -244,10 +244,13 @@
   // Persist consent only after confirmation; the worker clears data when disabled.
   function saveSharedFrom(enabled) {
     sharedFromSwitch.disabled = true;
+    // Distinguish saving consent from a setting that is simply unavailable.
+    sharedFromSwitch.setAttribute('aria-busy', 'true');
     chrome.storage.local.set({ [SHARED_FROM_ENABLED_KEY]: enabled }, () => {
       const failed = Boolean(chrome.runtime.lastError);
       sharedFromSwitch.checked = failed ? !enabled : enabled;
       sharedFromSwitch.disabled = false;
+      sharedFromSwitch.setAttribute('aria-busy', 'false');
       sharedFromStatus.textContent = failed ? "Could not save. Please try again." : enabled ? "Enabled. Visit Designer in each source environment." : "Disabled. Clearing source cache; favorites kept.";
     });
   }
@@ -281,7 +284,9 @@
       return;
     }
     refreshSharedFromButton.disabled = true;
-    sharedFromStatus.textContent = 'Updating this Designer environment…';
+    // Mark actual work separately from controls disabled by setup or preferences.
+    refreshSharedFromButton.setAttribute('aria-busy', 'true');
+    sharedFromStatus.textContent = 'Refreshing Shared From data…';
     try {
       // Read the active tab's identifier only; do not scan other tabs or their URLs.
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -296,19 +301,22 @@
         'extension-reloaded': 'Refresh this page after reloading the extension, then try again.',
         busy: 'A refresh is already running.',
       };
-      sharedFromStatus.textContent = result?.ok === true ? 'Updated this Designer environment.'
-        : guidance[result?.reason] || 'Could not update sources. Please try again.';
+      sharedFromStatus.textContent = result?.ok === true ? 'Shared From data refreshed.'
+        : guidance[result?.reason] || 'Could not refresh Shared From data. Please try again.';
     } catch (_error) {
       // Unsupported tabs and pages not refreshed after an extension reload have no receiver.
       sharedFromStatus.textContent = 'Open Designer on an enabled site, then try again. If already open, refresh that page once.';
     } finally {
       refreshSharedFromButton.disabled = false;
+      refreshSharedFromButton.setAttribute('aria-busy', 'false');
     }
   });
 
   // Read a fresh snapshot on demand, without collecting data or changing opt-in.
   exportSharedFromButton.addEventListener("click", () => {
     exportSharedFromButton.disabled = true;
+    // Expose the export's busy state without hiding its eventual error or setup guidance.
+    exportSharedFromButton.setAttribute('aria-busy', 'true');
     sharedFromStatus.textContent = "";
     chrome.storage.local.get({ [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
       try {
@@ -359,6 +367,7 @@
       } finally {
         // Allow retries after an empty cache, cancelled download, or temporary failure.
         exportSharedFromButton.disabled = false;
+        exportSharedFromButton.setAttribute('aria-busy', 'false');
       }
     });
   });

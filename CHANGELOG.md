@@ -2,6 +2,14 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.5 — 2026-10-06
+
+- Standardized extension-owned in-page help with one reusable styled tooltip for stars, favorites, search, sharing, and resize controls. Supports hover, keyboard focus, Escape, viewport-aware placement, live refresh results, and cleanup on navigation/removal; native page tooltips are untouched. Shared From guidance stays on its heading, not source values.
+- Uses Pin Package / Unpin Package and Pin Pipeline / Unpin Pipeline consistently in the normal and pinned lists, with named accessible labels.
+- Keeps routine page refresh feedback out of headings while leaving settings errors, permission/setup instructions, and empty-list/search guidance visible. Refresh wording is consistent; pending sharing checks remain distinct from empty or unavailable results.
+- Distinguishes disabled controls from active work using explicit busy states. Waiting cursors appear only during source refresh/export/saving or custom-site work. Standardized comparable hover/focus styling and search/refresh vector metrics while preserving native row typography, badge sizing, and custom star colors.
+- No changes to favorites, saved formats, permissions, sharing cache behavior, six-request limit, or pipeline navigation.
+
 ## 1.20.4 — 2026-10-06
 
 - Moved manual Shared To refresh feedback, including the no-shared-pipelines message, into the refresh icon's hover text instead of displaying it beneath the heading. Retains screen-reader announcements without changing header size.
