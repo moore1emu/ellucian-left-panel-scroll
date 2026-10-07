@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.3 — 2026-10-06
+
+- Raised the global Shared To service-request limit from three to six at Andrew's request, including when checking a single package batch. Keeps the one-scan-per-batch cleanup, existing caching, cancellation, and refresh behavior.
+- No changes to favorites, saved data, settings, permissions, column sizing, or Shared From collection.
+
 ## 1.20.2 — 2026-10-06
 
 - Limits Shared To history and destination-name service lookups to three simultaneous requests across all check batches. Disabling Shared To stops waiting calls; completed cached results are retained and cancelled calls can be retried when enabled again.

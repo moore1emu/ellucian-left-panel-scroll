@@ -15,6 +15,8 @@
   const sharedReleaseCache = new Map();
   // Remember only pipeline names already checked by the optional sharing column.
   const sharedArtifactNames = new Map();
+  // Give larger packages more capacity while keeping one global sharing budget.
+  const SHARING_REQUEST_LIMIT = 6;
   // Share one request budget across batches, including destination-name lookups.
   const sharingRequestQueue = [];
   const sharingCancelledError = new Error('Sharing checks were disabled.');
@@ -122,14 +124,14 @@
     return designerModules;
   }
 
-  // Start at most three sharing service requests across the entire page.
+  // Start at most six sharing service requests across the entire page.
   function drainSharingRequests() {
     // Disabling rejects waiting work without interrupting already-started requests.
     if (!sharingEnabled) {
       sharingRequestQueue.splice(0).forEach((request) => request.reject(sharingCancelledError));
       return;
     }
-    while (activeSharingRequests < 3 && sharingRequestQueue.length) {
+    while (activeSharingRequests < SHARING_REQUEST_LIMIT && sharingRequestQueue.length) {
       const request = sharingRequestQueue.shift();
       activeSharingRequests += 1;
       // Recheck opt-in before calling the service, even if it changed this turn.
@@ -284,7 +286,7 @@
     }
 
     await Promise.all(
-      Array.from({ length: Math.min(3, entries.length) }, runWorker),
+      Array.from({ length: Math.min(SHARING_REQUEST_LIMIT, entries.length) }, runWorker),
     );
     return results;
   }
