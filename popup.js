@@ -20,6 +20,9 @@
   const sharedFromSwitch = document.querySelector("#shared-from-enabled");
   const sharedFromConfirmation = document.querySelector("#shared-from-confirmation");
   const sharedFromStatus = document.querySelector("#shared-from-status");
+  const sharedFromCacheStatus = document.querySelector('#shared-from-cache-status');
+  let cacheStatusTabId = null;
+  let cacheStatusRead = 0;
   const exportSharedFromButton = document.querySelector("#export-shared-from");
   const refreshSharedFromButton = document.querySelector("#refresh-shared-from");
   const versionLabel = document.querySelector("#extension-version");
@@ -30,6 +33,7 @@
   const iconPreview = document.querySelector(".header-icon");
   const iconStatus = document.querySelector("#icon-status");
   const favoriteColorInput = document.querySelector("#favorite-color");
+  const favoriteShapeSelect = document.querySelector('#favorite-shape');
   const favoriteMatchSwitch = document.querySelector("#favorite-match-icon");
   const favoritePreview = document.querySelector("#favorite-color-preview");
   const favoriteStatus = document.querySelector("#favorite-color-status");
@@ -52,6 +56,7 @@
   iconTextColorInput.disabled = true;
   resetIconButton.disabled = true;
   favoriteColorInput.disabled = true;
+  favoriteShapeSelect.disabled = true;
   favoriteMatchSwitch.disabled = true;
   resetFavoriteButton.disabled = true;
 
@@ -75,6 +80,7 @@
       sharedFromSwitch.checked = settings[SHARED_FROM_ENABLED_KEY] === true;
       sharedFromSwitch.disabled = false;
       refreshSharedFromButton.disabled = false;
+      readOwnershipStatus();
 
       // Display the favorites preference, defaulting to the visible section.
       favoritesEnabledSwitch.checked =
@@ -95,6 +101,7 @@
       const stars = FavoriteAppearance.normalize(settings[FavoriteAppearance.KEY]);
       independentFavoriteColor = stars.color;
       favoriteMatchSwitch.checked = stars.matchIcon;
+      favoriteShapeSelect.value = stars.shape;
       appearanceLoaded = true;
       previewIcon();
       iconColorInput.disabled = false;
@@ -103,6 +110,7 @@
       resetIconButton.disabled = false;
       favoriteMatchSwitch.disabled = false;
       resetFavoriteButton.disabled = false;
+      favoriteShapeSelect.disabled = false;
     },
   );
 
@@ -126,6 +134,8 @@
     // Keep the swatch and star preview in sync without losing the independent choice.
     favoriteColorInput.value = resolvedColor;
     favoritePreview.style.color = resolvedColor;
+    // Reuse exactly the same filled vector as the sidebar, including the bear's transparent features.
+    FavoriteAppearance.render(favoritePreview.querySelector('svg'), { shape: favoriteShapeSelect.value });
     favoriteColorInput.disabled = !appearanceLoaded || favoriteMatchSwitch.checked;
   }
 
@@ -135,9 +145,9 @@
     if (!favoriteMatchSwitch.checked) {
       independentFavoriteColor = FavoriteAppearance.normalize({ color: favoriteColorInput.value }).color;
     }
-    const appearance = FavoriteAppearance.normalize({ color: independentFavoriteColor, matchIcon: favoriteMatchSwitch.checked });
+    const appearance = FavoriteAppearance.normalize({ color: independentFavoriteColor, matchIcon: favoriteMatchSwitch.checked, shape: favoriteShapeSelect.value });
     chrome.storage.local.set({ [FavoriteAppearance.KEY]: appearance }, () => {
-      favoriteStatus.textContent = chrome.runtime.lastError ? "Could not save. Please try again." : "Star color saved on this browser.";
+      favoriteStatus.textContent = chrome.runtime.lastError ? "Could not save. Please try again." : "Favorites appearance saved on this browser.";
     });
   }
 
@@ -151,6 +161,8 @@
     previewFavoriteColor();
   });
   favoriteColorInput.addEventListener("change", saveFavoriteColor);
+  // Preview and save the chosen shape without changing the color or any pinned records.
+  favoriteShapeSelect.addEventListener('change', () => { previewFavoriteColor(); saveFavoriteColor(); });
   favoriteMatchSwitch.addEventListener("change", () => {
     previewFavoriteColor();
     saveFavoriteColor();
@@ -160,8 +172,51 @@
   resetFavoriteButton.addEventListener("click", () => {
     independentFavoriteColor = FavoriteAppearance.DEFAULT.color;
     favoriteMatchSwitch.checked = FavoriteAppearance.DEFAULT.matchIcon;
+    favoriteShapeSelect.value = FavoriteAppearance.DEFAULT.shape;
     previewFavoriteColor();
     saveFavoriteColor();
+  });
+
+  // Format the last successful save in the browser's local date, matching MM-DD-YY.
+  function renderOwnershipStatus(status) {
+    sharedFromCacheStatus.hidden = !sharedFromSwitch.checked || status?.designer !== true;
+    if (sharedFromCacheStatus.hidden) { sharedFromCacheStatus.textContent = ''; return; }
+    if (status.enabled !== true) { sharedFromCacheStatus.textContent = 'Status Unavailable'; return; }
+    if (status.busy === true) { sharedFromCacheStatus.textContent = 'Caching…'; return; }
+    const timestamp = Number(status.checkedAt);
+    const date = new Date(timestamp);
+    if (Number.isFinite(timestamp) && timestamp > 0 && Number.isFinite(date.getTime())) {
+      const pad = (number) => String(number).padStart(2, '0');
+      sharedFromCacheStatus.textContent = `Cached ${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${String(date.getFullYear()).slice(-2)}`;
+    } else sharedFromCacheStatus.textContent = status.tenantId ? 'No Cache' : 'Status Unavailable';
+  }
+
+  // Opening settings reads only the active page's existing status, never a new snapshot.
+  async function readOwnershipStatus() {
+    const read = ++cacheStatusRead;
+    if (!sharedFromSwitch.checked) { sharedFromCacheStatus.hidden = true; sharedFromCacheStatus.textContent = ''; return; }
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (read !== cacheStatusRead) return;
+      if (!Number.isInteger(tab?.id)) throw new Error('No active tab.');
+      cacheStatusTabId = tab.id;
+      const status = await chrome.tabs.sendMessage(tab.id, { type: 'designer-ownership-status' });
+      if (read === cacheStatusRead) renderOwnershipStatus(status);
+    } catch (_error) {
+      // A missing page connection is not proof that the environment has no cache.
+      if (read !== cacheStatusRead) return;
+      sharedFromCacheStatus.hidden = false;
+      sharedFromCacheStatus.textContent = 'Status Unavailable';
+    }
+  }
+
+  // Listen only to this extension's active top-level page, not another Designer tab.
+  chrome.runtime.onMessage.addListener((message, sender) => {
+    if (message?.type !== 'designer-ownership-status-changed' || sender.id !== chrome.runtime.id ||
+        sender.tab?.id !== cacheStatusTabId || sender.frameId !== 0) return;
+    // A current event must win over an older asynchronous opening-status response.
+    cacheStatusRead += 1;
+    renderOwnershipStatus(message);
   });
 
   // Save only valid initials; the worker updates the toolbar when storage changes.
@@ -252,6 +307,7 @@
       sharedFromSwitch.disabled = false;
       sharedFromSwitch.setAttribute('aria-busy', 'false');
       sharedFromStatus.textContent = failed ? "Could not save. Please try again." : enabled ? "Enabled. Visit Designer in each source environment." : "Disabled. Clearing source cache; favorites kept.";
+      readOwnershipStatus();
     });
   }
 
@@ -287,6 +343,8 @@
     // Show the CSS working circle until collection and persistence return a result.
     refreshSharedFromButton.setAttribute('aria-busy', 'true');
     sharedFromStatus.textContent = 'Refreshing Shared From data…';
+    // Preserve other environment dates and existing failure feedback while this refresh is pending.
+    if (!sharedFromCacheStatus.hidden) sharedFromCacheStatus.textContent = 'Caching…';
     try {
       // Read the active tab's identifier only; do not scan other tabs or their URLs.
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -319,6 +377,7 @@
       // Stop the working circle on success, failure, or a lost page connection.
       refreshSharedFromButton.disabled = false;
       refreshSharedFromButton.setAttribute('aria-busy', 'false');
+      readOwnershipStatus();
     }
   });
 

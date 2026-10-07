@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.10 — 2026-10-07
+
+- Adds **Star**, **Circle**, and **Bear Face** favorite icons. Star remains the default; all three use your favorite color or **Match Icon Color**, with gray unpinned outlines. Appearance changes preserve pins, ordering, and expanded packages.
+- Renames the appearance section **Icon & Favorites** and shortens Shared From setup wording.
+- Settings shows **Cached MM-DD-YY**, **No Cache**, or **Caching…** for the current Designer environment. The date reflects the last successful save; failed refreshes retain it. Status reads reuse existing local state without new Ellucian requests or polling, and missing connections show **Status Unavailable**.
+
 ## 1.20.9 — 2026-10-07
 
 - Designer pipeline search displays 20 matches initially, with **Show More** adding 20 at a time and a total count. All loaded matches remain accessible beyond the previous 100-result cutoff, without new Ellucian requests.

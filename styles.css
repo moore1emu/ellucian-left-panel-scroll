@@ -252,6 +252,11 @@ html[data-ellucian-panel-resizing="true"] * {
   fill: currentColor !important;
 }
 
+/* Preserve gray facial strokes when unpinned; the filled bear uses transparent feature cutouts. */
+.ellucian-favorite-face-details { fill: none !important; }
+[data-favorite="true"] .ellucian-favorite-face-details,
+.ellucian-favorite-pipeline-remove .ellucian-favorite-face-details { display: none !important; }
+
 /* Place the remembered favorites directly beneath the package header. */
 .ellucian-favorites-section {
   background: transparent !important;

@@ -386,6 +386,8 @@
         indexAvailable:
           packageRowsFound > 0 && packages.length === packageRowsFound,
         packageRowsFound,
+        // Supply only existing environment identity for opted-in Designer cache status; no service call.
+        tenantId: ownershipEnabled && /\/data-connect-designer\/?$/iu.test(window.location.pathname) ? getCurrentTenantId() : '',
         packages,
       },
       window.location.origin,

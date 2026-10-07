@@ -26,6 +26,8 @@ Enable **Shared From**, accept its local-data notice, and visit Designer in each
 
 For a retry, stay in the source Designer environment and use **Page Behavior → Refresh Shared From Data**. The button collects only that environment, not every environment at once.
 
+Settings shows that environment's last successful **Cached MM-DD-YY** date, **No Cache**, or **Caching…**. A failed retry does not replace a saved date. **Status Unavailable** is different from an empty cache: refresh the page after an extension reload and confirm Shared From is enabled.
+
 The working circle remains visible until collection and saving finish. A failure message identifies loading/incomplete data, a lost page connection, site access, storage read/write problems, or a source-cache limit. Do not uninstall the extension or clear favorites to resolve a source-cache error. If the source cache is full, export it before turning Shared From off to clear that cache, then enable it and revisit the needed Designer environments.
 
 A dash means the source is unknown or conflicting. A source may be the same environment you are currently using. **Export JSON** lets you inspect saved names and last-checked times. Revisiting Designer refreshes its snapshot; disabling Shared From clears that cache.

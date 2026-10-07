@@ -76,7 +76,9 @@
         <label class="setting-row" for="shared-from-enabled">
           <span class="setting-copy">
             <span class="setting-title">Shared From</span>
-            <span class="setting-description">Remember Designer sources.</span>
+            <span class="setting-description">Show source environments in Packages.</span>
+            <!-- Display only the currently open Designer environment's cache status. -->
+            <span id="shared-from-cache-status" class="setting-description" role="status" aria-live="polite" hidden></span>
           </span>
           <span class="switch">
             <input id="shared-from-enabled" type="checkbox" disabled aria-describedby="shared-from-help" />
@@ -91,7 +93,7 @@
           <button id="confirm-shared-from" type="button">Enable Shared From</button>
           <button id="cancel-shared-from" type="button">Cancel</button>
         </div>
-        <p id="shared-from-help" class="card-description">Packages only. Visit Designer in each source environment first.</p>
+        <p id="shared-from-help" class="card-description">Visit Designer in each source environment first.</p>
         <!-- Keep manual collection and snapshot export together without adding a settings card. -->
         <div class="shared-from-actions">
           <button id="refresh-shared-from" type="button" disabled title="Update sources from the current Designer environment">Refresh Shared From Data</button>
@@ -126,7 +128,7 @@
 
       <!-- Keep optional personalization compact until the user opens it. -->
       <details class="settings-card icon-appearance-card">
-        <summary>Icon &amp; Favorites Appearance</summary>
+        <summary>Icon &amp; Favorites</summary>
         <div class="icon-appearance-controls">
           <!-- Provide a native color picker and a short initials field. -->
           <label class="icon-control" for="icon-color">
@@ -153,21 +155,30 @@
 
         <!-- Keep star personalization beside the icon rather than adding another card. -->
         <div class="favorite-appearance-controls">
-          <span class="setting-title">Favorite Stars</span>
+          <span class="setting-title">Favorites</span>
+          <!-- Shape changes affect appearance only; existing pins remain unchanged. -->
+          <label class="favorite-shape-control" for="favorite-shape">
+            <span>Favorite Icon</span>
+            <select id="favorite-shape" disabled>
+              <option value="star">Star</option>
+              <option value="circle">Circle</option>
+              <option value="bear">Bear Face</option>
+            </select>
+          </label>
           <label class="favorite-match-control" for="favorite-match-icon">
             <input id="favorite-match-icon" type="checkbox" disabled />
             <span>Match Icon Color</span>
           </label>
           <div class="favorite-color-controls">
             <label class="icon-control" for="favorite-color">
-              <span>Star Color</span>
+              <span>Favorite Color</span>
               <input id="favorite-color" type="color" value="#6d28d9" disabled />
             </label>
             <!-- Preview the unchanged filled star shape in the chosen color. -->
-            <span id="favorite-color-preview" role="img" aria-label="Favorite star preview">
+            <span id="favorite-color-preview" role="img" aria-label="Favorite icon preview">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.4l2.66 5.39 5.95.86-4.3 4.2 1.02 5.92L12 16.97l-5.32 2.8 1.01-5.92-4.3-4.2 5.95-.86L12 3.4z" /></svg>
             </span>
-            <button id="reset-favorite-color" type="button" disabled>Reset Stars</button>
+            <button id="reset-favorite-color" type="button" disabled>Reset Favorites</button>
           </div>
           <p id="favorite-color-status" class="icon-status" role="status" aria-live="polite"></p>
         </div>

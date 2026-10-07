@@ -92,6 +92,10 @@
   // Index locally observed Designer homes by exact name, not search text or version.
   let sharedFromEnabled = false;
   let ownershipByName = new Map();
+  // Retain just timestamps and current environment identity for the read-only settings status.
+  let ownershipCacheTimes = new Map();
+  let ownershipTenantId = '';
+  let ownershipLastStatus = '';
   let ownershipRequest = "";
   let ownershipSignature = "";
   let ownershipTimer = 0;
@@ -936,16 +940,8 @@
     icon.setAttribute("viewBox", "0 0 24 24");
     icon.setAttribute("aria-hidden", "true");
 
-    // Use one continuous shape so outlined and filled states align exactly.
-    const star = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
-    star.setAttribute(
-      "d",
-      "M12 3.4l2.66 5.39 5.95.86-4.3 4.2 1.02 5.92L12 16.97l-5.32 2.8 1.01-5.92-4.3-4.2 5.95-.86L12 3.4z",
-    );
-    icon.appendChild(star);
+    // Reuse the selected vector without rebuilding package rows or changing favorite state.
+    FavoriteAppearance.render(icon, favoriteAppearance);
     return icon;
   }
 
@@ -2805,11 +2801,14 @@
   // Index the compact local snapshots once per storage change, not once per table row.
   function loadOwnershipCache(cache) {
     ownershipByName = new Map();
+    ownershipCacheTimes = new Map();
     if (!sharedFromEnabled) return;
-    Object.values(cache || {}).forEach((snapshot) => {
+    Object.entries(cache || {}).forEach(([tenantId, snapshot]) => {
       const environment = normalizeText(snapshot?.environment);
       const checkedAt = Number(snapshot?.checkedAt);
       if (!environment || !Number.isFinite(checkedAt) || !Array.isArray(snapshot?.packages)) return;
+      // Include an empty, successfully saved environment snapshot as a real cache.
+      if (checkedAt > 0) ownershipCacheTimes.set(tenantId, checkedAt);
       const seenNames = new Set();
       // Build the same fast name lookup from groups, with no duplicate persisted flat list.
       snapshot.packages.slice(0, 10000).forEach((entry) => {
@@ -2825,12 +2824,40 @@
         });
       });
     });
+    publishOwnershipStatus();
+  }
+
+  // Report this document's current operation and last successful save, not another environment's date.
+  function getOwnershipStatus() {
+    const designer = isDesignerPackagePage();
+    const enabled = sharedFromEnabled && !ownershipExtensionDisconnected;
+    return { designer, enabled, tenantId: designer ? ownershipTenantId : '',
+      busy: Boolean(designer && enabled && (ownershipRequest || ownershipIndexTimer || ownershipManualResponse)),
+      checkedAt: designer ? ownershipCacheTimes.get(ownershipTenantId) || 0 : 0 };
+  }
+
+  // Notify open settings only when the small status changes; no polling or saved status records.
+  function publishOwnershipStatus() {
+    const status = getOwnershipStatus();
+    const signature = JSON.stringify(status);
+    if (signature === ownershipLastStatus) return;
+    ownershipLastStatus = signature;
+    try {
+      const runtime = globalThis.chrome?.runtime;
+      if (!runtime?.id || typeof runtime.sendMessage !== 'function') return;
+      // No open popup is normal; consume that delivery error without restarting collection.
+      runtime.sendMessage({ type: 'designer-ownership-status-changed', ...status }, () => {
+        // A popup may close or the extension may reload while this optional reply is pending.
+        try { void runtime.lastError; } catch (_error) { /* No cache or favorites write depends on status delivery. */ }
+      });
+    } catch (_error) { /* A reloaded extension cannot receive this optional status notification. */ }
   }
 
   // Complete a manual refresh only after persistence, cancellation, or a bounded failure.
   function finishOwnershipRefresh(result) {
     const respond = ownershipManualResponse;
     ownershipManualResponse = null;
+    publishOwnershipStatus();
     // Log only actionable fixed codes, not routine cancellation, names, or API payloads.
     const failureCodes = ['not-ready', 'lookup-failed', 'save-failed', 'storage-read', 'storage-write',
       'site-access', 'incomplete-data', 'source-limit', 'cache-full', 'document-unavailable'];
@@ -2878,6 +2905,7 @@
       ownershipIndexTimer = 0;
       requestDesignerOwnershipIndex();
     }, OWNERSHIP_INDEX_RETRY_MS);
+    publishOwnershipStatus();
   }
 
   // Recognize SPA entry and exit even when the browser emits no pageshow or popstate.
@@ -2885,6 +2913,7 @@
     const pageKey = sharedFromEnabled && isDesignerPackagePage() ? getFavoritesStorageKey() : '';
     if (!force && pageKey === ownershipPageKey) return;
     resetDesignerOwnership(sharedFromEnabled ? 'left-designer' : 'disabled');
+    ownershipTenantId = '';
     ownershipPageKey = pageKey;
     if (pageKey) requestDesignerOwnershipIndex();
   }
@@ -2915,10 +2944,16 @@
     // Repeat the opt-in handshake in case the page helper loaded after settings did.
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-setting", enabled: true }, window.location.origin);
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-request", requestId: ownershipRequest }, window.location.origin);
+    publishOwnershipStatus();
   }
 
   // Accept manual refresh only from this extension's settings on the current Designer page.
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
+    // Settings may inspect status without collecting data or making a service request.
+    if (message?.type === 'designer-ownership-status' && sender.id === chrome.runtime?.id && !sender.tab) {
+      respond(getOwnershipStatus());
+      return;
+    }
     // Let only this extension's background verify the live route of this isolated document.
     if (message?.type === 'designer-ownership-context' && sender.id === chrome.runtime?.id && !sender.tab) {
       respond({ url: window.location.href, enabled: sharedFromEnabled && !ownershipExtensionDisconnected });
@@ -3659,6 +3694,8 @@
       if (!sharedFromEnabled || !isDesignerPackagePage() || !ownershipRequest || event.data.requestId !== ownershipRequest) return;
       // Keep this request pending until the background confirms the cache write.
       const requestId = ownershipRequest;
+      ownershipTenantId = normalizeText(event.data.tenantId);
+      publishOwnershipStatus();
       // Extension reloads can remove the API or make an existing API throw synchronously.
       try {
         const runtime = globalThis.chrome?.runtime;
@@ -3764,6 +3801,8 @@
     window.clearTimeout(indexResponseTimer);
     const normalizedIndex = normalizeSearchIndex(event.data.packages);
     const packageRowsFound = Number(event.data.packageRowsFound) || 0;
+    // Reuse identity from the existing local index response, including while the inventory is loading.
+    if (sharedFromEnabled && isDesignerPackagePage()) ownershipTenantId = normalizeText(event.data.tenantId) || ownershipTenantId;
     const completeIndex =
       event.data.indexAvailable === true &&
       normalizedIndex.length > 0 &&
@@ -3788,6 +3827,7 @@
         ownershipIndexTimer = 0;
       }
       requestDesignerOwnership();
+      publishOwnershipStatus();
       refreshOpenSearchResults();
       refreshFavoritesUI();
     } else {

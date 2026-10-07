@@ -10,7 +10,7 @@ Make Ellucian Integration Packages and Integration Designer easier to navigate i
 - Automatically fit pipeline-name columns, with manual resizing when needed.
 - Optionally show **Shared To** in Designer, highlighting version mismatches in red.
 - Optionally show **Shared From** in Integration Packages using locally saved Designer sources.
-- Customize your toolbar icon, favorite-star colors, and search display.
+- Customize your toolbar icon, favorite shapes and colors, and search display.
 
 Favorites stay separate for each page and environment. Standard Experience Test and Production sites are supported, along with university vanity URLs you add in settings.
 

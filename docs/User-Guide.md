@@ -66,6 +66,8 @@ Unknown or conflicting sources show a dash. Hover or focus the column heading fo
 
 For a manual retry, open Designer in the source environment and select **Refresh Shared From Data** in settings. It refreshes only that currently open Designer environment. A working circle stays visible until collection and saving finish, or a failure is reported.
 
+In Designer, settings shows **Cached MM-DD-YY**, **No Cache**, or **Caching…** for the current environment. The date uses your browser's local time and reflects the last successful save, not a live share check. A failed refresh retains the date and shows its failure separately. **Status Unavailable** means the page connection or environment cannot be identified. Opening settings does not collect more data.
+
 **Export JSON** downloads a snapshot grouped by **Environment → Package → Pipelines**, with last-checked times. Older names without a recorded package appear under **Package Not Yet Recorded** until that Designer environment is refreshed. Nothing is uploaded, and export does not change favorites or settings. Exported files may contain institution-specific names; review them before sharing.
 
 Turning Shared From off clears only its browser cache, not favorites. Exported files remain separate snapshots and do not update or disappear automatically.
@@ -74,11 +76,11 @@ Turning Shared From off clears only its browser cache, not favorites. Exported f
 
 Choose **Search Box**, **Icon**, or **Hidden** independently for **Package Sidebar Search** on both pages and **Designer Pipeline Search** inside a selected Designer package. Both default to Search Box. Icon opens search when needed; Escape or clicking elsewhere closes it.
 
-### Icon & Favorites Appearance
+### Icon & Favorites
 
-Choose the toolbar icon's background, one or two letters, and black or white lettering. The default is a black **E** on purple. Under **Favorite Stars**, choose a separate color or **Match Icon Color**. Unpinned stars remain gray outlines.
+Choose the toolbar icon's background, one or two letters, and black or white lettering. The default is a black **E** on purple. Under **Favorites**, choose **Star**, **Circle**, or **Bear Face**, then a separate color or **Match Icon Color**. All three shapes use your chosen color; unpinned icons remain gray outlines.
 
-The previews reflect your choices. **Reset** restores the toolbar default; **Reset Stars** restores independent purple stars. These settings stay in this browser and do not change the store listing icon. The settings window follows your system's light or dark appearance.
+The previews reflect your choices. **Reset** restores the toolbar default; **Reset Favorites** restores independent purple stars. Appearance changes leave saved pins, ordering, and expanded packages alone. These settings stay in this browser and do not change the store listing icon. The settings window follows your system's light or dark appearance.
 
 ### Custom Sites
 
