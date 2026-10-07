@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.20.0 — 2026-10-06
+
+- Started the 1.20 release series with the wider, resizable pipeline-name column and double-click autofit introduced in 1.19.10. This is a version-number change only; functionality is unchanged.
+
 ## 1.19.10 — 2026-10-06
 
 - Gave pipeline names a wider 400-pixel starting column in Integration Packages, independently of Shared From. Names stay on one line; Version and source columns stay compact.
