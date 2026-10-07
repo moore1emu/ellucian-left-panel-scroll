@@ -28,9 +28,17 @@ Open the extension's toolbar icon to adjust its settings. Store-installed copies
 
 ![Pinned packages, pipeline favorites, search, and independent sidebar scrolling](docs/screenshots/pinned-packages.jpg)
 
+**Integration Designer:** search pipelines in the selected package and see shared destinations.
+
+![Integration Designer showing sidebar favorites, pipeline search, and Shared To](docs/screenshots/integration-designer.jpg)
+
 **Shared From:** see locally remembered Designer sources in Integration Packages.
 
 ![Integration Packages showing the optional Shared From column](docs/screenshots/shared-from.jpg)
+
+**Settings:** choose page behavior, search display, icon and favorite colors, and custom sites.
+
+![Integration Navigator settings showing Page Behavior and the collapsible settings sections](docs/screenshots/settings.jpg)
 
 Package and pipeline names in these screenshots are anonymized.
 
