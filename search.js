@@ -149,7 +149,7 @@
     let activeTarget = null;
     let activeNameTarget = null;
     let activeNamePageUrl = '';
-    // Favorites keep native clipped-name help; read-only record names use explicit delayed guidance instead.
+    // Favorites keep native clipped-name help; read-only records retain their own browser-native guidance.
     const nameSelector = '.ellucian-favorite-select, .ellucian-favorite-pipeline-name';
     const updateNameTip = (name) => {
       const fullName = name.textContent.trim();
@@ -3159,8 +3159,8 @@
           const label = document.createElement('span');
           label.dataset.ellucianArtifactName = 'true';
           label.textContent = text;
-          // Explain the non-actionable name through the shared hover handler, without per-row timers or actions.
-          label.setAttribute('data-ellucian-tooltip', 'For reference only; cannot be run from this page.');
+          // Use the browser's own tooltip and delay, with one line of guidance only on this name.
+          label.setAttribute('title', 'For Reference Only; Cannot Be Run From This Page.');
           cell.replaceChildren(label);
         } else if (index === 1) cell.dataset.ellucianTypeCell = 'true';
       });

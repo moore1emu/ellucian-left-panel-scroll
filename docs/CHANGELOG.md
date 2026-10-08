@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.4 — 2026-10-07
+
+- Uses the browser's built-in tooltip for non-actionable API/Sub-Pipeline names instead of a custom popover. The single-line text is now **For Reference Only; Cannot Be Run From This Page.** Browser timing and presentation are native; guidance stays on the name only.
+
 ## 1.21.3 — 2026-10-07
 
 - Hovering an API or Sub-Pipeline name shows “For reference only; cannot be run from this page.” after the existing two-second delay. Guidance stays on the name, not its row, version, or source; normal Integration links and favorite-name help are unchanged.
