@@ -6,7 +6,9 @@ Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
 ## What the extension does
 
-This independent browser extension improves navigation in Ellucian Integration Packages and Integration Designer on the standard Ellucian Experience Test and Production websites and university vanity domains you explicitly add. It adds scrolling, resizing, search, favorites, a Type column with read-only published API/Sub-Pipeline records, and optional Shared To and Shared From columns. Published record display reuses metadata already loaded by the page, without additional requests or persistent storage.
+This independent browser extension improves navigation in Ellucian Integration Packages and Integration Designer on the standard Ellucian Experience Test and Production websites and university vanity domains you explicitly add. It adds scrolling, resizing, search, favorites, and optional Shared To and Shared From columns. Shared From also enables a Type column with read-only published API/Sub-Pipeline records in Integration Packages.
+
+For these read-only records, a page-start observer extracts only names, types, and latest published versions from the package metadata response requested by the page, before Ellucian filters its sidebar data. It does not make or change requests, access headers or credentials, or retain response bodies. A bounded in-memory startup buffer is discarded as soon as saved Shared From opt-out is read; when off, subsequent response collection and record display stop. These records are not saved to browser storage or included in Designer-source exports. Disabling Shared From or reloading/closing the page discards this transient data.
 
 ## Information used
 

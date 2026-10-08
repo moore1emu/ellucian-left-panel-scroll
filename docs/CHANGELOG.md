@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.1 — 2026-10-07
+
+- Fixes missing API/Sub-Pipeline records: captures only their names, types, and latest published versions from the package response before Ellucian filters its sidebar data. Uses the existing request; no extra network traffic or permanent storage.
+- Ties the added Type column and read-only API/Sub-Pipeline rows to **Shared From**. Turning it off removes these additions and clears their in-memory records without touching native Integration rows or favorites.
+- After installing this update, or enabling Shared From after it was off, refresh Integration Packages once so its normal package loading supplies the records. Handles responses arriving before or after package selection and keeps snapshots separate by tenant and published package version.
+
 ## 1.21.0 — 2026-10-07
 
 - Integration Packages adds a **Type** column between **Pipeline Name** and **Version**, followed by optional **Shared From**. Name sizing and manual resizing account for all visible columns without wrapping names.

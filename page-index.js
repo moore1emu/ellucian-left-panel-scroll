@@ -9,6 +9,102 @@
   const SHARED_STATUS_REQUEST = "shared-status-request";
   const SHARED_STATUS_RESPONSE = "shared-status-response";
 
+  // Keep only sanitized, non-runnable display records for the lifetime of this page.
+  const packageArtifactSnapshots = new Map();
+  // Detach an earlier observer when the page reuses an XHR object for another request.
+  const packageArtifactListeners = new WeakMap();
+  let packageArtifactCount = 0;
+  // A brief startup buffer bridges the early page script and the saved opt-in read at UI startup.
+  let packageArtifactCaptureEnabled = null;
+
+  // Separate snapshots when Experience changes tenant, including on a vanity domain.
+  function getPackageArtifactContext() {
+    return window.location.origin + window.location.pathname.split('/app/')[0];
+  }
+
+  // Capture published package metadata before the native sidebar drops API/Sub-Pipeline rows.
+  function rememberPackageArtifacts(data, packageVersion, context) {
+    if (packageArtifactCaptureEnabled === false) return;
+    const name = normalizeText(data?.name);
+    if (!name || !Array.isArray(data?.pipelines)) return;
+    const latest = new Map();
+    for (const entry of data.pipelines.slice(0, 10000)) {
+      // Discard integration records, unknown types, payloads, and unpublished entries immediately.
+      const type = normalizeText(entry?.type).toLowerCase().replace(/[\s_-]/gu, '');
+      const pipeline = { name: normalizeText(entry?.name), version: normalizeText(entry?.version), type };
+      if (!['api', 'subpipeline'].includes(type) || !pipeline.name || !/^v?\d+\.\d+\.\d+$/u.test(pipeline.version)) continue;
+      const identity = JSON.stringify([pipeline.name, type]);
+      const previous = latest.get(identity);
+      // Retain the newest numeric release instead of holding every historical version in memory.
+      if (!previous || pipeline.version.replace(/^v/u, '').localeCompare(previous.version.replace(/^v/u, ''), undefined, { numeric: true }) > 0) latest.set(identity, pipeline);
+    }
+    const key = JSON.stringify([context, name]);
+    // Replace a refreshed snapshot without accumulating earlier package versions.
+    packageArtifactCount -= packageArtifactSnapshots.get(key)?.pipelines.length || 0;
+    packageArtifactSnapshots.delete(key);
+    const pipelines = Array.from(latest.values());
+    packageArtifactSnapshots.set(key, { packageVersion, pipelines });
+    packageArtifactCount += pipelines.length;
+    // Bound in-memory data even on unusually large accounts; no browser-storage writes occur.
+    while (packageArtifactSnapshots.size > 1000 || packageArtifactCount > 10000) {
+      const oldest = packageArtifactSnapshots.keys().next().value;
+      packageArtifactCount -= packageArtifactSnapshots.get(oldest).pipelines.length;
+      packageArtifactSnapshots.delete(oldest);
+    }
+    // Notify a selected package once if its response arrived after the UI's first request.
+    if (context === getPackageArtifactContext()) window.postMessage({ source: MESSAGE_SOURCE, type: 'package-artifacts-ready', packageName: name }, window.location.origin);
+  }
+
+  // Observe only the existing package XHR response; never issue requests or touch headers/tokens.
+  const originalPackageOpen = window.XMLHttpRequest?.prototype.open;
+  if (originalPackageOpen) {
+    window.XMLHttpRequest.prototype.open = function (method, url, ...options) {
+      let packageVersion = '';
+      const context = getPackageArtifactContext();
+      try {
+        // Ignore unrelated traffic, Designer routes, and endpoints outside the package service.
+        if (packageArtifactCaptureEnabled !== false && String(method).toUpperCase() === 'GET' && /\/data-connect\//iu.test(window.location.pathname)) {
+          const parsed = new URL(url, window.location.href);
+          const match = parsed.pathname.match(/^\/artifact\/[^/]+\/integration-package\/(v\d+\.\d+\.\d+)\/[^/]+\.json$/u);
+          if (parsed.protocol === 'https:' && parsed.hostname.startsWith('semver-s3-service.') && parsed.hostname.endsWith('.elluciancloud.com') && match) packageVersion = match[1];
+        }
+      } catch (_error) {
+        // An unusual URL must retain the native XHR behavior without extension errors.
+      }
+      // Reopening aborts the earlier request; it must not be recorded as this new package.
+      const previousListener = packageArtifactListeners.get(this);
+      if (previousListener) this.removeEventListener('readystatechange', previousListener);
+      packageArtifactListeners.delete(this);
+      // Call native open unchanged, preserving its arguments, return value, and exceptions.
+      const result = Reflect.apply(originalPackageOpen, this, [method, url, ...options]);
+      if (!packageVersion) return result;
+      const request = this;
+      const readPackage = () => {
+        if (request.readyState !== 4) return;
+        request.removeEventListener('readystatechange', readPackage);
+        packageArtifactListeners.delete(request);
+        // Opt-out can occur while a native request is pending; skip even parsing its response.
+        if (packageArtifactCaptureEnabled === false) return;
+        try {
+          // Run before Axios's loadend handler mutates the object supplied to sidebar rows.
+          if (request.status < 200 || request.status >= 300) return;
+          let data;
+          if (request.responseType === 'json') data = request.response;
+          else if (!request.responseType || request.responseType === 'text') {
+            if (request.responseText.length > 5000000) return;
+            data = JSON.parse(request.responseText);
+          }
+          rememberPackageArtifacts(data, packageVersion, context);
+        } catch (_error) {
+          // Failed/aborted/non-JSON responses must not interfere with native page handlers.
+        }
+      };
+      packageArtifactListeners.set(request, readPackage);
+      request.addEventListener('readystatechange', readPackage);
+      return result;
+    };
+  }
+
   // Cache tenant details because many shared pipelines use the same destination.
   const tenantDetailsCache = new Map();
   // Reuse exact-version checks when multiple rows share the same release history.
@@ -361,16 +457,31 @@
     }).filter((packageEntry) => packageEntry.name);
   }
 
+  // Shared From controls both the added records and their transient capture, not native page requests.
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || event.data?.source !== MESSAGE_SOURCE || event.data.type !== 'package-artifacts-setting') return;
+    packageArtifactCaptureEnabled = event.data.enabled === true;
+    if (!packageArtifactCaptureEnabled) {
+      // Forget any early startup buffer or displayed records as soon as saved opt-out is known.
+      packageArtifactSnapshots.clear();
+      packageArtifactCount = 0;
+    }
+  });
+
   // Read one selected package's published metadata without fetching or changing anything.
   window.addEventListener('message', (event) => {
     if (event.source !== window || event.data?.source !== MESSAGE_SOURCE || event.data.type !== 'package-artifacts-request') return;
+    if (packageArtifactCaptureEnabled === false) return;
     if (!/\/data-connect\/home\/?$/iu.test(window.location.pathname)) return;
     const packageName = normalizeText(event.data.packageName);
     const row = Array.from(document.querySelectorAll('li[data-level="1"][package-element], li[data-level="1"][packageelement]'))
       .find((element) => getPackageData(element)?.name === packageName);
     const data = row ? getPackageData(row) : null;
-    // Send only display fields; never pipeline bodies, service helpers, or credentials.
-    const pipelines = Array.isArray(data?.pipelines) ? data.pipelines : null;
+    // Prefer the pre-filter response, requiring the selected published package version to match.
+    const snapshot = packageArtifactSnapshots.get(JSON.stringify([getPackageArtifactContext(), packageName]));
+    const versionMatches = snapshot && (!data?.version || snapshot.packageVersion.replace(/^v/u, '') === normalizeText(data.version).replace(/^v/u, ''));
+    // Fall back only to already-loaded display fields; never fetch a missing response.
+    const pipelines = versionMatches ? snapshot.pipelines : Array.isArray(data?.pipelines) ? data.pipelines : null;
     window.postMessage({
       source: MESSAGE_SOURCE, type: 'package-artifacts-response',
       requestId: normalizeText(event.data.requestId), packageName,
