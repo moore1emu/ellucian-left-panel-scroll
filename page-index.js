@@ -457,7 +457,7 @@
     }).filter((packageEntry) => packageEntry.name);
   }
 
-  // Shared From controls both the added records and their transient capture, not native page requests.
+  // The independent display setting controls transient capture, never native requests or Designer sources.
   window.addEventListener('message', (event) => {
     if (event.source !== window || event.data?.source !== MESSAGE_SOURCE || event.data.type !== 'package-artifacts-setting') return;
     packageArtifactCaptureEnabled = event.data.enabled === true;

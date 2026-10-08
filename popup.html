@@ -76,7 +76,7 @@
         <label class="setting-row" for="shared-from-enabled">
           <span class="setting-copy">
             <span class="setting-title">Shared From</span>
-            <span class="setting-description">Sources and read-only records.</span>
+            <span class="setting-description">Remember Designer sources.</span>
             <!-- Display only the currently open Designer environment's cache status. -->
             <span id="shared-from-cache-status" class="setting-description" role="status" aria-live="polite" hidden></span>
           </span>
@@ -100,11 +100,18 @@
           <button id="export-shared-from" type="button" aria-label="Export Shared From JSON" title="Download a snapshot of saved Designer sources">Export JSON</button>
         </div>
         <p id="shared-from-status" class="icon-status" role="status" aria-live="polite"></p>
-      </details>
-
-      <!-- Keep search choices available in a compact, keyboard-accessible disclosure. -->
-      <details class="settings-card search-display-card">
-        <summary>Search Display</summary>
+        <!-- Display-only records are independent of source collection and its consent. -->
+        <label class="setting-row" for="package-artifacts-enabled" title="Refresh Integration Packages after enabling.">
+          <span class="setting-copy">
+            <span class="setting-title">Show APIs &amp; Sub-Pipelines</span>
+            <span class="setting-description">Show reference-only records.</span>
+          </span>
+          <span class="switch">
+            <input id="package-artifacts-enabled" type="checkbox" disabled />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="package-artifacts-status" class="icon-status" role="status" aria-live="polite"></p>
         <!-- Keep the two search areas independent without adding tall option cards. -->
         <label class="search-display-control" for="search-display-mode">
           <span>Package Sidebar Search</span>

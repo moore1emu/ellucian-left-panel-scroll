@@ -86,7 +86,11 @@ async function readOwnershipContext(sender) {
 // Preserve older observed names once, without inventing a package relationship or a newer timestamp.
 function upgradeOwnershipCache() {
   pendingOwnershipUpdate = pendingOwnershipUpdate.catch(() => {}).then(async () => {
-    const settings = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
+    const settings = await chrome.storage.local.get({ sharedFromEnabled: false, packageArtifactsEnabled: null, designerOwnershipCache: {} });
+    // Preserve the old display choice once; later source changes never change this independent setting.
+    if (typeof settings.packageArtifactsEnabled !== 'boolean') {
+      await chrome.storage.local.set({ packageArtifactsEnabled: settings.sharedFromEnabled === true });
+    }
     if (settings.sharedFromEnabled !== true) return;
     const cache = { ...settings.designerOwnershipCache };
     let changed = false;
@@ -110,6 +114,17 @@ function upgradeOwnershipCache() {
 
 // Queue the one-time conversion before new snapshots or opt-out clearing can run.
 upgradeOwnershipCache();
+// Let a new popup wait for the one-time preference upgrade before accepting a user choice.
+chrome.runtime.onMessage.addListener((message, sender, respond) => {
+  if (message?.type !== 'package-artifacts-preferences' || sender.id !== chrome.runtime.id || sender.tab) return;
+  pendingOwnershipUpdate.then(async () => {
+    // Read the persisted independent choice, never a later Shared From fallback.
+    const settings = await chrome.storage.local.get({ packageArtifactsEnabled: null });
+    if (typeof settings.packageArtifactsEnabled !== 'boolean') throw new Error('Display preference unavailable.');
+    respond({ enabled: settings.packageArtifactsEnabled });
+  }).catch(() => respond({ error: true }));
+  return true;
+});
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.type !== "designer-ownership-save" || sender.id !== chrome.runtime.id || !sender.tab) return;
   // Identify the failed step without retaining or logging the source names or page URL.

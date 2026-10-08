@@ -28,6 +28,7 @@
   const FAVORITES_ENABLED_KEY = "favoritesEnabled";
   const SHARED_VERSION_ENABLED_KEY = "sharedVersionEnabled";
   const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
+  const PACKAGE_ARTIFACTS_ENABLED_KEY = 'packageArtifactsEnabled';
   const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
   const FAVORITES_BY_HOST_KEY = "favoritePackagesByHost";
   const FAVORITES_EXPANDED_BY_HOST_KEY = "favoritesExpandedByHost";
@@ -94,8 +95,9 @@
   let sharedVersionEnabled = false;
   // Index locally observed Designer homes by exact name, not search text or version.
   let sharedFromEnabled = false;
-  // Do not send the default opt-out until the saved Shared From preference has been read.
-  let sharedFromPreferencesLoaded = false;
+  // Keep reference display independent; wait for saved preferences before discarding early responses.
+  let packageArtifactsEnabled = false;
+  let packageArtifactPreferencesLoaded = false;
   let packageArtifactSettingSent = null;
   let ownershipByName = new Map();
   // Retain just timestamps and current environment identity for the read-only settings status.
@@ -3043,11 +3045,11 @@
   // Add a Type column and non-clickable records using metadata already held by the page.
   function updatePackageArtifacts() {
     // Share only the preference; the page observer never receives the source cache or other settings.
-    if (sharedFromPreferencesLoaded && packageArtifactSettingSent !== sharedFromEnabled) {
-      window.postMessage({ source: MESSAGE_SOURCE, type: 'package-artifacts-setting', enabled: sharedFromEnabled }, window.location.origin);
-      packageArtifactSettingSent = sharedFromEnabled;
+    if (packageArtifactPreferencesLoaded && packageArtifactSettingSent !== packageArtifactsEnabled) {
+      window.postMessage({ source: MESSAGE_SOURCE, type: 'package-artifacts-setting', enabled: packageArtifactsEnabled }, window.location.origin);
+      packageArtifactSettingSent = packageArtifactsEnabled;
     }
-    if (!sharedFromEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+    if (!packageArtifactsEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
       clearPackageArtifacts();
       document.querySelectorAll('[data-ellucian-type-cell]').forEach((cell) => cell.remove());
       packageArtifacts = { key: '', row: null, nodeId: '', requestId: '', pipelines: [] };
@@ -3870,7 +3872,7 @@
 
     // Retry the current package once when its existing network response completes after selection.
     if (event.data.type === 'package-artifacts-ready') {
-      if (!sharedFromEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) return;
+      if (!packageArtifactsEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) return;
       const title = document.getElementById('packageDetails-title');
       if (title?.textContent.trim().replace(/^Package:\s*/u, '') !== event.data.packageName) return;
       packageArtifacts.row = null;
@@ -3880,7 +3882,7 @@
 
     // Accept only our newest selected-package response; sidebar records remain untouched.
     if (event.data.type === 'package-artifacts-response') {
-      if (!sharedFromEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname) || event.data.requestId !== packageArtifacts.requestId) return;
+      if (!packageArtifactsEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname) || event.data.requestId !== packageArtifacts.requestId) return;
       const title = document.getElementById('packageDetails-title') || Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent.trim().startsWith('Package:'));
       if (title?.textContent.trim().replace(/^Package:\s*/u, '') !== event.data.packageName) return;
       packageArtifacts.pipelines = event.data.available === true && Array.isArray(event.data.pipelines) ? normalizePackageArtifacts(event.data.pipelines) : [];
@@ -4094,11 +4096,18 @@
       updateSharedVersionColumn();
     }
 
-    // Collect nothing while disabled, and discard pending results immediately on opt-out.
+    // Update reference rows without changing source collection, consent, or stored favorites.
+    if (changes[PACKAGE_ARTIFACTS_ENABLED_KEY]) {
+      packageArtifactsEnabled = changes[PACKAGE_ARTIFACTS_ENABLED_KEY].newValue === true;
+      packageArtifactPreferencesLoaded = true;
+      updatePackageArtifacts();
+      updateSharedFromColumn();
+      scheduleSearchUpdate();
+    }
+
+    // Collect nothing while disabled, and discard pending source results immediately on opt-out.
     if (changes[SHARED_FROM_ENABLED_KEY]) {
       sharedFromEnabled = changes[SHARED_FROM_ENABLED_KEY].newValue === true;
-      sharedFromPreferencesLoaded = true;
-      updatePackageArtifacts();
       updateDesignerOwnershipVisit(true);
       if (!sharedFromEnabled) ownershipByName.clear();
       else chrome.storage.local.get({ [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
@@ -4107,6 +4116,8 @@
         requestSearchIndex();
       });
       updateSharedFromColumn();
+      // Refit the remaining columns without removing independently enabled reference records.
+      scheduleSearchUpdate();
     }
     // Update open Packages tabs when another environment's Designer is visited.
     if (changes[OWNERSHIP_CACHE_KEY]) {
@@ -4180,6 +4191,7 @@
       [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SHARED_FROM_ENABLED_KEY]: false,
+      [PACKAGE_ARTIFACTS_ENABLED_KEY]: null,
       [OWNERSHIP_CACHE_KEY]: {},
       [FAVORITES_ENABLED_KEY]: true,
       [FavoriteAppearance.KEY]: FavoriteAppearance.DEFAULT,
@@ -4201,7 +4213,10 @@
       designerSearchMode = normalizeSearchMode(settings[DESIGNER_SEARCH_MODE_KEY]);
       sharedVersionEnabled = settings[SHARED_VERSION_ENABLED_KEY] === true;
       sharedFromEnabled = settings[SHARED_FROM_ENABLED_KEY] === true;
-      sharedFromPreferencesLoaded = true;
+      // Use the prior choice only while the worker persists the one-time upgrade.
+      packageArtifactsEnabled = typeof settings[PACKAGE_ARTIFACTS_ENABLED_KEY] === 'boolean'
+        ? settings[PACKAGE_ARTIFACTS_ENABLED_KEY] : sharedFromEnabled;
+      packageArtifactPreferencesLoaded = true;
       loadOwnershipCache(settings[OWNERSHIP_CACHE_KEY]);
       favoritesEnabled = settings[FAVORITES_ENABLED_KEY] !== false;
       // Apply the saved color before inserting stars, including after a page refresh.

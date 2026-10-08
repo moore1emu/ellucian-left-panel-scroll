@@ -8,7 +8,7 @@ Make Ellucian Integration Packages and Integration Designer easier to navigate i
 - Search package and pipeline names, even with different spacing or separators.
 - Pin packages and published pipelines, then drag favorites into your preferred order.
 - Automatically fit pipeline-name columns, with manual resizing when needed.
-- Enable **Shared From** to also see the latest published APIs and Sub-Pipelines as read-only main-table records, with a **Type** column.
+- Optionally show the latest published APIs and Sub-Pipelines as read-only main-table records with a **Type** column, independently of Shared From.
 - Optionally show **Shared To** in Designer, highlighting version mismatches in red.
 - Optionally show **Shared From** in Integration Packages using locally saved Designer sources.
 - Customize your toolbar icon, favorite shapes and colors, and search display.

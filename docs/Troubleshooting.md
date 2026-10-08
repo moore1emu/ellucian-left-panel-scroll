@@ -18,11 +18,11 @@ Confirm the extension is enabled and you are on Integration Packages or Integrat
 
 After updating or reloading the extension, refresh any Experience pages that were already open once. Their previous extension connection may no longer be available. Disconnected checks stop safely rather than clearing saved favorites or sources.
 
-If a search box is missing, check **Search Display**. **Icon** opens it on demand; **Hidden** intentionally removes it. The sidebar and Designer pipeline searches have independent settings.
+If a search box is missing, check its dropdown under **Page Behavior**. **Icon** opens it on demand; **Hidden** intentionally removes it. The sidebar and Designer pipeline searches have independent settings.
 
 ## APIs or Sub-Pipelines Are Missing
 
-Enable **Shared From**, then refresh Integration Packages once. Version 1.21.1 reads the package response before Ellucian removes non-runnable entries from its sidebar data. The newest API/Sub-Pipeline records appear only in the main table, without links or run actions. Turning Shared From off also removes Type and these extra rows. Native Integration links and favorites are unchanged.
+Enable **Page Behavior → Show APIs & Sub-Pipelines**, then refresh Integration Packages once. The extension reads the package response before Ellucian removes non-runnable entries from its sidebar data. The newest API/Sub-Pipeline records appear only in the main table, without links or run actions. Turning this display setting off removes Type and these extra rows. Shared From is independent; it is needed only for source labels. Native Integration links and favorites are unchanged.
 
 ## Shared From Is Blank or Shows a Dash
 

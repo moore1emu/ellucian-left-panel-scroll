@@ -32,9 +32,9 @@ Designer pipeline search shows the first 20 matches and a count when there are m
 
 Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
 
-With **Shared From** enabled, the Integration Packages table shows **Pipeline Name**, **Type**, **Version**, and **Shared From**. Published APIs and Sub-Pipelines show their newest release for each name as plain, non-clickable records without run actions; they are not added to the sidebar or favorites. Normal Integration links work as before. These records use the page's normal package response, not extra network lookups or the Designer cache.
+Enable **Page Behavior → Show APIs & Sub-Pipelines** to add a **Type** column and the newest published API/Sub-Pipeline release for each name in Integration Packages. These are plain, non-clickable records without run actions; they are not added to the sidebar or favorites. Normal Integration links work as before. These records use the page's normal package response, not extra network lookups or the Designer cache. **Shared From** remains an independent optional column.
 
-Refresh Integration Packages once after installing this update or enabling Shared From after it was off. The page then loads the metadata normally, before its sidebar filters out non-runnable entries. Turning Shared From off removes Type and the extra records and clears their temporary in-memory data. Source labels still require visiting Designer; the API/Sub-Pipeline names do not.
+Refresh Integration Packages once after installing this update or re-enabling **Show APIs & Sub-Pipelines**. The page then loads the metadata normally, before its sidebar filters out non-runnable entries. Turning this display setting off removes Type and the extra records and clears their temporary in-memory data, without clearing Designer sources or favorites. Turning Shared From off removes only its source column and cache. Source labels require visiting Designer; API/Sub-Pipeline names do not.
 
 **Pipeline Name** automatically fits each selected package within the space remaining after the other visible columns. Names stay on one line. Drag the divider to adjust it or double-click to fit full loaded names, using local horizontal scrolling if needed. Switching packages calculates a fresh width. With the divider focused, arrow keys resize, Enter fits names, and Home restores automatic sizing.
 
@@ -76,9 +76,11 @@ In Designer, settings shows **Cached MM-DD-YY**, **No Cache**, or **Caching…**
 
 Turning Shared From off clears only its browser cache, not favorites. Exported files remain separate snapshots and do not update or disappear automatically.
 
-### Search Display
+### Search and Reference Display — Page Behavior
 
-Choose **Search Box**, **Icon**, or **Hidden** independently for **Package Sidebar Search** on both pages and **Designer Pipeline Search** inside a selected Designer package. Both default to Search Box. Icon opens search when needed; Escape or clicking elsewhere closes it.
+Under **Page Behavior**, choose **Search Box**, **Icon**, or **Hidden** independently for **Package Sidebar Search** on both pages and **Designer Pipeline Search** inside a selected Designer package. Both default to Search Box. Icon opens search when needed; Escape or clicking elsewhere closes it. The whole behavior group can be collapsed.
+
+**Show APIs & Sub-Pipelines** controls reference rows only in Integration Packages. It is off for new installs. Upgrading preserves your previous display choice once; later changes to Shared From do not change this setting. No additional local metadata storage or source-collection consent is needed for reference rows.
 
 ### Icon & Favorites
 

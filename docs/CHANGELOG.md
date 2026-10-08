@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.5 — 2026-10-07
+
+- Groups search controls under **Page Behavior**, removing the separate Search Display section. Adds **Show APIs & Sub-Pipelines** there as an independent switch for Integration Packages reference rows and their Type column, with a short one-line description.
+- Shared From now controls only Designer-source collection, its cache, and the source column. Disabling either setting leaves the other setting and favorites unchanged.
+- New installs default reference display to off; existing users retain their previous display choice once during the upgrade. Reference metadata still uses native package responses without extra requests or persistent record storage.
+
 ## 1.21.4 — 2026-10-07
 
 - Uses the browser's built-in tooltip for non-actionable API/Sub-Pipeline names instead of a custom popover. The single-line text is now **For Reference Only; Cannot Be Run From This Page.** Browser timing and presentation are native; guidance stays on the name only.

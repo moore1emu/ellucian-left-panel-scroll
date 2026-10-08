@@ -11,6 +11,7 @@
   const FAVORITES_ENABLED_KEY = "favoritesEnabled";
   const SHARED_VERSION_ENABLED_KEY = "sharedVersionEnabled";
   const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
+  const PACKAGE_ARTIFACTS_ENABLED_KEY = 'packageArtifactsEnabled';
   const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
 
   // Locate the popup controls after the static popup document loads.
@@ -18,6 +19,8 @@
   const favoritesEnabledSwitch = document.querySelector("#favorites-enabled");
   const sharedVersionSwitch = document.querySelector("#shared-version-enabled");
   const sharedFromSwitch = document.querySelector("#shared-from-enabled");
+  const packageArtifactsSwitch = document.querySelector('#package-artifacts-enabled');
+  const packageArtifactsStatus = document.querySelector('#package-artifacts-status');
   const sharedFromConfirmation = document.querySelector("#shared-from-confirmation");
   const sharedFromStatus = document.querySelector("#shared-from-status");
   const sharedFromCacheStatus = document.querySelector('#shared-from-cache-status');
@@ -67,6 +70,7 @@
       [FAVORITES_ENABLED_KEY]: true,
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SHARED_FROM_ENABLED_KEY]: false,
+      [PACKAGE_ARTIFACTS_ENABLED_KEY]: null,
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [IconAppearance.KEY]: IconAppearance.DEFAULT,
@@ -81,6 +85,19 @@
       sharedFromSwitch.disabled = false;
       refreshSharedFromButton.disabled = false;
       readOwnershipStatus();
+
+      // Existing users keep their previous choice once; new installs start with reference rows off.
+      if (typeof settings[PACKAGE_ARTIFACTS_ENABLED_KEY] === 'boolean') {
+        packageArtifactsSwitch.checked = settings[PACKAGE_ARTIFACTS_ENABLED_KEY];
+        packageArtifactsSwitch.disabled = false;
+      } else {
+        // The worker owns the upgrade; wait so it cannot overwrite a newly clicked switch.
+        chrome.runtime.sendMessage({ type: 'package-artifacts-preferences' }).then((response) => {
+          if (typeof response?.enabled !== 'boolean') throw new Error('Display preference unavailable.');
+          packageArtifactsSwitch.checked = response.enabled;
+          packageArtifactsSwitch.disabled = false;
+        }).catch(() => { packageArtifactsStatus.textContent = 'Could not load display setting. Reopen settings to retry.'; });
+      }
 
       // Display the favorites preference, defaulting to the visible section.
       favoritesEnabledSwitch.checked =
@@ -261,6 +278,18 @@
   });
 
   // Save each switch change immediately.
+  packageArtifactsSwitch.addEventListener('change', () => {
+    // Save only the display preference, without touching consent, sources, or favorites.
+    packageArtifactsSwitch.disabled = true;
+    chrome.storage.local.set({ [PACKAGE_ARTIFACTS_ENABLED_KEY]: packageArtifactsSwitch.checked }, () => {
+      const failed = Boolean(chrome.runtime.lastError);
+      if (failed) packageArtifactsSwitch.checked = !packageArtifactsSwitch.checked;
+      packageArtifactsSwitch.disabled = false;
+      packageArtifactsStatus.textContent = failed ? 'Could not save. Please try again.' : '';
+    });
+  });
+
+  // Width behavior remains separate from the new record display switch.
   rememberWidthSwitch.addEventListener("change", () => {
     const shouldRemember = rememberWidthSwitch.checked;
 
