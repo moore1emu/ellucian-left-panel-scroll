@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.7 — 2026-10-07
+
+- Clarifies the page-specific settings: API/Sub-Pipeline display is **Integration Packages only** and does not hide Designer records; Shared To describes Designer destinations, and Shared From describes sources in Integration Packages.
+- Replaces the long **Refresh Shared From Data** button with **Refresh** beside Shared From. Retains its working circle, current-Designer-only behavior, and success/failure feedback.
+- Moves the permanent Designer setup line into native hover/accessibility help; consent still explains visiting each source environment. Refresh feedback continues to guide users who need to open Designer. Export and saved preferences are unchanged.
+
 ## 1.21.6 — 2026-10-07
 
 - Orders **Page Behavior** into three groups separated by thin dividers: width/favorites/API and Sub-Pipeline display; Shared To/Shared From; then the two search controls.

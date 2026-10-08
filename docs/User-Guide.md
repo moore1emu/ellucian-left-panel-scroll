@@ -68,7 +68,7 @@ Collection starts automatically after Designer's package data loads, including w
 
 Unknown or conflicting sources show a dash. Hover or focus the column heading for setup guidance. Information reflects the last successful Designer collection and can become stale; revisit that environment to update it. The extension does not contact all environments from one page.
 
-For a manual retry, open Designer in the source environment and select **Refresh Shared From Data** in settings. It refreshes only that currently open Designer environment. A working circle stays visible until collection and saving finish, or a failure is reported.
+For a manual retry, open Designer in the source environment and select **Refresh** beside **Shared From** in settings. Setup guidance appears on hover and in the consent notice instead of a permanent extra line. Refresh feedback explains when Designer needs to be opened. It refreshes only that currently open Designer environment. A working circle stays visible until collection and saving finish, or a failure is reported.
 
 In Designer, settings shows **Cached MM-DD-YY**, **No Cache**, or **Caching…** for the current environment. The date uses your browser's local time and reflects the last successful save, not a live share check. A failed refresh retains the date and shows its failure separately. **Status Unavailable** means the page connection or environment cannot be identified. Opening settings does not collect more data.
 
