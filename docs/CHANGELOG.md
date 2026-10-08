@@ -2,6 +2,78 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.8 — 2026-10-07
+
+- Returns **Refresh** to the action row beside **Export JSON**, keeping the shorter label. Removes the no-longer-needed inline positioning and title spacing.
+- Keeps page-specific descriptions, hover/accessibility setup guidance, consent, working-circle feedback, and all saved settings unchanged.
+
+## 1.21.7 — 2026-10-07
+
+- Clarifies the page-specific settings: API/Sub-Pipeline display is **Integration Packages only** and does not hide Designer records; Shared To describes Designer destinations, and Shared From describes sources in Integration Packages.
+- Replaces the long **Refresh Shared From Data** button with **Refresh** beside Shared From. Retains its working circle, current-Designer-only behavior, and success/failure feedback.
+- Moves the permanent Designer setup line into native hover/accessibility help; consent still explains visiting each source environment. Refresh feedback continues to guide users who need to open Designer. Export and saved preferences are unchanged.
+
+## 1.21.6 — 2026-10-07
+
+- Orders **Page Behavior** into three groups separated by thin dividers: width/favorites/API and Sub-Pipeline display; Shared To/Shared From; then the two search controls.
+- Moves **Show APIs & Sub-Pipelines** above sharing controls. Both search labels now match the other setting titles' font size and weight; descriptions remain short. Settings behavior and saved choices are unchanged.
+
+## 1.21.5 — 2026-10-07
+
+- Groups search controls under **Page Behavior**, removing the separate Search Display section. Adds **Show APIs & Sub-Pipelines** there as an independent switch for Integration Packages reference rows and their Type column, with a short one-line description.
+- Shared From now controls only Designer-source collection, its cache, and the source column. Disabling either setting leaves the other setting and favorites unchanged.
+- New installs default reference display to off; existing users retain their previous display choice once during the upgrade. Reference metadata still uses native package responses without extra requests or persistent record storage.
+
+## 1.21.4 — 2026-10-07
+
+- Uses the browser's built-in tooltip for non-actionable API/Sub-Pipeline names instead of a custom popover. The single-line text is now **For Reference Only; Cannot Be Run From This Page.** Browser timing and presentation are native; guidance stays on the name only.
+
+## 1.21.3 — 2026-10-07
+
+- Hovering an API or Sub-Pipeline name shows “For reference only; cannot be run from this page.” after the existing two-second delay. Guidance stays on the name, not its row, version, or source; normal Integration links and favorite-name help are unchanged.
+- Shortens the favorite-shape setting from **Bear Face** to **Bear**, without changing the icon design, saved choice, or colors.
+
+## 1.21.2 — 2026-10-07
+
+- Removes the native empty-package illustration and its reserved blank space when read-only API/Sub-Pipeline records populate the main table. The replacement table is outside the hidden empty-state container.
+- Restores the complete original empty state for genuinely empty packages and when Shared From is turned off. Keeps the package heading/description, normal Integration rows, favorites, metadata capture, and storage behavior unchanged.
+
+## 1.21.1 — 2026-10-07
+
+- Fixes missing API/Sub-Pipeline records: captures only their names, types, and latest published versions from the package response before Ellucian filters its sidebar data. Uses the existing request; no extra network traffic or permanent storage.
+- Ties the added Type column and read-only API/Sub-Pipeline rows to **Shared From**. Turning it off removes these additions and clears their in-memory records without touching native Integration rows or favorites.
+- After installing this update, or enabling Shared From after it was off, refresh Integration Packages once so its normal package loading supplies the records. Handles responses arriving before or after package selection and keeps snapshots separate by tenant and published package version.
+
+## 1.21.0 — 2026-10-07
+
+- Integration Packages adds a **Type** column between **Pipeline Name** and **Version**, followed by optional **Shared From**. Name sizing and manual resizing account for all visible columns without wrapping names.
+- Shows the newest published **API** and **Sub-Pipeline** release for each name as plain, non-clickable records in the main package view, including otherwise empty packages. Normal integration links remain unchanged; the sidebar and favorites are not expanded.
+- Reuses the package metadata already loaded by Ellucian. Adds no network requests, permissions, persistent metadata, or changes to favorites/Designer source storage.
+
+## 1.20.10 — 2026-10-07
+
+- Adds **Star**, **Circle**, and **Bear Face** favorite icons. Star remains the default; all three use your favorite color or **Match Icon Color**, with gray unpinned outlines. Appearance changes preserve pins, ordering, and expanded packages.
+- Renames the appearance section **Icon & Favorites** and shortens Shared From setup wording.
+- Settings shows **Cached MM-DD-YY**, **No Cache**, or **Caching…** for the current Designer environment. The date reflects the last successful save; failed refreshes retain it. Status reads reuse existing local state without new Ellucian requests or polling, and missing connections show **Status Unavailable**.
+
+## 1.20.9 — 2026-10-07
+
+- Designer pipeline search displays 20 matches initially, with **Show More** adding 20 at a time and a total count. All loaded matches remain accessible beyond the previous 100-result cutoff, without new Ellucian requests.
+- Shared To updates each completed pipeline without waiting for its entire batch. The 30-second service deadline starts when the request begins, not while queued. Timed-out native calls retain their slot until they finish; identical pending calls are reused and actual traffic remains limited to six requests.
+- Adds **Report Bug** beside the settings version, opening a public GitHub report template without uploading local data. No diagnostic button is added.
+- Shared From failures now distinguish incomplete/loading data, lost page connections, site access, storage read/write failures, and cache limits. Basic console warnings contain fixed failure codes only, not raw exceptions, URLs, source names, or pipeline contents. Existing source data and favorites are preserved on failures.
+
+## 1.20.8 — 2026-10-07
+
+- Adds a spinning working circle to **Refresh Shared From Data** in settings. It stays visible while the current Designer environment is collected and saved, then stops on success or failure.
+- Keeps the existing completion messages, disabled button, and accessible busy state. Supports reduced-motion preferences without adding requests, polling, permissions, or changes to saved data.
+
+## 1.20.7 — 2026-10-07
+
+- Fixes Shared From snapshots being rejected after navigating from Experience Home into Designer without refreshing. Automatic collection does not require selecting a package; Designer's loaded package data must be ready.
+- Verifies the live Designer location through the existing extension page script, targeting the original top-level document and rechecking before saving. Navigation away, document replacement, or withdrawing consent prevents a pending save.
+- No new permissions, extra Ellucian service requests, cache-format changes, or changes to favorites. Includes regression coverage using real extension messaging and storage in a disposable browser profile.
+
 ## 1.20.6 — 2026-10-06
 
 - Pinned package and pipeline names use the browser's native tooltip only when their rendered name is cut off, following Andrew's observation of Integration Packages. Fully visible names have no tooltip; name-help timing and typography are browser-managed, with no custom wrapped bubble over the version badge. Native page names are untouched.

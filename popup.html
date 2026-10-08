@@ -59,12 +59,26 @@
           </label>
         </div>
 
+        <!-- Keep reference display with width and favorites, separate from sharing settings. -->
+        <label class="setting-row" for="package-artifacts-enabled" title="Integration Packages only; Designer is unchanged. Refresh Integration Packages after enabling.">
+          <span class="setting-copy">
+            <span class="setting-title">Show APIs &amp; Sub-Pipelines</span>
+            <span class="setting-description">Integration Packages only.</span>
+          </span>
+          <span class="switch">
+            <input id="package-artifacts-enabled" type="checkbox" disabled />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="package-artifacts-status" class="icon-status" role="status" aria-live="polite"></p>
+        <!-- Separate navigation/display choices from the two optional sharing features. -->
+        <hr class="page-behavior-divider" />
         <!-- Keep destination sharing details an opt-in named to match Shared From. -->
         <div>
           <label class="setting-row" for="shared-version-enabled">
             <span class="setting-copy">
               <span class="setting-title">Shared To</span>
-              <span class="setting-description">Show sharing details in Designer.</span>
+              <span class="setting-description">Sharing destinations in Designer.</span>
             </span>
             <span class="switch">
               <input id="shared-version-enabled" type="checkbox" />
@@ -73,10 +87,12 @@
           </label>
         </div>
         <!-- Ownership collection stays off until the user accepts its local-data notice. -->
-        <label class="setting-row" for="shared-from-enabled">
+        <label class="setting-row" for="shared-from-enabled" title="Visit Designer in each source environment first. Refresh updates only the currently open Designer environment.">
           <span class="setting-copy">
             <span class="setting-title">Shared From</span>
-            <span class="setting-description">Remember Designer sources.</span>
+            <span class="setting-description">Sources in Integration Packages.</span>
+            <!-- Display only the currently open Designer environment's cache status. -->
+            <span id="shared-from-cache-status" class="setting-description" role="status" aria-live="polite" hidden></span>
           </span>
           <span class="switch">
             <input id="shared-from-enabled" type="checkbox" disabled aria-describedby="shared-from-help" />
@@ -91,21 +107,19 @@
           <button id="confirm-shared-from" type="button">Enable Shared From</button>
           <button id="cancel-shared-from" type="button">Cancel</button>
         </div>
-        <p id="shared-from-help" class="card-description">Packages only. Visit Designer in each source environment first.</p>
-        <!-- Keep manual collection and snapshot export together without adding a settings card. -->
+        <!-- Retain setup guidance for assistive technology without a permanent extra text line. -->
+        <span id="shared-from-help" hidden>Visit Designer in each source environment first. Refresh updates only the current Designer environment.</span>
+        <!-- Keep both source actions together, outside the checkbox label so they cannot change consent. -->
         <div class="shared-from-actions">
-          <button id="refresh-shared-from" type="button" disabled title="Update sources from the current Designer environment">Refresh Shared From Data</button>
+          <button id="refresh-shared-from" type="button" disabled aria-label="Refresh Shared From Data" title="Visit Designer in each source environment first. Refresh sources from the current Designer environment.">Refresh</button>
           <button id="export-shared-from" type="button" aria-label="Export Shared From JSON" title="Download a snapshot of saved Designer sources">Export JSON</button>
         </div>
         <p id="shared-from-status" class="icon-status" role="status" aria-live="polite"></p>
-      </details>
-
-      <!-- Keep search choices available in a compact, keyboard-accessible disclosure. -->
-      <details class="settings-card search-display-card">
-        <summary>Search Display</summary>
+        <!-- Separate sharing controls and their feedback from search presentation. -->
+        <hr class="page-behavior-divider" />
         <!-- Keep the two search areas independent without adding tall option cards. -->
         <label class="search-display-control" for="search-display-mode">
-          <span>Package Sidebar Search</span>
+          <span class="setting-title">Package Sidebar Search</span>
           <select id="search-display-mode" disabled>
             <option value="box">Search Box</option>
             <option value="icon">Icon</option>
@@ -114,7 +128,7 @@
         </label>
         <p class="card-description">Beside PACKAGES on both pages.</p>
         <label class="search-display-control" for="designer-search-display-mode">
-          <span>Designer Pipeline Search</span>
+          <span class="setting-title">Designer Pipeline Search</span>
           <select id="designer-search-display-mode" disabled>
             <option value="box">Search Box</option>
             <option value="icon">Icon</option>
@@ -126,7 +140,7 @@
 
       <!-- Keep optional personalization compact until the user opens it. -->
       <details class="settings-card icon-appearance-card">
-        <summary>Icon &amp; Favorites Appearance</summary>
+        <summary>Icon &amp; Favorites</summary>
         <div class="icon-appearance-controls">
           <!-- Provide a native color picker and a short initials field. -->
           <label class="icon-control" for="icon-color">
@@ -153,21 +167,30 @@
 
         <!-- Keep star personalization beside the icon rather than adding another card. -->
         <div class="favorite-appearance-controls">
-          <span class="setting-title">Favorite Stars</span>
+          <span class="setting-title">Favorites</span>
+          <!-- Shape changes affect appearance only; existing pins remain unchanged. -->
+          <label class="favorite-shape-control" for="favorite-shape">
+            <span>Favorite Icon</span>
+            <select id="favorite-shape" disabled>
+              <option value="star">Star</option>
+              <option value="circle">Circle</option>
+              <option value="bear">Bear</option>
+            </select>
+          </label>
           <label class="favorite-match-control" for="favorite-match-icon">
             <input id="favorite-match-icon" type="checkbox" disabled />
             <span>Match Icon Color</span>
           </label>
           <div class="favorite-color-controls">
             <label class="icon-control" for="favorite-color">
-              <span>Star Color</span>
+              <span>Favorite Color</span>
               <input id="favorite-color" type="color" value="#6d28d9" disabled />
             </label>
             <!-- Preview the unchanged filled star shape in the chosen color. -->
-            <span id="favorite-color-preview" role="img" aria-label="Favorite star preview">
+            <span id="favorite-color-preview" role="img" aria-label="Favorite icon preview">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.4l2.66 5.39 5.95.86-4.3 4.2 1.02 5.92L12 16.97l-5.32 2.8 1.01-5.92-4.3-4.2 5.95-.86L12 3.4z" /></svg>
             </span>
-            <button id="reset-favorite-color" type="button" disabled>Reset Stars</button>
+            <button id="reset-favorite-color" type="button" disabled>Reset Favorites</button>
           </div>
           <p id="favorite-color-status" class="icon-status" role="status" aria-live="polite"></p>
         </div>
@@ -197,7 +220,12 @@
           <span class="footer-separator" aria-hidden="true">•</span>
           <span>Test &amp; Production</span>
         </div>
-        <span id="extension-version"></span>
+        <!-- Share the existing version row so support does not make settings taller. -->
+        <div class="footer-version">
+          <span id="extension-version"></span>
+          <!-- Open a public bug form only on request; never attach local data automatically. -->
+          <a class="report-bug-link" href="https://github.com/moore1emu/ellucian-left-panel-scroll/issues/new?template=bug_report.md" target="_blank" rel="noopener noreferrer" title="Opens a public GitHub report. Do not include confidential information.">Report Bug</a>
+        </div>
         <p class="affiliation-notice">
           This extension is not affiliated with or supported by Ellucian.
         </p>

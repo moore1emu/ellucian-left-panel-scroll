@@ -252,6 +252,11 @@ html[data-ellucian-panel-resizing="true"] * {
   fill: currentColor !important;
 }
 
+/* Preserve gray facial strokes when unpinned; the filled bear uses transparent feature cutouts. */
+.ellucian-favorite-face-details { fill: none !important; }
+[data-favorite="true"] .ellucian-favorite-face-details,
+.ellucian-favorite-pipeline-remove .ellucian-favorite-face-details { display: none !important; }
+
 /* Place the remembered favorites directly beneath the package header. */
 .ellucian-favorites-section {
   background: transparent !important;
@@ -995,6 +1000,10 @@ html[data-ellucian-favorites-resizing="true"] * {
 .ellucian-designer-results[hidden] { display: none; }
 .ellucian-designer-results button { display: block; width: 100%; padding: 9px; text-align: left; border: 0; background: transparent; color: inherit; cursor: pointer; }
 .ellucian-designer-results button:hover, .ellucian-designer-results button:focus-visible { background: #e8f4ed; }
+/* Keep larger searches compact while exposing their complete local match count. */
+.ellucian-designer-results-footer { align-items: center; border-top: 1px solid #b6c2d0; display: flex; font-size: 12px; gap: 8px; justify-content: space-between; padding: 6px 9px; }
+.ellucian-designer-results-footer .ellucian-designer-show-more { color: #08783e; font: inherit; width: auto; }
+.ellucian-designer-results-footer button[aria-busy="true"] { cursor: wait; opacity: 0.6; }
 /* Keep the heading and its search adjacent while preserving the native add control. */
 .ellucian-pipeline-heading-group { display: flex !important; align-items: center !important; justify-content: flex-start !important; flex-wrap: wrap; gap: 12px; }
 .ellucian-pipeline-heading-group > .ellucian-pipeline-heading { flex: 0 0 auto !important; width: auto !important; margin-right: 0 !important; }
@@ -1029,12 +1038,18 @@ th[data-ellucian-shared-cell] > span { font-weight: 700; }
 [data-ellucian-source-cell] > .ellucian-shared-value { display: inline-block; width: fit-content; }
 
 /* Keep oversized single-line names inside a local table scrollbar, not the whole page. */
-#packageTable-table[data-ellucian-pipeline-scroll] { max-width: 100%; min-width: 0; overflow-x: auto; }
-#packageTable-table table[data-ellucian-pipeline-table] { table-layout: fixed !important; width: var(--ellucian-pipeline-table-width) !important; min-width: 0 !important; }
+#packageTable-table[data-ellucian-pipeline-scroll], [data-ellucian-artifact-wrapper][data-ellucian-pipeline-scroll] { max-width: 100%; min-width: 0; overflow-x: auto; }
+#packageTable-table table[data-ellucian-pipeline-table], table[data-ellucian-artifact-table][data-ellucian-pipeline-table] { table-layout: fixed !important; width: var(--ellucian-pipeline-table-width) !important; min-width: 0 !important; }
 /* Reserve actual name space instead of letting the extra source column consume it. */
 [data-ellucian-pipeline-table] [data-ellucian-name-cell] { box-sizing: border-box; width: var(--ellucian-pipeline-name-width) !important; max-width: var(--ellucian-pipeline-name-width) !important; white-space: nowrap !important; }
-[data-ellucian-pipeline-table] a[id^="packageTable-pipeline-button"] { display: block; max-width: 100%; overflow: hidden; white-space: nowrap !important; text-overflow: ellipsis; }
+[data-ellucian-pipeline-table] a[id^="packageTable-pipeline-button"], [data-ellucian-pipeline-table] [data-ellucian-artifact-name] { display: block; max-width: 100%; overflow: hidden; white-space: nowrap !important; text-overflow: ellipsis; }
 [data-ellucian-pipeline-table] [data-ellucian-compact-column] { box-sizing: border-box; width: var(--ellucian-compact-column-width) !important; white-space: nowrap; }
+/* Keep React's empty placeholder available for restoration without showing it beside added records. */
+[data-ellucian-artifact-empty] { display: none !important; }
+/* Match the native table's plain rows when a package contains no runnable integrations to borrow from. */
+table[data-ellucian-artifact-table] { border-collapse: collapse; font: inherit; color: inherit; }
+table[data-ellucian-artifact-table] th, table[data-ellucian-artifact-table] td { box-sizing: border-box; padding: 16px; height: 53px; border-bottom: 1px solid #ddd; text-align: left; }
+table[data-ellucian-artifact-table] th { font-size: 0.875em; font-weight: 700; }
 /* Use a narrow, visible divider at the column edge without covering the sort label. */
 [data-ellucian-pipeline-table] thead [data-ellucian-name-cell] { position: relative; }
 .ellucian-pipeline-column-resizer { position: absolute; top: 4px; bottom: 4px; right: 0; width: 10px; padding: 0; border: 0; color: inherit; background: transparent; cursor: col-resize; touch-action: none; }
