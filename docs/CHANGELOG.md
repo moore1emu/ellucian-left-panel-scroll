@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.2 — 2026-10-07
+
+- Removes the native empty-package illustration and its reserved blank space when read-only API/Sub-Pipeline records populate the main table. The replacement table is outside the hidden empty-state container.
+- Restores the complete original empty state for genuinely empty packages and when Shared From is turned off. Keeps the package heading/description, normal Integration rows, favorites, metadata capture, and storage behavior unchanged.
+
 ## 1.21.1 — 2026-10-07
 
 - Fixes missing API/Sub-Pipeline records: captures only their names, types, and latest published versions from the package response before Ellucian filters its sidebar data. Uses the existing request; no extra network traffic or permanent storage.

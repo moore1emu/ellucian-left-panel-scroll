@@ -3078,7 +3078,8 @@
     if (!table && extras.length) {
       const emptyHeading = document.getElementById('packageTable-no-pipelines');
       if (!emptyHeading) return;
-      const empty = emptyHeading.parentElement;
+      // Hide the full native panel, not just its figcaption; the illustration and reserved space live outside the caption.
+      const empty = emptyHeading.closest('#packageTable-empty') || emptyHeading.closest('figure, [role="figure"]') || emptyHeading.parentElement;
       empty.dataset.ellucianArtifactEmpty = 'true';
       const wrapper = document.createElement('div');
       wrapper.dataset.ellucianArtifactWrapper = 'true';
@@ -3094,6 +3095,7 @@
         header.appendChild(cell);
       });
       wrapper.appendChild(table);
+      // Keep the replacement outside the hidden panel so React's original empty state stays restorable.
       empty.after(wrapper);
     }
     const header = table?.querySelector('thead tr');
