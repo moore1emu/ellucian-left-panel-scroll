@@ -361,6 +361,26 @@
     }).filter((packageEntry) => packageEntry.name);
   }
 
+  // Read one selected package's published metadata without fetching or changing anything.
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || event.data?.source !== MESSAGE_SOURCE || event.data.type !== 'package-artifacts-request') return;
+    if (!/\/data-connect\/home\/?$/iu.test(window.location.pathname)) return;
+    const packageName = normalizeText(event.data.packageName);
+    const row = Array.from(document.querySelectorAll('li[data-level="1"][package-element], li[data-level="1"][packageelement]'))
+      .find((element) => getPackageData(element)?.name === packageName);
+    const data = row ? getPackageData(row) : null;
+    // Send only display fields; never pipeline bodies, service helpers, or credentials.
+    const pipelines = Array.isArray(data?.pipelines) ? data.pipelines : null;
+    window.postMessage({
+      source: MESSAGE_SOURCE, type: 'package-artifacts-response',
+      requestId: normalizeText(event.data.requestId), packageName,
+      available: Boolean(pipelines),
+      pipelines: pipelines ? pipelines.slice(0, 10000).map((pipeline) => ({
+        name: normalizeText(pipeline?.name), version: normalizeText(pipeline?.version), type: normalizeText(pipeline?.type),
+      })) : [],
+    }, window.location.origin);
+  });
+
   // Respond only to explicit index requests from the isolated search script.
   window.addEventListener("message", (event) => {
     if (

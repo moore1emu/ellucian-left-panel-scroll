@@ -6,7 +6,7 @@ Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
 ## What the extension does
 
-This independent browser extension improves navigation in Ellucian Integration Packages and Integration Designer on the standard Ellucian Experience Test and Production websites and university vanity domains you explicitly add. It adds scrolling, resizing, search, favorites, and optional Shared To and Shared From columns.
+This independent browser extension improves navigation in Ellucian Integration Packages and Integration Designer on the standard Ellucian Experience Test and Production websites and university vanity domains you explicitly add. It adds scrolling, resizing, search, favorites, a Type column with read-only published API/Sub-Pipeline records, and optional Shared To and Shared From columns. Published record display reuses metadata already loaded by the page, without additional requests or persistent storage.
 
 ## Information used
 

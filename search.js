@@ -57,6 +57,9 @@
   let packagePipelineAutoWidth = true;
   const packagePipelineTables = new WeakMap();
 
+  // Keep display-only API/Sub-Pipeline metadata local to the current package visit.
+  let packageArtifacts = { key: '', row: null, nodeId: '', requestId: '', pipelines: [] };
+
   // Hold only the sanitized names and versions returned by the page-world indexer.
   let searchMode = DEFAULT_SEARCH_MODE;
   let designerSearchMode = DEFAULT_SEARCH_MODE;
@@ -144,7 +147,7 @@
     let activeNameTarget = null;
     let activeNamePageUrl = '';
     // Native name tooltips need no custom styling or timing; measure only the requested name.
-    const nameSelector = '.ellucian-favorite-select, .ellucian-favorite-pipeline-name';
+    const nameSelector = '.ellucian-favorite-select, .ellucian-favorite-pipeline-name, [data-ellucian-artifact-name]';
     const updateNameTip = (name) => {
       const fullName = name.textContent.trim();
       const clipped = name.isConnected && name.clientWidth > 0 && name.scrollWidth > name.clientWidth + 1;
@@ -2995,6 +2998,164 @@
     return value;
   }
 
+  // Locate native or extension-created tables without changing the sidebar or its index.
+  function getPackagePipelineTable() {
+    return document.getElementById('packageTable-table')?.querySelector('table')
+      || document.querySelector('table[data-ellucian-artifact-table]');
+  }
+
+  // Include plain display-only names in sizing and source lookup, never in navigation.
+  function getPackagePipelineNames(table) {
+    return Array.from(table.querySelectorAll('a[id^="packageTable-pipeline-button"], [data-ellucian-artifact-name]'));
+  }
+
+  // Recognize only the non-runnable types returned by the published package inventory.
+  function getPackageArtifactType(type) {
+    const normalized = normalizeText(type).toLowerCase().replace(/[\s_-]/gu, '');
+    if (normalized === 'api') return 'API';
+    if (normalized === 'subpipeline') return 'Sub-Pipeline';
+    return '';
+  }
+
+  // Reduce the sanitized response once, not on every DOM or layout update.
+  function normalizePackageArtifacts(pipelines) {
+    const latest = new Map();
+    pipelines.slice(0, 10000).forEach((entry) => {
+      const pipeline = { name: normalizeText(entry?.name), version: normalizeText(entry?.version), type: getPackageArtifactType(entry?.type) };
+      if (!pipeline.type || !pipeline.name || !/^v?\d+\.\d+\.\d+$/u.test(pipeline.version)) return;
+      const identity = `${pipeline.name}\u0000${pipeline.type}`;
+      const previous = latest.get(identity);
+      // Numeric version ordering handles patch/minor numbers above nine correctly.
+      if (!previous || comparePipelineVersionsDescending(pipeline, previous) < 0) latest.set(identity, pipeline);
+    });
+    return Array.from(latest.values()).sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }));
+  }
+
+  // Restore placeholders and remove only extension-owned records on package or route changes.
+  function clearPackageArtifacts() {
+    document.querySelectorAll('[data-ellucian-artifact-body], [data-ellucian-artifact-wrapper]').forEach((element) => element.remove());
+    document.querySelectorAll('[data-ellucian-artifact-empty]').forEach((element) => element.removeAttribute('data-ellucian-artifact-empty'));
+  }
+
+  // Add a Type column and non-clickable records using metadata already held by the page.
+  function updatePackageArtifacts() {
+    if (!/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+      clearPackageArtifacts();
+      document.querySelectorAll('[data-ellucian-type-cell]').forEach((cell) => cell.remove());
+      packageArtifacts = { key: '', row: null, nodeId: '', requestId: '', pipelines: [] };
+      return;
+    }
+    // Bind responses to the visible heading so late replies cannot populate another package.
+    const title = document.getElementById('packageDetails-title') || Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent.trim().startsWith('Package:'));
+    const name = title?.textContent.trim().replace(/^Package:\s*/u, '') || '';
+    if (!name) return;
+    const key = `${getFavoritesStorageKey()}\u0000${name}`;
+    const row = Array.from(document.querySelectorAll('li[data-level="1"]')).find((element) => getVisiblePackageName(element) === name);
+    // A republished package can reuse its React element but change the versioned node identifier.
+    const nodeId = row?.getAttribute('data-nodeid') || '';
+    if (key !== packageArtifacts.key || row !== packageArtifacts.row || nodeId !== packageArtifacts.nodeId) {
+      clearPackageArtifacts();
+      packageArtifacts = { key, row, nodeId, requestId: '', pipelines: [] };
+      // Ask once for each selected package/row, with no polling, storage write, or service call.
+      if (row) {
+        packageArtifacts.requestId = crypto.randomUUID();
+        window.postMessage({ source: MESSAGE_SOURCE, type: 'package-artifacts-request', requestId: packageArtifacts.requestId, packageName: name }, window.location.origin);
+      }
+    }
+
+    // Reuse newest releases from this package response; leave native integration versions alone.
+    const extras = packageArtifacts.pipelines;
+    let table = getPackagePipelineTable();
+    // Keep React's empty state mounted; use our own removable table beside it.
+    if (!table && extras.length) {
+      const emptyHeading = document.getElementById('packageTable-no-pipelines');
+      if (!emptyHeading) return;
+      const empty = emptyHeading.parentElement;
+      empty.dataset.ellucianArtifactEmpty = 'true';
+      const wrapper = document.createElement('div');
+      wrapper.dataset.ellucianArtifactWrapper = 'true';
+      table = document.createElement('table');
+      table.dataset.ellucianArtifactTable = 'true';
+      table.setAttribute('aria-label', 'Published package records');
+      const header = table.createTHead().insertRow();
+      // Text-only headings do not pretend the otherwise empty native table has sorting controls.
+      ['Pipeline Name', 'Version'].forEach((label) => {
+        const cell = document.createElement('th');
+        cell.scope = 'col';
+        cell.textContent = label;
+        header.appendChild(cell);
+      });
+      wrapper.appendChild(table);
+      empty.after(wrapper);
+    }
+    const header = table?.querySelector('thead tr');
+    if (!header) return;
+    // Place Type between Name and Version without assuming whether Shared From is enabled.
+    const versionHeader = Array.from(header.children).find((cell) => cell.textContent.trim() === 'Version');
+    if (!versionHeader) return;
+    if (!header.querySelector('[data-ellucian-type-cell]')) {
+      const typeHeader = document.createElement(versionHeader.tagName.toLowerCase());
+      typeHeader.className = versionHeader.className;
+      typeHeader.dataset.ellucianTypeCell = 'true';
+      typeHeader.scope = 'col';
+      typeHeader.textContent = 'Type';
+      // Type is a label, not a numeric value; retain native font sizing but align it left.
+      typeHeader.style.textAlign = 'left';
+      versionHeader.before(typeHeader);
+    }
+    // Label existing runnable records without changing their links or native event handlers.
+    table.querySelectorAll('a[id^="packageTable-pipeline-button"]').forEach((link) => {
+      const nativeRow = link.closest('tr');
+      if (nativeRow.querySelector('[data-ellucian-type-cell]')) return;
+      const cells = Array.from(nativeRow.children).filter((cell) => !cell.hasAttribute('data-ellucian-source-cell'));
+      const typeCell = document.createElement('td');
+      typeCell.className = cells[1]?.className || '';
+      typeCell.dataset.ellucianTypeCell = 'true';
+      typeCell.textContent = 'Integration';
+      typeCell.style.textAlign = 'left';
+      cells[0]?.after(typeCell);
+    });
+    // Reuse an unchanged owned body to avoid DOM churn on unrelated mutations.
+    const signature = JSON.stringify(extras);
+    let body = table.querySelector('[data-ellucian-artifact-body]');
+    if (body?.dataset.signature === signature) return;
+    body?.remove();
+    if (!extras.length) return;
+    body = document.createElement('tbody');
+    body.dataset.ellucianArtifactBody = 'true';
+    body.dataset.signature = signature;
+    // Borrow native cells' presentation, but never clone their links, identifiers, or handlers.
+    const nativeCells = table.querySelector('a[id^="packageTable-pipeline-button"]')?.closest('tr')?.children;
+    // Measure each native column once, rather than rereading styles for every added record.
+    const nativePresentation = Array.from({ length: 3 }, (_, index) => {
+      const cell = nativeCells?.[index];
+      if (!cell) return null;
+      const style = window.getComputedStyle(cell);
+      return { className: cell.className, properties: Object.fromEntries(
+        ['padding', 'height', 'borderBottom', 'textAlign', 'fontFamily', 'fontSize', 'fontWeight', 'color', 'lineHeight'].map((property) => [property, style[property]]),
+      ) };
+    });
+    extras.forEach((pipeline) => {
+      const record = body.insertRow();
+      [pipeline.name, pipeline.type, normalizePipelineVersion(pipeline.version)].forEach((text, index) => {
+        const cell = record.insertCell();
+        cell.className = nativePresentation[index]?.className || '';
+        cell.textContent = text;
+        if (nativePresentation[index]) {
+          // Match native row spacing and typography while deliberately retaining plain text.
+          Object.entries(nativePresentation[index].properties).forEach(([property, value]) => { cell.style[property] = value; });
+        }
+        if (index === 0) {
+          const label = document.createElement('span');
+          label.dataset.ellucianArtifactName = 'true';
+          label.textContent = text;
+          cell.replaceChildren(label);
+        } else if (index === 1) cell.dataset.ellucianTypeCell = 'true';
+      });
+    });
+    table.appendChild(body);
+  }
+
   // Add observed source information only to the native Integration Packages table.
   function updateSharedFromColumn() {
     // Tell the page helper to stop source lookups when the feature or route is inactive.
@@ -3003,7 +3164,7 @@
       document.querySelectorAll('[data-ellucian-source-cell]').forEach((cell) => cell.remove());
       return;
     }
-    const table = document.getElementById('packageTable-table')?.querySelector('table');
+    const table = getPackagePipelineTable();
     const headerRow = table?.querySelector('thead tr') || table?.querySelector('tr');
     if (!headerRow) return;
     // Locate the native Version cell, excluding our previously inserted header.
@@ -3022,7 +3183,7 @@
       versionHeader.after(header);
     }
     // Enhance only actual pipeline links, leaving placeholders and other native rows alone.
-    table.querySelectorAll('a[id^="packageTable-pipeline-button"]').forEach((link) => {
+    getPackagePipelineNames(table).forEach((link) => {
       const row = link.closest('tr');
       const nativeCells = Array.from(row.children).filter((cell) => !cell.hasAttribute('data-ellucian-source-cell'));
       const versionCell = nativeCells[versionIndex];
@@ -3083,8 +3244,8 @@
       return;
     }
     // Identify the column from a real native pipeline link, not an assumed table order.
-    const table = document.getElementById('packageTable-table')?.querySelector('table');
-    const links = table ? Array.from(table.querySelectorAll('a[id^="packageTable-pipeline-button"]')) : [];
+    const table = getPackagePipelineTable();
+    const links = table ? getPackagePipelineNames(table) : [];
     const headerRow = table?.querySelector('thead tr');
     const nameIndex = links[0]?.closest('td')?.cellIndex;
     const nameHeader = headerRow?.children[nameIndex];
@@ -3151,7 +3312,7 @@
     };
     // Fit the full names currently loaded in this package, including ellipsized link text.
     const autoFit = (fitToPanel = false) => {
-      const currentLinks = Array.from(table.querySelectorAll('a[id^="packageTable-pipeline-button"]'));
+      const currentLinks = getPackagePipelineNames(table);
       let width = measurePackagePipelineText(nameHeader, nameHeader.querySelector('[role="button"]')?.textContent || 'Pipeline Name', state.context) + 32;
       currentLinks.forEach((link) => {
         const cellStyle = window.getComputedStyle(link.closest('td'));
@@ -3592,6 +3753,8 @@
     updateDesignerOwnershipVisit();
     updateDesignerSearch();
     updateSharedVersionColumn();
+    // Prepare Type and display-only rows before source lookup and shared column sizing.
+    updatePackageArtifacts();
     updateSharedFromColumn();
     // Keep table resizing independent of whether the optional source column is enabled.
     updatePackagePipelineColumn();
@@ -3683,9 +3846,21 @@
     }
 
     if (event.data.type === INDEX_READY) {
+      // A late-loaded package inventory permits another read of the current selected package.
+      packageArtifacts.row = null;
       if (isSupportedPage()) {
         requestSearchIndex();
       }
+      return;
+    }
+
+    // Accept only our newest selected-package response; sidebar records remain untouched.
+    if (event.data.type === 'package-artifacts-response') {
+      if (!/\/data-connect\/home\/?$/iu.test(window.location.pathname) || event.data.requestId !== packageArtifacts.requestId) return;
+      const title = document.getElementById('packageDetails-title') || Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent.trim().startsWith('Package:'));
+      if (title?.textContent.trim().replace(/^Package:\s*/u, '') !== event.data.packageName) return;
+      packageArtifacts.pipelines = event.data.available === true && Array.isArray(event.data.pipelines) ? normalizePackageArtifacts(event.data.pipelines) : [];
+      scheduleSearchUpdate();
       return;
     }
 
@@ -3772,6 +3947,7 @@
             console.warn(`Integration Navigator: Shared To check failed (${code}).`);
           }
         }
+
         sharedStatusCache.set(key, result ? {
           error: result.error === true,
           reason: normalizeText(result.reason),
@@ -3800,6 +3976,11 @@
 
     window.clearTimeout(indexResponseTimer);
     const normalizedIndex = normalizeSearchIndex(event.data.packages);
+    // A fresh inventory read also refreshes selected-package types after loaded data changes.
+    if (/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+      packageArtifacts.row = null;
+      scheduleSearchUpdate();
+    }
     const packageRowsFound = Number(event.data.packageRowsFound) || 0;
     // Reuse identity from the existing local index response, including while the inventory is loading.
     if (sharedFromEnabled && isDesignerPackagePage()) ownershipTenantId = normalizeText(event.data.tenantId) || ownershipTenantId;
@@ -3862,8 +4043,8 @@
     checkShareCompletion();
     const changed = mutations.some((mutation) => {
       const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
-      if (target?.closest('[data-ellucian-shared-cell], [data-ellucian-source-cell], .ellucian-designer-search')) return false;
-      return target?.closest('table') || Array.from(mutation.addedNodes).some((node) => node instanceof Element && (node.matches('table, h2') || node.querySelector('table')));
+      if (target?.closest('[data-ellucian-shared-cell], [data-ellucian-source-cell], [data-ellucian-type-cell], [data-ellucian-artifact-body], .ellucian-designer-search')) return false;
+      return target?.closest('table, #packageDetails-title, #packageTable-no-pipelines') || Array.from(mutation.addedNodes).some((node) => node instanceof Element && (node.matches('table, h2') || node.querySelector('table, #packageTable-no-pipelines')));
     });
     if (changed) scheduleSearchUpdate();
   });

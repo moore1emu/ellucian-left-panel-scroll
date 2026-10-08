@@ -32,7 +32,9 @@ Designer pipeline search shows the first 20 matches and a count when there are m
 
 Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
 
-In Integration Packages, **Pipeline Name** automatically fits each selected package within the available space. Names stay on one line. Drag the divider to adjust it or double-click to fit full loaded names, using local horizontal scrolling if needed. Switching packages calculates a fresh width. With the divider focused, arrow keys resize, Enter fits names, and Home restores automatic sizing.
+In Integration Packages, the main table shows **Pipeline Name**, **Type**, **Version**, and optional **Shared From**. Published APIs and Sub-Pipelines show their newest release for each name as plain, non-clickable records without run actions; they are not added to the sidebar or favorites. Normal Integration links work as before. These records use package metadata already loaded by Ellucian, not extra network lookups or the Designer cache.
+
+**Pipeline Name** automatically fits each selected package within the space remaining after the other visible columns. Names stay on one line. Drag the divider to adjust it or double-click to fit full loaded names, using local horizontal scrolling if needed. Switching packages calculates a fresh width. With the divider focused, arrow keys resize, Enter fits names, and Home restores automatic sizing.
 
 Clipped favorite names have the browser's native full-name tooltip; fully visible names do not. Action and sharing help appears after a two-second hover or immediately on keyboard focus. Escape dismisses that help.
 

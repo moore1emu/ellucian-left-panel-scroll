@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.0 — 2026-10-07
+
+- Integration Packages adds a **Type** column between **Pipeline Name** and **Version**, followed by optional **Shared From**. Name sizing and manual resizing account for all visible columns without wrapping names.
+- Shows the newest published **API** and **Sub-Pipeline** release for each name as plain, non-clickable records in the main package view, including otherwise empty packages. Normal integration links remain unchanged; the sidebar and favorites are not expanded.
+- Reuses the package metadata already loaded by Ellucian. Adds no network requests, permissions, persistent metadata, or changes to favorites/Designer source storage.
+
 ## 1.20.10 — 2026-10-07
 
 - Adds **Star**, **Circle**, and **Bear Face** favorite icons. Star remains the default; all three use your favorite color or **Match Icon Color**, with gray unpinned outlines. Appearance changes preserve pins, ordering, and expanded packages.
