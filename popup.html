@@ -87,22 +87,18 @@
           </label>
         </div>
         <!-- Ownership collection stays off until the user accepts its local-data notice. -->
-        <div class="shared-from-setting">
-          <label class="setting-row" for="shared-from-enabled" title="Visit Designer in each source environment first. Refresh updates only the currently open Designer environment.">
-            <span class="setting-copy">
-              <span class="setting-title">Shared From</span>
-              <span class="setting-description">Sources in Integration Packages.</span>
-              <!-- Display only the currently open Designer environment's cache status. -->
-              <span id="shared-from-cache-status" class="setting-description" role="status" aria-live="polite" hidden></span>
-            </span>
-            <span class="switch">
-              <input id="shared-from-enabled" type="checkbox" disabled aria-describedby="shared-from-help" />
-              <span class="switch-track" aria-hidden="true"></span>
-            </span>
-          </label>
-          <!-- Keep refresh outside the checkbox label so clicking it cannot change source consent. -->
-          <button id="refresh-shared-from" type="button" disabled aria-label="Refresh Shared From Data" title="Visit Designer in each source environment first. Refresh sources from the current Designer environment.">Refresh</button>
-        </div>
+        <label class="setting-row" for="shared-from-enabled" title="Visit Designer in each source environment first. Refresh updates only the currently open Designer environment.">
+          <span class="setting-copy">
+            <span class="setting-title">Shared From</span>
+            <span class="setting-description">Sources in Integration Packages.</span>
+            <!-- Display only the currently open Designer environment's cache status. -->
+            <span id="shared-from-cache-status" class="setting-description" role="status" aria-live="polite" hidden></span>
+          </span>
+          <span class="switch">
+            <input id="shared-from-enabled" type="checkbox" disabled aria-describedby="shared-from-help" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
         <!-- Explain the extra storage before allowing the new feature to start. -->
         <div id="shared-from-confirmation" class="local-data-notice" role="group" aria-labelledby="shared-from-confirm-title" hidden>
           <strong id="shared-from-confirm-title">Store Additional Local Data?</strong>
@@ -113,8 +109,9 @@
         </div>
         <!-- Retain setup guidance for assistive technology without a permanent extra text line. -->
         <span id="shared-from-help" hidden>Visit Designer in each source environment first. Refresh updates only the current Designer environment.</span>
-        <!-- Keep the existing local export action below the compact source control. -->
+        <!-- Keep both source actions together, outside the checkbox label so they cannot change consent. -->
         <div class="shared-from-actions">
+          <button id="refresh-shared-from" type="button" disabled aria-label="Refresh Shared From Data" title="Visit Designer in each source environment first. Refresh sources from the current Designer environment.">Refresh</button>
           <button id="export-shared-from" type="button" aria-label="Export Shared From JSON" title="Download a snapshot of saved Designer sources">Export JSON</button>
         </div>
         <p id="shared-from-status" class="icon-status" role="status" aria-live="polite"></p>

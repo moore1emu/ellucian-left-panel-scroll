@@ -213,18 +213,15 @@ h1 {
 .local-data-notice p { margin: 6px 0; }
 .local-data-notice button { background: var(--background); border: 1px solid var(--border); border-radius: 5px; color: var(--text); cursor: pointer; font: inherit; padding: 5px 7px; }
 
-/* Reserve title space for the inline refresh button without narrowing the description or cache date. */
-.shared-from-setting { position: relative; }
-.shared-from-setting .setting-title { padding-right: 86px; }
-/* Keep export below the source row, wrapping safely if text is enlarged. */
+/* Keep refresh and export on one compact row, wrapping safely if text is enlarged. */
 .shared-from-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.shared-from-actions button, #refresh-shared-from { background: var(--background); border: 1px solid var(--border); border-radius: 5px; color: var(--text); cursor: pointer; font: 12px Arial, sans-serif; padding: 5px 7px; }
-.shared-from-actions button:hover:not(:disabled), #refresh-shared-from:hover:not(:disabled) { border-color: var(--purple); }
-.shared-from-actions button:focus-visible, #refresh-shared-from:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
-.shared-from-actions button:disabled, #refresh-shared-from:disabled { cursor: default; opacity: 0.6; }
+.shared-from-actions button { background: var(--background); border: 1px solid var(--border); border-radius: 5px; color: var(--text); cursor: pointer; font: 12px Arial, sans-serif; padding: 5px 7px; }
+.shared-from-actions button:hover:not(:disabled) { border-color: var(--purple); }
+.shared-from-actions button:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+.shared-from-actions button:disabled { cursor: default; opacity: 0.6; }
 
 /* Draw a lightweight working circle only while the saved-result reply is pending. */
-#refresh-shared-from { align-items: center; display: inline-flex; gap: 6px; position: absolute; right: 54px; top: 2px; }
+#refresh-shared-from { align-items: center; display: inline-flex; gap: 6px; }
 /* Active refresh must override the disabled button's default cursor while awaiting completion. */
 #refresh-shared-from[aria-busy="true"] { cursor: wait; }
 #refresh-shared-from::after { content: ""; display: none; flex: 0 0 12px; height: 12px; width: 12px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; }

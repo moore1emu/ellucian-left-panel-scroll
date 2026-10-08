@@ -28,7 +28,7 @@ Enable **Page Behavior → Show APIs & Sub-Pipelines**, then refresh Integration
 
 Enable **Shared From**, accept its local-data notice, and visit Designer in each source environment. Let Designer finish loading before returning to Integration Packages. Collection starts automatically; you do not need to select a package. Version 1.20.7 fixes a save rejection when entering Designer from Experience Home without refreshing.
 
-For a retry, stay in the source Designer environment and select **Refresh** beside **Shared From** under Page Behavior. Hover over the setting or button for setup guidance. The button collects only that environment, not every environment at once.
+For a retry, stay in the source Designer environment and select **Refresh** next to **Export JSON** under Shared From under Page Behavior. Hover over the setting or button for setup guidance. The button collects only that environment, not every environment at once.
 
 Settings shows that environment's last successful **Cached MM-DD-YY** date, **No Cache**, or **Caching…**. A failed retry does not replace a saved date. **Status Unavailable** is different from an empty cache: refresh the page after an extension reload and confirm Shared From is enabled.
 

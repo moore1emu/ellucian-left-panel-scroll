@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.8 — 2026-10-07
+
+- Returns **Refresh** to the action row beside **Export JSON**, keeping the shorter label. Removes the no-longer-needed inline positioning and title spacing.
+- Keeps page-specific descriptions, hover/accessibility setup guidance, consent, working-circle feedback, and all saved settings unchanged.
+
 ## 1.21.7 — 2026-10-07
 
 - Clarifies the page-specific settings: API/Sub-Pipeline display is **Integration Packages only** and does not hide Designer records; Shared To describes Designer destinations, and Shared From describes sources in Integration Packages.
