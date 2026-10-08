@@ -38,7 +38,7 @@ Refresh Integration Packages once after installing this update or enabling Share
 
 **Pipeline Name** automatically fits each selected package within the space remaining after the other visible columns. Names stay on one line. Drag the divider to adjust it or double-click to fit full loaded names, using local horizontal scrolling if needed. Switching packages calculates a fresh width. With the divider focused, arrow keys resize, Enter fits names, and Home restores automatic sizing.
 
-Clipped favorite names have the browser's native full-name tooltip; fully visible names do not. Action and sharing help appears after a two-second hover or immediately on keyboard focus. Escape dismisses that help.
+Clipped favorite names have the browser's native full-name tooltip; fully visible names do not. API/Sub-Pipeline names show “For reference only; cannot be run from this page.” after a two-second hover, even when fully visible. This guidance applies only to the name, not the entire row. Action and sharing help appears after a two-second hover or immediately on keyboard focus. Escape dismisses that help.
 
 ## Settings
 
@@ -82,7 +82,7 @@ Choose **Search Box**, **Icon**, or **Hidden** independently for **Package Sideb
 
 ### Icon & Favorites
 
-Choose the toolbar icon's background, one or two letters, and black or white lettering. The default is a black **E** on purple. Under **Favorites**, choose **Star**, **Circle**, or **Bear Face**, then a separate color or **Match Icon Color**. All three shapes use your chosen color; unpinned icons remain gray outlines.
+Choose the toolbar icon's background, one or two letters, and black or white lettering. The default is a black **E** on purple. Under **Favorites**, choose **Star**, **Circle**, or **Bear**, then a separate color or **Match Icon Color**. All three shapes use your chosen color; unpinned icons remain gray outlines.
 
 The previews reflect your choices. **Reset** restores the toolbar default; **Reset Favorites** restores independent purple stars. Appearance changes leave saved pins, ordering, and expanded packages alone. These settings stay in this browser and do not change the store listing icon. The settings window follows your system's light or dark appearance.
 

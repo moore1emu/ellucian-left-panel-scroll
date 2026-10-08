@@ -149,8 +149,8 @@
     let activeTarget = null;
     let activeNameTarget = null;
     let activeNamePageUrl = '';
-    // Native name tooltips need no custom styling or timing; measure only the requested name.
-    const nameSelector = '.ellucian-favorite-select, .ellucian-favorite-pipeline-name, [data-ellucian-artifact-name]';
+    // Favorites keep native clipped-name help; read-only record names use explicit delayed guidance instead.
+    const nameSelector = '.ellucian-favorite-select, .ellucian-favorite-pipeline-name';
     const updateNameTip = (name) => {
       const fullName = name.textContent.trim();
       const clipped = name.isConnected && name.clientWidth > 0 && name.scrollWidth > name.clientWidth + 1;
@@ -3159,6 +3159,8 @@
           const label = document.createElement('span');
           label.dataset.ellucianArtifactName = 'true';
           label.textContent = text;
+          // Explain the non-actionable name through the shared hover handler, without per-row timers or actions.
+          label.setAttribute('data-ellucian-tooltip', 'For reference only; cannot be run from this page.');
           cell.replaceChildren(label);
         } else if (index === 1) cell.dataset.ellucianTypeCell = 'true';
       });

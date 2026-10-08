@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.3 — 2026-10-07
+
+- Hovering an API or Sub-Pipeline name shows “For reference only; cannot be run from this page.” after the existing two-second delay. Guidance stays on the name, not its row, version, or source; normal Integration links and favorite-name help are unchanged.
+- Shortens the favorite-shape setting from **Bear Face** to **Bear**, without changing the icon design, saved choice, or colors.
+
 ## 1.21.2 — 2026-10-07
 
 - Removes the native empty-package illustration and its reserved blank space when read-only API/Sub-Pipeline records populate the main table. The replacement table is outside the hidden empty-state container.
