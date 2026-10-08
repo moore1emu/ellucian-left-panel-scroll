@@ -59,6 +59,20 @@
           </label>
         </div>
 
+        <!-- Keep reference display with width and favorites, separate from sharing settings. -->
+        <label class="setting-row" for="package-artifacts-enabled" title="Refresh Integration Packages after enabling.">
+          <span class="setting-copy">
+            <span class="setting-title">Show APIs &amp; Sub-Pipelines</span>
+            <span class="setting-description">Show reference-only records.</span>
+          </span>
+          <span class="switch">
+            <input id="package-artifacts-enabled" type="checkbox" disabled />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="package-artifacts-status" class="icon-status" role="status" aria-live="polite"></p>
+        <!-- Separate navigation/display choices from the two optional sharing features. -->
+        <hr class="page-behavior-divider" />
         <!-- Keep destination sharing details an opt-in named to match Shared From. -->
         <div>
           <label class="setting-row" for="shared-version-enabled">
@@ -100,21 +114,11 @@
           <button id="export-shared-from" type="button" aria-label="Export Shared From JSON" title="Download a snapshot of saved Designer sources">Export JSON</button>
         </div>
         <p id="shared-from-status" class="icon-status" role="status" aria-live="polite"></p>
-        <!-- Display-only records are independent of source collection and its consent. -->
-        <label class="setting-row" for="package-artifacts-enabled" title="Refresh Integration Packages after enabling.">
-          <span class="setting-copy">
-            <span class="setting-title">Show APIs &amp; Sub-Pipelines</span>
-            <span class="setting-description">Show reference-only records.</span>
-          </span>
-          <span class="switch">
-            <input id="package-artifacts-enabled" type="checkbox" disabled />
-            <span class="switch-track" aria-hidden="true"></span>
-          </span>
-        </label>
-        <p id="package-artifacts-status" class="icon-status" role="status" aria-live="polite"></p>
+        <!-- Separate sharing controls and their feedback from search presentation. -->
+        <hr class="page-behavior-divider" />
         <!-- Keep the two search areas independent without adding tall option cards. -->
         <label class="search-display-control" for="search-display-mode">
-          <span>Package Sidebar Search</span>
+          <span class="setting-title">Package Sidebar Search</span>
           <select id="search-display-mode" disabled>
             <option value="box">Search Box</option>
             <option value="icon">Icon</option>
@@ -123,7 +127,7 @@
         </label>
         <p class="card-description">Beside PACKAGES on both pages.</p>
         <label class="search-display-control" for="designer-search-display-mode">
-          <span>Designer Pipeline Search</span>
+          <span class="setting-title">Designer Pipeline Search</span>
           <select id="designer-search-display-mode" disabled>
             <option value="box">Search Box</option>
             <option value="icon">Icon</option>

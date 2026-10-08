@@ -46,7 +46,7 @@ Clipped favorite names have the browser's native full-name tooltip; fully visibl
 
 ### Page Behavior
 
-Turn width memory, pinned favorites, **Shared To**, and **Shared From** on or off. Both sharing features are off by default.
+The section has three groups separated by thin dividers: width memory, pinned favorites, and **Show APIs & Sub-Pipelines**; **Shared To** and **Shared From**; then the two search dropdowns. Both sharing features are off by default. Search titles use the same size and weight as the other setting titles.
 
 ### Shared To — Designer
 

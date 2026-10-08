@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.6 — 2026-10-07
+
+- Orders **Page Behavior** into three groups separated by thin dividers: width/favorites/API and Sub-Pipeline display; Shared To/Shared From; then the two search controls.
+- Moves **Show APIs & Sub-Pipelines** above sharing controls. Both search labels now match the other setting titles' font size and weight; descriptions remain short. Settings behavior and saved choices are unchanged.
+
 ## 1.21.5 — 2026-10-07
 
 - Groups search controls under **Page Behavior**, removing the separate Search Display section. Adds **Show APIs & Sub-Pipelines** there as an independent switch for Integration Packages reference rows and their Type column, with a short one-line description.
