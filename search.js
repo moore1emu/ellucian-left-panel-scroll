@@ -621,7 +621,7 @@
     const requestedStorageKey = getFavoritesStorageKey();
     activeFavoritesStorageKey = requestedStorageKey;
 
-    // Storage calls can throw after an extension reload even when the API still exists.
+    // Keep: storage calls can throw after an extension reload even when the API still exists (1.19.7).
     try {
       const runtime = globalThis.chrome?.runtime;
       const storage = globalThis.chrome?.storage?.local;
@@ -645,7 +645,7 @@
               stopDisconnectedOwnership();
               return;
             }
-            // A failed read is not an empty favorites list; never load its fallback defaults.
+            // Keep: a failed read is not an empty favorites list; never load its fallback defaults (1.19.7).
             if (lastError || !settings) return;
           } catch (_error) {
             stopDisconnectedOwnership();
@@ -994,7 +994,7 @@
 
   // Persist the current page's complete favorite hierarchy without changing other pages.
   function saveFavorites() {
-    // Snapshot the originating page and pins before navigation can change either one.
+    // Keep: snapshot the originating page and pins before navigation can change either one (1.19.4).
     const storageKey = getFavoritesStorageKey();
     const favoriteState = structuredClone(serializeFavoriteState());
     chrome.storage.local.get(
@@ -1017,7 +1017,7 @@
 
   // Persist whether this environment's favorites section is expanded.
   function saveFavoritesExpandedState() {
-    // Keep a delayed disclosure save attached to the page where the click occurred.
+    // Keep: attach a delayed disclosure save to the page where the click occurred (1.19.4).
     const storageKey = getFavoritesStorageKey();
     const expanded = favoritesExpanded;
     chrome.storage.local.get(
@@ -1089,12 +1089,17 @@
       return;
     }
 
+    // Keep: snapshot the page and height before the async read so navigation cannot misfile them (1.21.9).
+    const storageKey = getFavoritesStorageKey();
+    const height = favoriteListHeight;
     chrome.storage.local.get(
       { [FAVORITES_HEIGHTS_BY_HOST_KEY]: {} },
       (settings) => {
+        // Keep: a failed read must not replace other pages' saved heights (1.21.9).
+        if (chrome.runtime.lastError) return;
         const heightsByHost = {
           ...settings[FAVORITES_HEIGHTS_BY_HOST_KEY],
-          [getFavoritesStorageKey()]: favoriteListHeight,
+          [storageKey]: height,
         };
 
         chrome.storage.local.set({
@@ -2949,7 +2954,7 @@
         finishOwnershipRefresh({ ok: false, reason: 'lookup-failed' });
       }
     }, 15000);
-    // Repeat the opt-in handshake in case the page helper loaded after settings did.
+    // Keep: repeat the opt-in handshake in case the page helper loaded after settings did (1.19.2).
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-setting", enabled: true }, window.location.origin);
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-request", requestId: ownershipRequest }, window.location.origin);
     publishOwnershipStatus();
@@ -3897,7 +3902,7 @@
       const requestId = ownershipRequest;
       ownershipTenantId = normalizeText(event.data.tenantId);
       publishOwnershipStatus();
-      // Extension reloads can remove the API or make an existing API throw synchronously.
+      // Keep: extension reloads can remove the API or make an existing API throw synchronously (1.19.6).
       try {
         const runtime = globalThis.chrome?.runtime;
         if (!runtime?.id || typeof runtime.sendMessage !== 'function') {
@@ -4042,7 +4047,7 @@
     }
   });
 
-  // Reuse content.js's observer instead of watching the entire document twice.
+  // Reuse content.js's sidebar observer instead of adding a second sidebar watcher.
   window.addEventListener(DOM_CHANGE_EVENT, scheduleSearchUpdate);
 
   // Reattach controls after restored pages, tab returns, or replaced app roots.
@@ -4063,7 +4068,7 @@
     if (event.isTrusted) navigationSequence += 1;
   }, true);
 
-  // Observe table updates separately because sidebar-only events miss pagination.
+  // Keep: observe table updates separately because sidebar-only events miss pagination (1.15.1).
   const detailObserver = new MutationObserver((mutations) => {
     // Both share flows refresh once on return, even when the user cancels.
     checkShareCompletion();
@@ -4074,7 +4079,7 @@
     });
     if (changed) scheduleSearchUpdate();
   });
-  // Include modal visibility changes for dialogs that remain mounted when closed.
+  // Keep: include modal visibility changes for dialogs that remain mounted when closed (1.15.1).
   detailObserver.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['hidden', 'aria-hidden'] });
 
   // Apply popup changes immediately to the open Ellucian page.
@@ -4201,6 +4206,21 @@
       [FAVORITES_HEIGHTS_BY_HOST_KEY]: {},
     },
     (settings) => {
+      // Keep: a failed read is not an empty favorites list; never start from fallback defaults (1.21.9).
+      try {
+        const lastError = chrome.runtime.lastError;
+        if (/Extension context invalidated/i.test(lastError?.message || '')) {
+          stopDisconnectedOwnership();
+          return;
+        }
+        if (lastError || !settings) {
+          console.warn('Integration Navigator: settings could not be read. Refresh this page to retry.');
+          return;
+        }
+      } catch (_error) {
+        stopDisconnectedOwnership();
+        return;
+      }
       const currentStorageKey = isSupportedPage()
         ? getFavoritesStorageKey()
         : "";

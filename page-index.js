@@ -86,7 +86,7 @@
         // Opt-out can occur while a native request is pending; skip even parsing its response.
         if (packageArtifactCaptureEnabled === false) return;
         try {
-          // Run before Axios's loadend handler mutates the object supplied to sidebar rows.
+          // Keep: run before Axios's loadend handler mutates the object supplied to sidebar rows (1.21.1).
           if (request.status < 200 || request.status >= 300) return;
           let data;
           if (request.responseType === 'json') data = request.response;
@@ -111,19 +111,21 @@
   const sharedReleaseCache = new Map();
   // Remember only pipeline names already checked by the optional sharing column.
   const sharedArtifactNames = new Map();
-  // Give larger packages more capacity while keeping one global sharing budget.
+  // Keep: one global six-request sharing budget, raised from three on request (1.20.3).
   const SHARING_REQUEST_LIMIT = 6;
   // Start the deadline only when an actual sharing service call starts, not in its queue.
   const SHARING_REQUEST_TIMEOUT = 30000;
   // Share one request budget across batches, including destination-name lookups.
   const sharingRequestQueue = [];
   const sharingCancelledError = new Error('Sharing checks were disabled.');
-  // Keep timed-out native calls in the real six-slot budget until they settle.
+  // Keep: timed-out native calls hold their slot in the six-request budget until they settle (1.20.9).
   const activeSharingJobs = new Set();
   const sharingServiceRequests = new Map();
   const sharingTimeoutError = Object.assign(new Error('Sharing service timed out.'), { code: 'request-timeout' });
   const sharingBlockedError = Object.assign(new Error('Earlier sharing calls are still running.'), { code: 'requests-stalled' });
   let designerModules = null;
+  let designerWebpackRequire = null;
+  let designerProbeTarget = null;
   let sharingEnabled = false;
   let ownershipEnabled = false;
 
@@ -188,7 +190,7 @@
     return "";
   }
 
-  // Reuse Ellucian's authenticated helpers without reading or copying its token.
+  // Keep: reuse Ellucian's signed-in helpers so the extension never reads or copies its token (1.19.0).
   function getDesignerModules() {
     if (designerModules) {
       return designerModules;
@@ -200,14 +202,18 @@
       return null;
     }
 
-    let webpackRequire = null;
-    designerChunks.push([
-      [`ellucian-left-panel-${Date.now()}`],
-      {},
-      (runtimeRequire) => {
-        webpackRequire = runtimeRequire;
-      },
-    ]);
+    // Push one loader probe per chunk list; webpack runs a queued probe once its runtime loads.
+    if (!designerWebpackRequire && designerProbeTarget !== designerChunks) {
+      designerProbeTarget = designerChunks;
+      designerChunks.push([
+        [`ellucian-left-panel-${Date.now()}`],
+        {},
+        (runtimeRequire) => {
+          designerWebpackRequire = runtimeRequire;
+        },
+      ]);
+    }
+    const webpackRequire = designerWebpackRequire;
 
     if (!webpackRequire) {
       return null;
@@ -432,6 +438,7 @@
   }
 
   // Build a minimal index containing names and versions, never credentials or payloads.
+  // Keep: match both package-element and packageelement; Ellucian's pages use either spelling (1.15.1).
   function buildSearchIndex() {
     const packageRows = document.querySelectorAll(
       'li[data-level="1"][package-element], li[data-level="1"][packageelement]',
@@ -592,7 +599,8 @@
     const pipeline = pipelines.find((item) => item.name === event.data.name && normalizeText(item.version) === event.data.version && normalizeText(item.status) === event.data.status);
     if (!pipeline) return;
     if (String(pipeline.status).toLowerCase() === 'draft') manager.editPipeline(pipeline);
-    else manager.viewPipeline(pipeline, pipelines.some((item) => item.parent_pipeline === `${pipeline.name} ${pipeline.version.replace(/^v/u, '')}`));
+    // Treat a missing or non-text version as empty instead of throwing in this handler.
+    else manager.viewPipeline(pipeline, pipelines.some((item) => item.parent_pipeline === `${pipeline.name} ${normalizeText(pipeline.version).replace(/^v/u, '')}`));
   });
 
   window.addEventListener("message", async (event) => {

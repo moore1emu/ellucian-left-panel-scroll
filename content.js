@@ -156,16 +156,19 @@
       return;
     }
 
-    // Keep Test/Production and the two Ellucian pages independent.
+    // Keep: snapshot the page and width before the async read so navigation cannot misfile them (1.21.9).
+    const storageKey = getCurrentWidthStorageKey();
     const currentWidth = Math.round(panel.getBoundingClientRect().width);
     chrome.storage.local.get({ [SAVED_WIDTHS_KEY]: {} }, (settings) => {
+      // Keep: a failed read must not replace other pages' saved widths (1.21.9).
+      if (chrome.runtime.lastError) return;
       const savedWidths = {
         ...settings[SAVED_WIDTHS_KEY],
-        [getCurrentWidthStorageKey()]: currentWidth,
+        [storageKey]: currentWidth,
       };
 
       // Update the local cache and persist the completed resize.
-      savedWidthForCurrentPage = currentWidth;
+      if (storageKey === activeWidthStorageKey) savedWidthForCurrentPage = currentWidth;
       savedWidthsByPage = savedWidths;
       chrome.storage.local.set({ [SAVED_WIDTHS_KEY]: savedWidths });
     });

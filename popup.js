@@ -289,30 +289,31 @@
     });
   });
 
+  // Keep: flip a switch back when its save fails so it never shows an unsaved choice (1.21.9).
+  function saveSwitch(input, key, onSaved) {
+    const value = input.checked;
+    chrome.storage.local.set({ [key]: value }, () => {
+      if (chrome.runtime.lastError) input.checked = !value;
+      else onSaved?.(value);
+    });
+  }
+
   // Width behavior remains separate from the new record display switch.
   rememberWidthSwitch.addEventListener("change", () => {
-    const shouldRemember = rememberWidthSwitch.checked;
-
-    chrome.storage.local.set(
-      { [REMEMBER_WIDTH_KEY]: shouldRemember },
-    );
-
-    // Remove old widths when reset-on-refresh is selected.
-    if (!shouldRemember) {
-      chrome.storage.local.remove(SAVED_WIDTHS_KEY);
-    }
+    // Remove old widths only after reset-on-refresh is actually saved.
+    saveSwitch(rememberWidthSwitch, REMEMBER_WIDTH_KEY, (shouldRemember) => {
+      if (!shouldRemember) chrome.storage.local.remove(SAVED_WIDTHS_KEY);
+    });
   });
 
   // Apply optional sharing checks immediately to open Designer pages.
   sharedVersionSwitch.addEventListener("change", () => {
-    chrome.storage.local.set({ [SHARED_VERSION_ENABLED_KEY]: sharedVersionSwitch.checked });
+    saveSwitch(sharedVersionSwitch, SHARED_VERSION_ENABLED_KEY);
   });
 
   // Show or hide favorite controls immediately while retaining saved packages.
   favoritesEnabledSwitch.addEventListener("change", () => {
-    chrome.storage.local.set({
-      [FAVORITES_ENABLED_KEY]: favoritesEnabledSwitch.checked,
-    });
+    saveSwitch(favoritesEnabledSwitch, FAVORITES_ENABLED_KEY);
   });
 
   // Save sidebar changes without changing the Designer pipeline preference.

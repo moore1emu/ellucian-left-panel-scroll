@@ -2,6 +2,14 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.21.9 — 2026-10-13
+
+- Saving a favorites height or a remembered panel width now keeps the page it started on and skips the save if the stored values cannot be read, so other pages' saved heights and widths are never overwritten.
+- Settings switches for **Remember Resized Width**, **Pinned Packages**, and **Shared To** flip back if saving fails. Saved widths are cleared only after reset-on-refresh is actually saved.
+- A failed settings read when a page first loads no longer starts from empty favorites.
+- Designer sharing lookups stop adding a new loader probe on each failed attempt, and opening a Designer pipeline no longer errors on a missing version.
+- Marks deliberate code with one-line `Keep:` comments that name the version that introduced it. No changes to features, saved data formats, permissions, or service requests.
+
 ## 1.21.8 — 2026-10-07
 
 - Returns **Refresh** to the action row beside **Export JSON**, keeping the shorter label. Removes the no-longer-needed inline positioning and title spacing.
