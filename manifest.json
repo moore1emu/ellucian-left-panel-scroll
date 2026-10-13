@@ -53,6 +53,7 @@
         "styles.css"
       ],
       "js": [
+        "shared.js",
         "favorite-appearance.js",
         "content.js",
         "search.js"

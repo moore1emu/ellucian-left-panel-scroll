@@ -1,17 +1,14 @@
 (() => {
   "use strict";
 
-  // Select the stable semantic marker shared by both Ellucian pages.
-  const PANEL_SELECTOR = '[data-testid="master"]';
+  // Reuse the page rules shared with search.js.
+  const {
+    PANEL_SELECTOR, DOM_CHANGE_EVENT, LAYOUT_REQUEST_EVENT,
+    isSupportedPage, getPageStorageKey, attachResizeDrag,
+  } = globalThis.NavigatorShared;
 
   // Mark only panels that contain the package tree structure we expect.
   const TREE_SELECTOR = ':scope > [role="tree"]';
-
-  // Limit the behavior to the two requested pages.
-  const SUPPORTED_PATHS = [
-    "/data-connect/home",
-    "/data-connect-designer",
-  ];
 
   // Leave a small buffer so borders do not create a new whole-page scrollbar.
   const VIEWPORT_BOTTOM_BUFFER = 2;
@@ -26,12 +23,6 @@
   const REMEMBER_WIDTH_KEY = "rememberWidth";
   const SAVED_WIDTHS_KEY = "savedWidths";
 
-  // Let the search script reuse this script's scoped React-change observer.
-  const DOM_CHANGE_EVENT = "ellucian-left-panel-dom-changed";
-
-  // Accept explicit layout requests after the favorites section is resized.
-  const LAYOUT_REQUEST_EVENT = "ellucian-left-panel-layout-request";
-
   // Default to resetting the width on every refresh, as requested.
   let rememberWidth = false;
   let savedWidthForCurrentPage = null;
@@ -40,25 +31,6 @@
 
   // Avoid applying repeated layout updates within the same animation frame.
   let pendingAnimationFrame = 0;
-
-  // Confirm that the current single-page-app route is one of the requested pages.
-  function isSupportedPage() {
-    const currentPath = window.location.pathname.toLowerCase();
-
-    return SUPPORTED_PATHS.some((supportedPath) =>
-      currentPath.includes(supportedPath),
-    );
-  }
-
-  // Keep Designer and Integration Packages widths independent on each host.
-  function getCurrentWidthStorageKey() {
-    const currentPath = window.location.pathname.toLowerCase();
-    const pageName = currentPath.includes("/data-connect-designer")
-      ? "designer"
-      : "packages";
-
-    return `${window.location.host}|${pageName}`;
-  }
 
   // Remove this extension's marker and size from panels on unrelated routes.
   function clearPanelAdjustments() {
@@ -157,7 +129,7 @@
     }
 
     // Keep: snapshot the page and width before the async read so navigation cannot misfile them (1.21.9).
-    const storageKey = getCurrentWidthStorageKey();
+    const storageKey = getPageStorageKey();
     const currentWidth = Math.round(panel.getBoundingClientRect().width);
     chrome.storage.local.get({ [SAVED_WIDTHS_KEY]: {} }, (settings) => {
       // Keep: a failed read must not replace other pages' saved widths (1.21.9).
@@ -248,80 +220,16 @@
     resizeHandle.setAttribute("tabindex", "0");
     updateResizeHandleHelp(resizeHandle);
 
-    // Track the starting pointer and width for the current drag only.
-    let dragStartX = 0;
-    let dragStartWidth = 0;
-    let isDragging = false;
-
-    // Begin resizing and capture future pointer events on the same handle.
-    resizeHandle.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) {
-        return;
-      }
-
-      event.preventDefault();
-      dragStartX = event.clientX;
-      dragStartWidth = panel.getBoundingClientRect().width;
-      isDragging = true;
-      document.documentElement.setAttribute(
-        "data-ellucian-panel-resizing",
-        "true",
-      );
-      resizeHandle.setPointerCapture(event.pointerId);
-    });
-
-    // Update the column width as the captured pointer moves horizontally.
-    resizeHandle.addEventListener("pointermove", (event) => {
-      if (!isDragging) {
-        return;
-      }
-
-      const directionMultiplier =
-        window.getComputedStyle(panel).direction === "rtl" ? -1 : 1;
-      const horizontalChange =
-        (event.clientX - dragStartX) * directionMultiplier;
-      setPanelWidth(panel, dragStartWidth + horizontalChange);
-    });
-
-    // End a drag cleanly whether the pointer is released or cancelled.
-    const finishDragging = (event) => {
-      if (!isDragging) {
-        return;
-      }
-
-      isDragging = false;
-      document.documentElement.removeAttribute(
-        "data-ellucian-panel-resizing",
-      );
-
-      // Release capture only when this handle still owns the pointer.
-      if (resizeHandle.hasPointerCapture(event.pointerId)) {
-        resizeHandle.releasePointerCapture(event.pointerId);
-      }
-
-      // Persist only the final width rather than writing on every pointer movement.
-      savePanelWidth(panel);
-    };
-
-    resizeHandle.addEventListener("pointerup", finishDragging);
-    resizeHandle.addEventListener("pointercancel", finishDragging);
-
-    // Allow precise resizing without requiring a mouse or touch drag.
-    resizeHandle.addEventListener("keydown", (event) => {
-      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
-        return;
-      }
-
-      event.preventDefault();
-      const currentWidth = panel.getBoundingClientRect().width;
-      const widthChange =
-        event.key === "ArrowRight"
-          ? KEYBOARD_RESIZE_STEP
-          : -KEYBOARD_RESIZE_STEP;
-      setPanelWidth(panel, currentWidth + widthChange);
-
-      // Keyboard resize actions are discrete, so save each completed step.
-      savePanelWidth(panel);
+    // Drag or use Left/Right to resize; a right-to-left page reverses pointer movement.
+    attachResizeDrag(resizeHandle, {
+      axis: "x",
+      keys: ["ArrowLeft", "ArrowRight"],
+      step: KEYBOARD_RESIZE_STEP,
+      resizingAttribute: "data-ellucian-panel-resizing",
+      getSize: () => panel.getBoundingClientRect().width,
+      setSize: (width) => setPanelWidth(panel, width),
+      save: () => savePanelWidth(panel),
+      direction: () => (window.getComputedStyle(panel).direction === "rtl" ? -1 : 1),
     });
 
     // Insert the handle last so it overlays only the panel's rightmost edge.
@@ -337,7 +245,7 @@
     }
 
     // Refresh the remembered width when Ellucian changes pages without reloading.
-    const currentWidthStorageKey = getCurrentWidthStorageKey();
+    const currentWidthStorageKey = getPageStorageKey();
     if (activeWidthStorageKey !== currentWidthStorageKey) {
       activeWidthStorageKey = currentWidthStorageKey;
       savedWidthForCurrentPage =
@@ -530,7 +438,7 @@
       rememberWidth = Boolean(settings[REMEMBER_WIDTH_KEY]);
       savedWidthsByPage = settings[SAVED_WIDTHS_KEY] ?? {};
       activeWidthStorageKey = isSupportedPage()
-        ? getCurrentWidthStorageKey()
+        ? getPageStorageKey()
         : "";
 
       // Load only the current page-specific width format.

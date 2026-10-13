@@ -9,6 +9,12 @@
   const SHARED_STATUS_REQUEST = "shared-status-request";
   const SHARED_STATUS_RESPONSE = "shared-status-response";
 
+  // Keep: page-world copies of shared.js rules; loading shared.js here would expose a global to Ellucian (1.21.9).
+  // Keep: match both package-element and packageelement; Ellucian's pages use either spelling (1.15.1).
+  const PACKAGE_ROW_SELECTOR = 'li[data-level="1"][package-element], li[data-level="1"][packageelement]';
+  const isPackagesPage = () => /\/data-connect\/home\/?$/iu.test(window.location.pathname);
+  const isDesignerPage = () => /\/data-connect-designer\/?$/iu.test(window.location.pathname);
+
   // Keep only sanitized, non-runnable display records for the lifetime of this page.
   const packageArtifactSnapshots = new Map();
   // Detach an earlier observer when the page reuses an XHR object for another request.
@@ -438,11 +444,8 @@
   }
 
   // Build a minimal index containing names and versions, never credentials or payloads.
-  // Keep: match both package-element and packageelement; Ellucian's pages use either spelling (1.15.1).
   function buildSearchIndex() {
-    const packageRows = document.querySelectorAll(
-      'li[data-level="1"][package-element], li[data-level="1"][packageelement]',
-    );
+    const packageRows = document.querySelectorAll(PACKAGE_ROW_SELECTOR);
 
     return Array.from(packageRows, (packageRow) => {
       const packageData = getPackageData(packageRow);
@@ -465,23 +468,20 @@
   }
 
   // The independent display setting controls transient capture, never native requests or Designer sources.
-  window.addEventListener('message', (event) => {
-    if (event.source !== window || event.data?.source !== MESSAGE_SOURCE || event.data.type !== 'package-artifacts-setting') return;
-    packageArtifactCaptureEnabled = event.data.enabled === true;
+  function handlePackageArtifactsSetting(message) {
+    packageArtifactCaptureEnabled = message.enabled === true;
     if (!packageArtifactCaptureEnabled) {
       // Forget any early startup buffer or displayed records as soon as saved opt-out is known.
       packageArtifactSnapshots.clear();
       packageArtifactCount = 0;
     }
-  });
+  }
 
   // Read one selected package's published metadata without fetching or changing anything.
-  window.addEventListener('message', (event) => {
-    if (event.source !== window || event.data?.source !== MESSAGE_SOURCE || event.data.type !== 'package-artifacts-request') return;
-    if (packageArtifactCaptureEnabled === false) return;
-    if (!/\/data-connect\/home\/?$/iu.test(window.location.pathname)) return;
-    const packageName = normalizeText(event.data.packageName);
-    const row = Array.from(document.querySelectorAll('li[data-level="1"][package-element], li[data-level="1"][packageelement]'))
+  function handlePackageArtifactsRequest(message) {
+    if (packageArtifactCaptureEnabled === false || !isPackagesPage()) return;
+    const packageName = normalizeText(message.packageName);
+    const row = Array.from(document.querySelectorAll(PACKAGE_ROW_SELECTOR))
       .find((element) => getPackageData(element)?.name === packageName);
     const data = row ? getPackageData(row) : null;
     // Prefer the pre-filter response, requiring the selected published package version to match.
@@ -491,28 +491,18 @@
     const pipelines = versionMatches ? snapshot.pipelines : Array.isArray(data?.pipelines) ? data.pipelines : null;
     window.postMessage({
       source: MESSAGE_SOURCE, type: 'package-artifacts-response',
-      requestId: normalizeText(event.data.requestId), packageName,
+      requestId: normalizeText(message.requestId), packageName,
       available: Boolean(pipelines),
       pipelines: pipelines ? pipelines.slice(0, 10000).map((pipeline) => ({
         name: normalizeText(pipeline?.name), version: normalizeText(pipeline?.version), type: normalizeText(pipeline?.type),
       })) : [],
     }, window.location.origin);
-  });
+  }
 
   // Respond only to explicit index requests from the isolated search script.
-  window.addEventListener("message", (event) => {
-    if (
-      event.source !== window ||
-      event.data?.source !== MESSAGE_SOURCE ||
-      event.data?.type !== INDEX_REQUEST
-    ) {
-      return;
-    }
-
+  function handleIndexRequest(message) {
     // Count the rendered rows so the isolated script can detect a partial index.
-    const packageRowsFound = document.querySelectorAll(
-      'li[data-level="1"][package-element], li[data-level="1"][packageelement]',
-    ).length;
+    const packageRowsFound = document.querySelectorAll(PACKAGE_ROW_SELECTOR).length;
     const packages = buildSearchIndex();
 
     // Return the sanitized index, its health metadata, and the request identifier.
@@ -520,28 +510,27 @@
       {
         source: MESSAGE_SOURCE,
         type: INDEX_RESPONSE,
-        requestId: normalizeText(event.data.requestId),
+        requestId: normalizeText(message.requestId),
         indexAvailable:
           packageRowsFound > 0 && packages.length === packageRowsFound,
         packageRowsFound,
         // Supply only existing environment identity for opted-in Designer cache status; no service call.
-        tenantId: ownershipEnabled && /\/data-connect-designer\/?$/iu.test(window.location.pathname) ? getCurrentTenantId() : '',
+        tenantId: ownershipEnabled && isDesignerPage() ? getCurrentTenantId() : '',
         packages,
       },
       window.location.origin,
     );
-  });
+  }
+
+  // Disabling cancels pending publication as well as preventing new label lookups.
+  function handleOwnershipSetting(message) {
+    ownershipEnabled = message.enabled === true;
+  }
 
   // Record Designer ownership only on explicit opt-in, using already-loaded pipeline names.
-  window.addEventListener("message", async (event) => {
-    if (event.source !== window || event.data?.source !== MESSAGE_SOURCE) return;
-    // Disabling cancels pending publication as well as preventing new label lookups.
-    if (event.data.type === "designer-ownership-setting") {
-      ownershipEnabled = event.data.enabled === true;
-      return;
-    }
-    if (!ownershipEnabled || event.data.type !== "designer-ownership-request" || !/\/data-connect-designer\/?$/iu.test(window.location.pathname)) return;
-    const requestId = normalizeText(event.data.requestId);
+  async function handleOwnershipRequest(message) {
+    if (!ownershipEnabled || !isDesignerPage()) return;
+    const requestId = normalizeText(message.requestId);
     const tenantId = getCurrentTenantId();
     const modules = getDesignerModules();
     if (!requestId || !tenantId || typeof modules?.server.JR !== "function") return;
@@ -555,9 +544,9 @@
       pipelines: [...new Set(entry.pipelines.map((pipeline) => pipeline.name).filter(Boolean))],
     }));
     const pipelineCount = packages.reduce((count, entry) => count + entry.pipelines.length, 0);
-    if (!ownershipEnabled || !environment || packages.length > 10000 || pipelineCount > 10000 || !/\/data-connect-designer\/?$/iu.test(window.location.pathname)) return;
+    if (!ownershipEnabled || !environment || packages.length > 10000 || pipelineCount > 10000 || !isDesignerPage()) return;
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-response", requestId, tenantId, environment, packages }, window.location.origin);
-  });
+  }
 
   // Find the live Designer manager through the package row's React ancestry.
   function getDesignerManager() {
@@ -572,66 +561,62 @@
   }
 
   // Search all pipelines in the selected package, including other table pages.
-  window.addEventListener('message', (event) => {
-    if (event.source !== window || event.data?.source !== MESSAGE_SOURCE || !/\/data-connect-designer\/?$/u.test(window.location.pathname)) return;
-    if (!['designer-search', 'designer-open'].includes(event.data.type)) return;
+  function handleDesignerSearch(message) {
+    if (!isDesignerPage()) return;
     const manager = getDesignerManager();
     const selectedPackage = manager?.state?.selectedPackage;
     const pipelines = selectedPackage?.pipelines || [];
-    if (event.data.type === 'designer-search') {
-      // Ignore separators and case so camel case, hyphens, and spaces match alike.
-      const fold = (value) => normalizeText(value).toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
-      const query = fold(event.data.query);
-      // Page only the already-loaded matches; Show More never contacts another environment.
-      const matches = pipelines.filter((pipeline) => fold(pipeline.name).includes(query));
-      // Echo the requested page even if the native inventory shrank between clicks.
-      const offset = Number.isInteger(event.data.offset) && event.data.offset >= 0 ? event.data.offset : 0;
-      window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-results', requestId: event.data.requestId,
-        packageName: normalizeText(selectedPackage?.name), available: Boolean(manager),
-        offset, total: matches.length,
-        results: matches.slice(offset, offset + 20).map((pipeline) => ({
-          name: normalizeText(pipeline.name), version: normalizeText(pipeline.version), status: normalizeText(pipeline.status),
-        })) }, window.location.origin);
-      return;
-    }
-    // Invoke only the native navigation for an exact entry in the current package.
-    if (selectedPackage?.name !== event.data.packageName) return;
-    const pipeline = pipelines.find((item) => item.name === event.data.name && normalizeText(item.version) === event.data.version && normalizeText(item.status) === event.data.status);
+    // Ignore separators and case so camel case, hyphens, and spaces match alike.
+    const fold = (value) => normalizeText(value).toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+    const query = fold(message.query);
+    // Page only the already-loaded matches; Show More never contacts another environment.
+    const matches = pipelines.filter((pipeline) => fold(pipeline.name).includes(query));
+    // Echo the requested page even if the native inventory shrank between clicks.
+    const offset = Number.isInteger(message.offset) && message.offset >= 0 ? message.offset : 0;
+    window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-results', requestId: message.requestId,
+      packageName: normalizeText(selectedPackage?.name), available: Boolean(manager),
+      offset, total: matches.length,
+      results: matches.slice(offset, offset + 20).map((pipeline) => ({
+        name: normalizeText(pipeline.name), version: normalizeText(pipeline.version), status: normalizeText(pipeline.status),
+      })) }, window.location.origin);
+  }
+
+  // Invoke only the native navigation for an exact entry in the current package.
+  function handleDesignerOpen(message) {
+    if (!isDesignerPage()) return;
+    const manager = getDesignerManager();
+    const selectedPackage = manager?.state?.selectedPackage;
+    const pipelines = selectedPackage?.pipelines || [];
+    if (selectedPackage?.name !== message.packageName) return;
+    const pipeline = pipelines.find((item) => item.name === message.name && normalizeText(item.version) === message.version && normalizeText(item.status) === message.status);
     if (!pipeline) return;
     if (String(pipeline.status).toLowerCase() === 'draft') manager.editPipeline(pipeline);
     // Treat a missing or non-text version as empty instead of throwing in this handler.
     else manager.viewPipeline(pipeline, pipelines.some((item) => item.parent_pipeline === `${pipeline.name} ${normalizeText(pipeline.version).replace(/^v/u, '')}`));
-  });
+  }
 
-  window.addEventListener("message", async (event) => {
-    // Forget affected lookups without making a request or touching tenant details.
-    if (event.source === window && event.data?.source === MESSAGE_SOURCE && event.data?.type === 'shared-status-invalidate') {
-      const names = Array.isArray(event.data.names) ? event.data.names.slice(0, 500) : [];
-      const artifacts = new Set(names.map((name) => sharedArtifactNames.get(name)).filter(Boolean));
-      for (const key of sharedReleaseCache.keys()) {
-        if (artifacts.has(JSON.parse(key)[1])) sharedReleaseCache.delete(key);
-      }
-      return;
+  // Forget affected lookups without making a request or touching tenant details.
+  function handleSharedStatusInvalidate(message) {
+    const names = Array.isArray(message.names) ? message.names.slice(0, 500) : [];
+    const artifacts = new Set(names.map((name) => sharedArtifactNames.get(name)).filter(Boolean));
+    for (const key of sharedReleaseCache.keys()) {
+      if (artifacts.has(JSON.parse(key)[1])) sharedReleaseCache.delete(key);
     }
-    if (event.source === window && event.data?.source === MESSAGE_SOURCE && event.data?.type === 'shared-status-setting') {
-      sharingEnabled = event.data.enabled === true;
-      // Immediately discard waiting sharing calls on opt-out, without clearing good results.
-      drainSharingRequests();
-      return;
-    }
-    if (
-      event.source !== window ||
-      event.data?.source !== MESSAGE_SOURCE ||
-      event.data?.type !== SHARED_STATUS_REQUEST ||
-      !sharingEnabled ||
-      !/\/data-connect-designer\/?$/u.test(window.location.pathname.toLowerCase())
-    ) {
-      return;
-    }
+  }
+
+  // Immediately discard waiting sharing calls on opt-out, without clearing good results.
+  function handleSharedStatusSetting(message) {
+    sharingEnabled = message.enabled === true;
+    drainSharingRequests();
+  }
+
+  // Check sharing for one bounded batch, streaming each completed row back to the UI.
+  async function handleSharedStatusRequest(message) {
+    if (!sharingEnabled || !isDesignerPage()) return;
 
     // Accept only bounded pipeline names, versions, and opaque response keys.
-    const entries = Array.isArray(event.data.entries)
-      ? event.data.entries.slice(0, 25).flatMap((entry) => {
+    const entries = Array.isArray(message.entries)
+      ? message.entries.slice(0, 25).flatMap((entry) => {
           const key = normalizeText(entry?.key);
           const name = normalizeText(entry?.name);
           const version = normalizeText(entry?.version);
@@ -640,7 +625,7 @@
         })
       : [];
     // Acknowledge delivery before waiting in the queue so the UI's connection timer can stop.
-    const requestId = normalizeText(event.data.requestId);
+    const requestId = normalizeText(message.requestId);
     const report = (results, complete = false) => window.postMessage({
       source: MESSAGE_SOURCE, type: SHARED_STATUS_RESPONSE, requestId, results, complete,
     }, window.location.origin);
@@ -658,6 +643,27 @@
       // Completed rows were already delivered; the final marker carries no duplicate row data.
       report([], true);
     }
+  }
+
+  // Route each message type to one handler; unknown types are ignored.
+  const messageHandlers = {
+    'package-artifacts-setting': handlePackageArtifactsSetting,
+    'package-artifacts-request': handlePackageArtifactsRequest,
+    [INDEX_REQUEST]: handleIndexRequest,
+    'designer-ownership-setting': handleOwnershipSetting,
+    'designer-ownership-request': handleOwnershipRequest,
+    'designer-search': handleDesignerSearch,
+    'designer-open': handleDesignerOpen,
+    'shared-status-invalidate': handleSharedStatusInvalidate,
+    'shared-status-setting': handleSharedStatusSetting,
+    [SHARED_STATUS_REQUEST]: handleSharedStatusRequest,
+  };
+
+  // Keep: accept only same-window messages tagged with this extension's source (1.15.1).
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || event.data?.source !== MESSAGE_SOURCE) return;
+    const type = event.data.type;
+    if (typeof type === 'string' && Object.hasOwn(messageHandlers, type)) messageHandlers[type](event.data);
   });
 
   // Announce readiness so the isolated script can request data after either load order.

@@ -2,6 +2,7 @@
   "use strict";
 
   // Reuse the page-world protocol without granting additional extension permissions.
+  // Keep: must match page-index.js; that page-world script cannot load shared.js without exposing a global (1.21.9).
   const MESSAGE_SOURCE = "ellucian-left-panel-scroll";
   const INDEX_REQUEST = "search-index-request";
   const INDEX_RESPONSE = "search-index-response";
@@ -9,14 +10,11 @@
   const SHARED_STATUS_REQUEST = "shared-status-request";
   const SHARED_STATUS_RESPONSE = "shared-status-response";
 
-  // Reuse the layout script's single scoped React-change observer.
-  const DOM_CHANGE_EVENT = "ellucian-left-panel-dom-changed";
-
-  // Limit visible controls to the two supported Experience routes.
-  const SUPPORTED_PATHS = [
-    "/data-connect/home",
-    "/data-connect-designer",
-  ];
+  // Reuse the page rules and resize gesture shared with content.js.
+  const {
+    PANEL_SELECTOR, PIPELINE_ROW_SELECTOR, DOM_CHANGE_EVENT, LAYOUT_REQUEST_EVENT,
+    isSupportedPage, isPackagesPage, getPageStorageKey, attachResizeDrag,
+  } = globalThis.NavigatorShared;
 
   // Keep sidebar and selected-package Designer search presentation independent.
   const SEARCH_MODE_KEY = "searchDisplayMode";
@@ -33,9 +31,6 @@
   const FAVORITES_BY_HOST_KEY = "favoritePackagesByHost";
   const FAVORITES_EXPANDED_BY_HOST_KEY = "favoritesExpandedByHost";
   const FAVORITES_HEIGHTS_BY_HOST_KEY = "favoritesHeightsByHost";
-
-  // Ask content.js to recalculate the remaining package-list height after resizing.
-  const LAYOUT_REQUEST_EVENT = "ellucian-left-panel-layout-request";
 
   // Keep result lists useful without overwhelming the narrow package column.
   const MAX_PACKAGE_RESULTS = 12;
@@ -134,15 +129,6 @@
   // Accept only the three supported values from extension storage.
   function normalizeSearchMode(value) {
     return SEARCH_MODES.has(value) ? value : DEFAULT_SEARCH_MODE;
-  }
-
-  // Detect supported routes after Ellucian changes pages without reloading.
-  function isSupportedPage() {
-    const currentPath = window.location.pathname.toLowerCase();
-
-    return SUPPORTED_PATHS.some((supportedPath) =>
-      currentPath.includes(supportedPath),
-    );
   }
 
   // Give extension-owned page controls one lightweight hover and keyboard tooltip.
@@ -288,6 +274,12 @@
     // Switching tabs must not leave a pending hover or a pressed-pointer state behind.
     window.addEventListener('blur', () => { pointerPressed = false; hideTip(); });
     window.addEventListener(DOM_CHANGE_EVENT, updateActivePageTooltip);
+  }
+
+  // Find the selected package heading on either page.
+  function getPackageHeading() {
+    return document.getElementById('packageDetails-title')
+      || Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent.trim().startsWith('Package:'));
   }
 
   // Limit the optional column to the Designer package table itself.
@@ -465,16 +457,6 @@
     });
   }
 
-  // Keep favorites independent across environment and Ellucian workflow.
-  function getFavoritesStorageKey() {
-    const currentPath = window.location.pathname.toLowerCase();
-    const pageName = currentPath.includes("/data-connect-designer")
-      ? "designer"
-      : "packages";
-
-    return `${window.location.host}|${pageName}`;
-  }
-
   // Validate page-world data before allowing it to affect extension-created controls.
   function normalizeSearchIndex(packages) {
     if (!Array.isArray(packages)) {
@@ -567,7 +549,7 @@
         // Include rendered child pipelines when a package is already expanded.
         const pipelines = Array.from(
           packageRow.querySelectorAll(
-            'li[data-level="2"][pipeline-element], li[data-level="2"][pipelineelement]',
+            PIPELINE_ROW_SELECTOR,
           ),
           (pipelineRow) => ({
             name: normalizeText(
@@ -603,9 +585,22 @@
       return;
     }
 
-    document.querySelectorAll('[data-testid="master"]').forEach((panel) => {
+    document.querySelectorAll(PANEL_SELECTOR).forEach((panel) => {
       updateFavoritesForPanel(panel);
     });
+  }
+
+  // Read one page's saved favorites height, ignoring missing or invalid values.
+  function readStoredHeight(heightsByHost, storageKey) {
+    const storedHeight = Number(heightsByHost?.[storageKey]);
+    return Number.isFinite(storedHeight) && storedHeight > 0 ? storedHeight : null;
+  }
+
+  // Apply one page's saved pins, disclosure state, and list height from a completed storage read.
+  function applyFavoriteSettings(settings, storageKey) {
+    loadFavoriteState(settings[FAVORITES_BY_HOST_KEY]?.[storageKey]);
+    favoritesExpanded = settings[FAVORITES_EXPANDED_BY_HOST_KEY]?.[storageKey] !== false;
+    favoriteListHeight = readStoredHeight(settings[FAVORITES_HEIGHTS_BY_HOST_KEY], storageKey);
   }
 
   // Load the correct page-specific favorites after an in-app route change.
@@ -618,7 +613,7 @@
       return;
     }
 
-    const requestedStorageKey = getFavoritesStorageKey();
+    const requestedStorageKey = getPageStorageKey();
     activeFavoritesStorageKey = requestedStorageKey;
 
     // Keep: storage calls can throw after an extension reload even when the API still exists (1.19.7).
@@ -638,7 +633,7 @@
         },
         (settings) => {
           // Ignore stale replies before inspecting a potentially disconnected runtime.
-          if (ownershipExtensionDisconnected || !isSupportedPage() || getFavoritesStorageKey() !== requestedStorageKey) return;
+          if (ownershipExtensionDisconnected || !isSupportedPage() || getPageStorageKey() !== requestedStorageKey) return;
           try {
             const lastError = runtime.lastError;
             if (globalThis.chrome?.runtime !== runtime || !runtime.id || /Extension context invalidated/i.test(lastError?.message || '')) {
@@ -653,13 +648,7 @@
           }
 
           // Restore the destination page's hierarchy, disclosure, and height only after a valid read.
-          const favoritesByHost = settings[FAVORITES_BY_HOST_KEY] ?? {};
-          const expandedByHost = settings[FAVORITES_EXPANDED_BY_HOST_KEY] ?? {};
-          const heightsByHost = settings[FAVORITES_HEIGHTS_BY_HOST_KEY] ?? {};
-          loadFavoriteState(favoritesByHost[requestedStorageKey]);
-          favoritesExpanded = expandedByHost[requestedStorageKey] !== false;
-          const storedHeight = Number(heightsByHost[requestedStorageKey]);
-          favoriteListHeight = Number.isFinite(storedHeight) && storedHeight > 0 ? storedHeight : null;
+          applyFavoriteSettings(settings, requestedStorageKey);
 
           applySearchMode();
           requestSearchIndex();
@@ -676,7 +665,7 @@
     // Keep the last complete index through transient package-row replacements.
     if (
       completeSearchIndex.length &&
-      completeSearchIndexKey === getFavoritesStorageKey()
+      completeSearchIndexKey === getPageStorageKey()
     ) {
       searchIndex = completeSearchIndex;
       indexState = "ready";
@@ -739,7 +728,7 @@
     if (!packageRow) return null;
     return Array.from(
       packageRow.querySelectorAll(
-        'li[data-level="2"][pipeline-element], li[data-level="2"][pipelineelement]',
+        PIPELINE_ROW_SELECTOR,
       ),
     ).find((pipelineRow) => {
       const name = pipelineRow.querySelector("span[title]")?.getAttribute("title");
@@ -815,7 +804,7 @@
         watchedRegion?.addEventListener("keydown", cancelForKeyboardScroll);
       }
       const pipelines = packageRow ? Array.from(packageRow.querySelectorAll(
-        'li[data-level="2"][pipeline-element], li[data-level="2"][pipelineelement]',
+        PIPELINE_ROW_SELECTOR,
       )).slice(0, 5) : [];
 
       // Wait for rendered children instead of estimating space from a stale index.
@@ -995,7 +984,7 @@
   // Persist the current page's complete favorite hierarchy without changing other pages.
   function saveFavorites() {
     // Keep: snapshot the originating page and pins before navigation can change either one (1.19.4).
-    const storageKey = getFavoritesStorageKey();
+    const storageKey = getPageStorageKey();
     const favoriteState = structuredClone(serializeFavoriteState());
     chrome.storage.local.get(
       { [FAVORITES_BY_HOST_KEY]: {} },
@@ -1018,7 +1007,7 @@
   // Persist whether this environment's favorites section is expanded.
   function saveFavoritesExpandedState() {
     // Keep: attach a delayed disclosure save to the page where the click occurred (1.19.4).
-    const storageKey = getFavoritesStorageKey();
+    const storageKey = getPageStorageKey();
     const expanded = favoritesExpanded;
     chrome.storage.local.get(
       { [FAVORITES_EXPANDED_BY_HOST_KEY]: {} },
@@ -1090,7 +1079,7 @@
     }
 
     // Keep: snapshot the page and height before the async read so navigation cannot misfile them (1.21.9).
-    const storageKey = getFavoritesStorageKey();
+    const storageKey = getPageStorageKey();
     const height = favoriteListHeight;
     chrome.storage.local.get(
       { [FAVORITES_HEIGHTS_BY_HOST_KEY]: {} },
@@ -1208,30 +1197,24 @@
     saveFavorites();
   }
 
+  // Move one entry before or after another; return null when either is missing or they match.
+  function moveListEntry(entries, identityOf, sourceIdentity, targetIdentity, insertAfter) {
+    const ordered = [...entries];
+    const sourceIndex = ordered.findIndex((entry) => identityOf(entry) === sourceIdentity);
+    if (sourceIndex < 0 || sourceIdentity === targetIdentity) return null;
+    // Remove the source before resolving the target's updated position.
+    const [moved] = ordered.splice(sourceIndex, 1);
+    const targetIndex = ordered.findIndex((entry) => identityOf(entry) === targetIdentity);
+    if (targetIndex < 0) return null;
+    ordered.splice(targetIndex + (insertAfter ? 1 : 0), 0, moved);
+    return ordered;
+  }
+
   // Move one saved favorite relative to another while preserving unavailable pins.
   function moveFavorite(sourceName, targetName, insertAfter) {
-    const orderedNames = Array.from(favoriteNames);
-    const sourceIdentity = normalizePackageIdentity(sourceName);
-    const targetIdentity = normalizePackageIdentity(targetName);
-    const sourceIndex = orderedNames.findIndex(
-      (name) => normalizePackageIdentity(name) === sourceIdentity,
-    );
-
-    if (sourceIndex < 0 || sourceIdentity === targetIdentity) {
-      return;
-    }
-
-    // Remove the source before resolving the target's updated position.
-    const [movedName] = orderedNames.splice(sourceIndex, 1);
-    const targetIndex = orderedNames.findIndex(
-      (name) => normalizePackageIdentity(name) === targetIdentity,
-    );
-
-    if (targetIndex < 0) {
-      return;
-    }
-
-    orderedNames.splice(targetIndex + (insertAfter ? 1 : 0), 0, movedName);
+    const orderedNames = moveListEntry(Array.from(favoriteNames), normalizePackageIdentity,
+      normalizePackageIdentity(sourceName), normalizePackageIdentity(targetName), insertAfter);
+    if (!orderedNames) return;
     favoriteNames = new Set(orderedNames);
     refreshFavoritesUI();
     saveFavorites();
@@ -1254,45 +1237,14 @@
   }
 
   // Move one pinned pipeline within its own package and preserve its saved order.
-  function moveFavoritePipeline(
-    packageName,
-    sourcePipeline,
-    targetPipeline,
-    insertAfter,
-  ) {
+  function moveFavoritePipeline(packageName, sourcePipeline, targetPipeline, insertAfter) {
     const packageIdentity = normalizePackageIdentity(packageName);
     const currentGroup = favoritePipelineGroups.get(packageIdentity);
-    const orderedPipelines = [...(currentGroup?.pipelines ?? [])];
-    const sourceIdentity = getPipelineIdentity(sourcePipeline);
-    const targetIdentity = getPipelineIdentity(targetPipeline);
-    const sourceIndex = orderedPipelines.findIndex(
-      (pipeline) => getPipelineIdentity(pipeline) === sourceIdentity,
-    );
-
-    if (sourceIndex < 0 || sourceIdentity === targetIdentity) {
-      return;
-    }
-
-    // Remove the source before locating the target's updated array position.
-    const [movedPipeline] = orderedPipelines.splice(sourceIndex, 1);
-    const targetIndex = orderedPipelines.findIndex(
-      (pipeline) => getPipelineIdentity(pipeline) === targetIdentity,
-    );
-
-    if (targetIndex < 0) {
-      return;
-    }
-
+    const orderedPipelines = moveListEntry(currentGroup?.pipelines ?? [], getPipelineIdentity,
+      getPipelineIdentity(sourcePipeline), getPipelineIdentity(targetPipeline), insertAfter);
+    if (!orderedPipelines) return;
     // Save the child order without changing the package pin or disclosure state.
-    orderedPipelines.splice(
-      targetIndex + (insertAfter ? 1 : 0),
-      0,
-      movedPipeline,
-    );
-    favoritePipelineGroups.set(packageIdentity, {
-      ...currentGroup,
-      pipelines: orderedPipelines,
-    });
+    favoritePipelineGroups.set(packageIdentity, { ...currentGroup, pipelines: orderedPipelines });
     refreshFavoritesUI();
     saveFavorites();
   }
@@ -1534,6 +1486,66 @@
     );
   }
 
+  // Wire one favorites row for drag-and-drop and Up/Down reordering within its own list.
+  function wireFavoriteReorder(item, handle, reorder) {
+    // Keep handle clicks separate from navigation and disclosure targets.
+    handle.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
+
+    // Start a native drag using only the dedicated handle.
+    handle.addEventListener("dragstart", (event) => {
+      reorder.start();
+      item.setAttribute("data-dragging", "true");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", reorder.dragText);
+    });
+
+    // Clear drag styling even when the pointer is released outside the list.
+    handle.addEventListener("dragend", () => {
+      reorder.end();
+      clearFavoriteDragIndicators();
+    });
+
+    // Offer the same reordering without requiring pointer dragging.
+    handle.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+      const insertAfter = event.key === "ArrowDown";
+      const target = reorder.neighbor(insertAfter ? 1 : -1);
+      if (!target) return;
+      event.preventDefault();
+      event.stopPropagation();
+      reorder.move(reorder.self, target, insertAfter);
+    });
+
+    // Show whether a dragged row will land before or after this one.
+    item.addEventListener("dragover", (event) => {
+      const source = reorder.dragged();
+      if (!source || !reorder.accepts(source) || reorder.isSelf(source)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      const bounds = item.getBoundingClientRect();
+      item.dataset.dropPosition = event.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
+    });
+
+    // Remove the insertion line after leaving the complete target row.
+    item.addEventListener("dragleave", (event) => {
+      if (!item.contains(event.relatedTarget)) item.removeAttribute("data-drop-position");
+    });
+
+    // Persist the new order and restore focus to the moved handle.
+    item.addEventListener("drop", (event) => {
+      const source = reorder.dragged();
+      if (!source || !reorder.accepts(source)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const insertAfter = item.dataset.dropPosition === "after";
+      reorder.end();
+      clearFavoriteDragIndicators();
+      reorder.move(source, reorder.self, insertAfter);
+    });
+  }
+
   // Populate the collapsible favorites section using only currently available data.
   function renderFavoritesSection(panel, section) {
     const toggleButton = section.querySelector(".ellucian-favorites-toggle");
@@ -1541,7 +1553,7 @@
     const list = section.querySelector(".ellucian-favorites-list");
     // Prefer the last complete index so collapsing another package cannot hide pins.
     const verifiedIndex =
-      completeSearchIndexKey === getFavoritesStorageKey() &&
+      completeSearchIndexKey === getPageStorageKey() &&
       completeSearchIndex.length
         ? completeSearchIndex
         : searchIndex;
@@ -1564,7 +1576,7 @@
         // Include expanded child rows even when Ellucian's private index is stale.
         const renderedPipelines = Array.from(
           packageRow.querySelectorAll(
-            'li[data-level="2"][pipeline-element], li[data-level="2"][pipelineelement]',
+            PIPELINE_ROW_SELECTOR,
           ),
           (pipelineRow) => ({
             name: normalizeText(
@@ -1733,90 +1745,24 @@
         "Drag to reorder, or use Up and Down when focused",
       );
 
-      // Keep handle clicks separate from the parent's expand/collapse target.
-      dragHandle.addEventListener("click", (event) => {
-        event.stopPropagation();
-      });
-
-      // Start a native drag using only the dedicated handle.
-      dragHandle.addEventListener("dragstart", (event) => {
-        draggedFavoriteName = packageEntry.name;
-        item.setAttribute("data-dragging", "true");
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("text/plain", packageEntry.name);
-      });
-
-      // Clear drag styling even when the pointer is released outside the list.
-      dragHandle.addEventListener("dragend", () => {
-        draggedFavoriteName = "";
-        clearFavoriteDragIndicators();
-      });
-
-      // Offer the same parent reordering without requiring pointer dragging.
-      dragHandle.addEventListener("keydown", (event) => {
-        if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
-          return;
-        }
-
-        const currentIndex = availableFavorites.findIndex(
-          (favorite) =>
-            normalizePackageIdentity(favorite.name) ===
-            normalizePackageIdentity(packageEntry.name),
-        );
-        const targetIndex =
-          event.key === "ArrowUp" ? currentIndex - 1 : currentIndex + 1;
-
-        if (targetIndex < 0 || targetIndex >= availableFavorites.length) {
-          return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-        moveFavorite(
-          packageEntry.name,
-          availableFavorites[targetIndex].name,
-          event.key === "ArrowDown",
-        );
-        focusFavoriteHandle(packageEntry.name);
-      });
-
-      // Show whether a dragged parent will land before or after this row.
-      item.addEventListener("dragover", (event) => {
-        if (
-          !draggedFavoriteName ||
-          normalizePackageIdentity(draggedFavoriteName) ===
-            normalizePackageIdentity(packageEntry.name)
-        ) {
-          return;
-        }
-
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
-        const bounds = item.getBoundingClientRect();
-        item.dataset.dropPosition =
-          event.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
-      });
-
-      // Remove the insertion line after leaving the complete target row.
-      item.addEventListener("dragleave", (event) => {
-        if (!item.contains(event.relatedTarget)) {
-          item.removeAttribute("data-drop-position");
-        }
-      });
-
-      // Persist the new parent order and restore focus to the moved handle.
-      item.addEventListener("drop", (event) => {
-        if (!draggedFavoriteName) {
-          return;
-        }
-
-        event.preventDefault();
-        const movedName = draggedFavoriteName;
-        const insertAfter = item.dataset.dropPosition === "after";
-        draggedFavoriteName = "";
-        clearFavoriteDragIndicators();
-        moveFavorite(movedName, packageEntry.name, insertAfter);
-        focusFavoriteHandle(movedName);
+      // Packages can move anywhere in the pinned list.
+      const packageIdentity = normalizePackageIdentity(packageEntry.name);
+      wireFavoriteReorder(item, dragHandle, {
+        self: packageEntry.name,
+        dragText: packageEntry.name,
+        start: () => { draggedFavoriteName = packageEntry.name; },
+        end: () => { draggedFavoriteName = ""; },
+        dragged: () => draggedFavoriteName || null,
+        accepts: () => true,
+        isSelf: (name) => normalizePackageIdentity(name) === packageIdentity,
+        neighbor: (step) => {
+          const index = availableFavorites.findIndex((favorite) => normalizePackageIdentity(favorite.name) === packageIdentity);
+          return availableFavorites[index + step]?.name ?? null;
+        },
+        move: (sourceName, targetName, insertAfter) => {
+          moveFavorite(sourceName, targetName, insertAfter);
+          focusFavoriteHandle(sourceName);
+        },
       });
 
       const selectButton = document.createElement("button");
@@ -1912,7 +1858,6 @@
           pipelineItem.className = "ellucian-favorite-pipeline-item";
 
           const pipelineIdentity = getPipelineIdentity(pipelineEntry);
-          const packageIdentity = normalizePackageIdentity(packageEntry.name);
           const pipelineDragHandle = document.createElement("button");
           pipelineDragHandle.type = "button";
           pipelineDragHandle.className =
@@ -1930,108 +1875,25 @@
             "Drag to reorder within this package, or use Up and Down when focused",
           );
 
-          // Keep the reorder control separate from pipeline navigation.
-          pipelineDragHandle.addEventListener("click", (event) => {
-            event.stopPropagation();
-          });
-
-          // Track both identities so children can move only inside their parent.
-          pipelineDragHandle.addEventListener("dragstart", (event) => {
-            draggedFavoritePipeline = {
-              packageIdentity,
-              pipelineIdentity,
-              pipelineEntry,
-            };
-            pipelineItem.setAttribute("data-dragging", "true");
-            event.dataTransfer.effectAllowed = "move";
-            event.dataTransfer.setData("text/plain", pipelineIdentity);
-          });
-
-          // Clear transient state if the drag finishes outside a valid child row.
-          pipelineDragHandle.addEventListener("dragend", () => {
-            draggedFavoritePipeline = null;
-            clearFavoriteDragIndicators();
-          });
-
-          // Match package reordering with accessible Up and Down key controls.
-          pipelineDragHandle.addEventListener("keydown", (event) => {
-            if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
-              return;
-            }
-
-            const currentIndex = packageEntry.favoritePipelines.findIndex(
-              (pipeline) => getPipelineIdentity(pipeline) === pipelineIdentity,
-            );
-            const targetIndex =
-              event.key === "ArrowUp" ? currentIndex - 1 : currentIndex + 1;
-
-            if (
-              targetIndex < 0 ||
-              targetIndex >= packageEntry.favoritePipelines.length
-            ) {
-              return;
-            }
-
-            event.preventDefault();
-            event.stopPropagation();
-            moveFavoritePipeline(
-              packageEntry.name,
-              pipelineEntry,
-              packageEntry.favoritePipelines[targetIndex],
-              event.key === "ArrowDown",
-            );
-            focusFavoritePipelineHandle(packageEntry.name, pipelineEntry);
-          });
-
-          // Show a before-or-after marker only for children of this package.
-          pipelineItem.addEventListener("dragover", (event) => {
-            if (
-              !draggedFavoritePipeline ||
-              draggedFavoritePipeline.packageIdentity !== packageIdentity ||
-              draggedFavoritePipeline.pipelineIdentity === pipelineIdentity
-            ) {
-              return;
-            }
-
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "move";
-            const bounds = pipelineItem.getBoundingClientRect();
-            pipelineItem.dataset.dropPosition =
-              event.clientY < bounds.top + bounds.height / 2
-                ? "before"
-                : "after";
-          });
-
-          // Remove the insertion marker after the pointer leaves the whole row.
-          pipelineItem.addEventListener("dragleave", (event) => {
-            if (!pipelineItem.contains(event.relatedTarget)) {
-              pipelineItem.removeAttribute("data-drop-position");
-            }
-          });
-
-          // Persist the reordered children and restore focus to the moved grip.
-          pipelineItem.addEventListener("drop", (event) => {
-            if (
-              !draggedFavoritePipeline ||
-              draggedFavoritePipeline.packageIdentity !== packageIdentity
-            ) {
-              return;
-            }
-
-            event.preventDefault();
-            event.stopPropagation();
-            const movedPipeline = draggedFavoritePipeline.pipelineEntry;
-            const insertAfter =
-              pipelineItem.dataset.dropPosition === "after";
-            draggedFavoritePipeline = null;
-            clearFavoriteDragIndicators();
-            moveFavoritePipeline(
-              packageEntry.name,
-              movedPipeline,
-              pipelineEntry,
-              insertAfter,
-            );
-            focusFavoritePipelineHandle(packageEntry.name, movedPipeline);
+          // Pipelines can move only within their own package.
+          const pipelineRecord = { packageIdentity, pipelineIdentity, pipelineEntry };
+          wireFavoriteReorder(pipelineItem, pipelineDragHandle, {
+            self: pipelineRecord,
+            dragText: pipelineIdentity,
+            start: () => { draggedFavoritePipeline = pipelineRecord; },
+            end: () => { draggedFavoritePipeline = null; },
+            dragged: () => draggedFavoritePipeline,
+            accepts: (source) => source.packageIdentity === packageIdentity,
+            isSelf: (source) => source.pipelineIdentity === pipelineIdentity,
+            neighbor: (step) => {
+              const index = packageEntry.favoritePipelines.findIndex((pipeline) => getPipelineIdentity(pipeline) === pipelineIdentity);
+              const target = packageEntry.favoritePipelines[index + step];
+              return target ? { pipelineEntry: target } : null;
+            },
+            move: (source, target, insertAfter) => {
+              moveFavoritePipeline(packageEntry.name, source.pipelineEntry, target.pipelineEntry, insertAfter);
+              focusFavoritePipelineHandle(packageEntry.name, source.pipelineEntry);
+            },
           });
 
           const pipelineButton = document.createElement("button");
@@ -2117,74 +1979,15 @@
       "Drag up or down to resize pinned packages",
     );
 
-    // Track only the active drag's starting position and list height.
-    let dragStartY = 0;
-    let dragStartHeight = 0;
-    let isDragging = false;
-
-    // Capture the pointer so resizing continues outside the thin divider.
-    resizeHandle.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) {
-        return;
-      }
-
-      event.preventDefault();
-      dragStartY = event.clientY;
-      dragStartHeight = list.getBoundingClientRect().height;
-      isDragging = true;
-      document.documentElement.setAttribute(
-        "data-ellucian-favorites-resizing",
-        "true",
-      );
-      resizeHandle.setPointerCapture(event.pointerId);
-    });
-
-    // Grow downward or shrink upward as the captured pointer moves.
-    resizeHandle.addEventListener("pointermove", (event) => {
-      if (!isDragging) {
-        return;
-      }
-
-      setFavoritesListHeight(
-        section,
-        dragStartHeight + event.clientY - dragStartY,
-      );
-    });
-
-    // Complete the interaction and save only the final height.
-    const finishDragging = (event) => {
-      if (!isDragging) {
-        return;
-      }
-
-      isDragging = false;
-      document.documentElement.removeAttribute(
-        "data-ellucian-favorites-resizing",
-      );
-
-      if (resizeHandle.hasPointerCapture(event.pointerId)) {
-        resizeHandle.releasePointerCapture(event.pointerId);
-      }
-
-      saveFavoritesListHeight();
-    };
-    resizeHandle.addEventListener("pointerup", finishDragging);
-    resizeHandle.addEventListener("pointercancel", finishDragging);
-
-    // Provide the same precise adjustment for keyboard users.
-    resizeHandle.addEventListener("keydown", (event) => {
-      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
-        return;
-      }
-
-      event.preventDefault();
-      const currentHeight = list.getBoundingClientRect().height;
-      const heightChange =
-        event.key === "ArrowDown"
-          ? FAVORITES_KEYBOARD_RESIZE_STEP
-          : -FAVORITES_KEYBOARD_RESIZE_STEP;
-      setFavoritesListHeight(section, currentHeight + heightChange);
-      saveFavoritesListHeight();
+    // Drag or use Up/Down to resize; only completed changes are saved.
+    attachResizeDrag(resizeHandle, {
+      axis: "y",
+      keys: ["ArrowUp", "ArrowDown"],
+      step: FAVORITES_KEYBOARD_RESIZE_STEP,
+      resizingAttribute: "data-ellucian-favorites-resizing",
+      getSize: () => list.getBoundingClientRect().height,
+      setSize: (height) => setFavoritesListHeight(section, height),
+      save: saveFavoritesListHeight,
     });
 
     return resizeHandle;
@@ -2269,7 +2072,7 @@
     // Add stars only to child rows that Ellucian has currently rendered.
     panel
       .querySelectorAll(
-        'li[data-level="2"][pipeline-element], li[data-level="2"][pipelineelement]',
+        PIPELINE_ROW_SELECTOR,
       )
       .forEach(updatePipelineFavoriteButton);
     renderFavoritesSection(panel, section);
@@ -2733,7 +2536,7 @@
   function readSelectedSharingNames() {
     const table = getDesignerPipelineTable();
     if (!table) return [];
-    const packageName = Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent.trim().startsWith('Package:'))?.textContent || '';
+    const packageName = getPackageHeading()?.textContent || '';
     if (packageName !== sharedSelectionPackage) {
       selectedShareRows.clear();
       sharedSelectionPackage = packageName;
@@ -2923,7 +2726,7 @@
 
   // Recognize SPA entry and exit even when the browser emits no pageshow or popstate.
   function updateDesignerOwnershipVisit(force = false) {
-    const pageKey = sharedFromEnabled && isDesignerPackagePage() ? getFavoritesStorageKey() : '';
+    const pageKey = sharedFromEnabled && isDesignerPackagePage() ? getPageStorageKey() : '';
     if (!force && pageKey === ownershipPageKey) return;
     resetDesignerOwnership(sharedFromEnabled ? 'left-designer' : 'disabled');
     ownershipTenantId = '';
@@ -2934,7 +2737,7 @@
   // Ask for one source snapshot only after this visit's loaded Designer index is ready.
   function requestDesignerOwnership() {
     if (ownershipExtensionDisconnected || !sharedFromEnabled || !isDesignerPackagePage() || !ownershipIndexReady || indexState !== "ready" || ownershipRequest) return;
-    const signature = JSON.stringify([getFavoritesStorageKey(), searchIndex.map((entry) => [entry.name, entry.pipelines.map((pipeline) => pipeline.name)])]);
+    const signature = JSON.stringify([getPageStorageKey(), searchIndex.map((entry) => [entry.name, entry.pipelines.map((pipeline) => pipeline.name)])]);
     // A changed inventory gets its own bounded attempt budget.
     if (signature !== ownershipSignature) {
       ownershipSignature = signature;
@@ -2988,7 +2791,7 @@
       return;
     }
     resetDesignerOwnership('restarted');
-    ownershipPageKey = getFavoritesStorageKey();
+    ownershipPageKey = getPageStorageKey();
     ownershipManualResponse = respond;
     requestDesignerOwnershipIndex();
     return true;
@@ -3054,17 +2857,17 @@
       window.postMessage({ source: MESSAGE_SOURCE, type: 'package-artifacts-setting', enabled: packageArtifactsEnabled }, window.location.origin);
       packageArtifactSettingSent = packageArtifactsEnabled;
     }
-    if (!packageArtifactsEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+    if (!packageArtifactsEnabled || !isPackagesPage()) {
       clearPackageArtifacts();
       document.querySelectorAll('[data-ellucian-type-cell]').forEach((cell) => cell.remove());
       packageArtifacts = { key: '', row: null, nodeId: '', requestId: '', pipelines: [] };
       return;
     }
     // Bind responses to the visible heading so late replies cannot populate another package.
-    const title = document.getElementById('packageDetails-title') || Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent.trim().startsWith('Package:'));
+    const title = getPackageHeading();
     const name = title?.textContent.trim().replace(/^Package:\s*/u, '') || '';
     if (!name) return;
-    const key = `${getFavoritesStorageKey()}\u0000${name}`;
+    const key = `${getPageStorageKey()}\u0000${name}`;
     const row = Array.from(document.querySelectorAll('li[data-level="1"]')).find((element) => getVisiblePackageName(element) === name);
     // A republished package can reuse its React element but change the versioned node identifier.
     const nodeId = row?.getAttribute('data-nodeid') || '';
@@ -3179,7 +2982,7 @@
   function updateSharedFromColumn() {
     // Tell the page helper to stop source lookups when the feature or route is inactive.
     window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-ownership-setting', enabled: sharedFromEnabled && isDesignerPackagePage() }, window.location.origin);
-    if (!sharedFromEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+    if (!sharedFromEnabled || !isPackagesPage()) {
       document.querySelectorAll('[data-ellucian-source-cell]').forEach((cell) => cell.remove());
       return;
     }
@@ -3247,7 +3050,7 @@
   // Fit each package's names while keeping Version and optional source columns compact.
   function updatePackagePipelineColumn() {
     // Remove only our presentation when a retained table belongs to another route.
-    if (!/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+    if (!isPackagesPage()) {
       // Treat a return from another page as a new package selection too.
       packagePipelineWidthKey = '';
       document.querySelectorAll('[data-ellucian-pipeline-table]').forEach((table) => {
@@ -3271,9 +3074,8 @@
     if (!nameHeader) return;
 
     // Use the native package heading so rerenders and sorting do not reset a user's current resize.
-    const packageTitle = document.getElementById('packageDetails-title')?.textContent.trim()
-      || Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent.trim().startsWith('Package:'))?.textContent.trim();
-    const widthKey = packageTitle ? `${getFavoritesStorageKey()}\u0000${packageTitle}` : '';
+    const packageTitle = getPackageHeading()?.textContent.trim();
+    const widthKey = packageTitle ? `${getPageStorageKey()}\u0000${packageTitle}` : '';
     const newPackage = Boolean(widthKey && widthKey !== packagePipelineWidthKey);
     if (newPackage) {
       packagePipelineWidthKey = widthKey;
@@ -3384,7 +3186,7 @@
         handle.dataset.dragging = 'true';
       });
       handle.addEventListener('pointermove', (event) => {
-        if (drag && table.isConnected && /\/data-connect\/home\/?$/iu.test(window.location.pathname)) setWidth(drag.width + event.clientX - drag.x);
+        if (drag && table.isConnected && isPackagesPage()) setWidth(drag.width + event.clientX - drag.x);
       });
       // Release capture after either a completed drag or cancellation.
       const stopDrag = () => { drag = null; delete handle.dataset.dragging; };
@@ -3566,7 +3368,7 @@
     refresh.setAttribute('aria-label', busy ? 'Refreshing Shared To information' : 'Refresh Shared To information');
     // Reset manual feedback when React reuses the table for another package.
     const header = refresh.closest('th');
-    const packageScope = Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim().startsWith('Package:'))?.textContent.trim() || window.location.pathname;
+    const packageScope = getPackageHeading()?.textContent.trim() || window.location.pathname;
     if (header.dataset.packageScope !== packageScope) {
       header.dataset.packageScope = packageScope;
       delete header.dataset.manualRefresh;
@@ -3596,7 +3398,7 @@
   // Place a package-scoped search beside the Designer Pipelines heading.
   function updateDesignerSearch() {
     const heading = isDesignerPackagePage() && Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim() === 'Pipelines:');
-    const packageName = Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim().startsWith('Package:'))?.textContent.trim() || '';
+    const packageName = getPackageHeading()?.textContent.trim() || '';
     document.querySelectorAll('.ellucian-designer-search').forEach((control) => {
       // Restore native heading styling and cancel pending work when the control leaves.
       if (!heading || control.dataset.package !== packageName || designerSearchMode === 'hidden') {
@@ -3780,14 +3582,14 @@
     requestDesignerOwnership();
     // Keep the shared Experience shell untouched outside the supported pages.
     if (!isSupportedPage()) {
-      document.querySelectorAll('[data-testid="master"]').forEach((panel) => {
+      document.querySelectorAll(PANEL_SELECTOR).forEach((panel) => {
         removeFavoritesFromPanel(panel);
         removeSearchControls(panel);
       });
       return;
     }
 
-    document.querySelectorAll('[data-testid="master"]').forEach((panel) => {
+    document.querySelectorAll(PANEL_SELECTOR).forEach((panel) => {
       // Keep favorites independent from the selected search presentation mode.
       updateFavoritesForPanel(panel);
 
@@ -3825,7 +3627,7 @@
 
       // Load the destination page's saved state after internal navigation.
       const currentStorageKey = isSupportedPage()
-        ? getFavoritesStorageKey()
+        ? getPageStorageKey()
         : "";
       if (currentStorageKey !== activeFavoritesStorageKey) {
         loadFavoritesForCurrentPage();
@@ -3877,8 +3679,8 @@
 
     // Retry the current package once when its existing network response completes after selection.
     if (event.data.type === 'package-artifacts-ready') {
-      if (!packageArtifactsEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) return;
-      const title = document.getElementById('packageDetails-title');
+      if (!packageArtifactsEnabled || !isPackagesPage()) return;
+      const title = getPackageHeading();
       if (title?.textContent.trim().replace(/^Package:\s*/u, '') !== event.data.packageName) return;
       packageArtifacts.row = null;
       scheduleSearchUpdate();
@@ -3887,8 +3689,8 @@
 
     // Accept only our newest selected-package response; sidebar records remain untouched.
     if (event.data.type === 'package-artifacts-response') {
-      if (!packageArtifactsEnabled || !/\/data-connect\/home\/?$/iu.test(window.location.pathname) || event.data.requestId !== packageArtifacts.requestId) return;
-      const title = document.getElementById('packageDetails-title') || Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent.trim().startsWith('Package:'));
+      if (!packageArtifactsEnabled || !isPackagesPage() || event.data.requestId !== packageArtifacts.requestId) return;
+      const title = getPackageHeading();
       if (title?.textContent.trim().replace(/^Package:\s*/u, '') !== event.data.packageName) return;
       packageArtifacts.pipelines = event.data.available === true && Array.isArray(event.data.pipelines) ? normalizePackageArtifacts(event.data.pipelines) : [];
       scheduleSearchUpdate();
@@ -4008,7 +3810,7 @@
     window.clearTimeout(indexResponseTimer);
     const normalizedIndex = normalizeSearchIndex(event.data.packages);
     // A fresh inventory read also refreshes selected-package types after loaded data changes.
-    if (/\/data-connect\/home\/?$/iu.test(window.location.pathname)) {
+    if (isPackagesPage()) {
       packageArtifacts.row = null;
       scheduleSearchUpdate();
     }
@@ -4022,7 +3824,7 @@
 
     // Prefer the complete React index and clearly fall back when it is incomplete.
     if (completeIndex) {
-      const currentIndexKey = getFavoritesStorageKey();
+      const currentIndexKey = getPageStorageKey();
 
       // Merge only within this page so Test, Production, Packages, and Designer stay isolated.
       completeSearchIndex =
@@ -4033,7 +3835,7 @@
       searchIndex = completeSearchIndex;
       indexState = "ready";
       // Only a complete response for the current Designer visit permits source collection.
-      if (sharedFromEnabled && isDesignerPackagePage() && ownershipPageKey === getFavoritesStorageKey()) {
+      if (sharedFromEnabled && isDesignerPackagePage() && ownershipPageKey === getPageStorageKey()) {
         ownershipIndexReady = true;
         window.clearTimeout(ownershipIndexTimer);
         ownershipIndexTimer = 0;
@@ -4148,31 +3950,19 @@
 
     // Synchronize changes made by another tab in the same environment.
     if (changes[FAVORITES_BY_HOST_KEY]) {
-      const favoritesByHost = changes[FAVORITES_BY_HOST_KEY].newValue ?? {};
-      loadFavoriteState(favoritesByHost[getFavoritesStorageKey()]);
+      loadFavoriteState(changes[FAVORITES_BY_HOST_KEY].newValue?.[getPageStorageKey()]);
       refreshFavoritesUI();
     }
 
     // Synchronize the expanded state across tabs in the same environment.
     if (changes[FAVORITES_EXPANDED_BY_HOST_KEY]) {
-      const expandedByHost =
-        changes[FAVORITES_EXPANDED_BY_HOST_KEY].newValue ?? {};
-      favoritesExpanded =
-        expandedByHost[getFavoritesStorageKey()] !== false;
+      favoritesExpanded = changes[FAVORITES_EXPANDED_BY_HOST_KEY].newValue?.[getPageStorageKey()] !== false;
       refreshFavoritesUI();
     }
 
     // Synchronize a remembered list height changed in another tab.
     if (changes[FAVORITES_HEIGHTS_BY_HOST_KEY]) {
-      const heightsByHost =
-        changes[FAVORITES_HEIGHTS_BY_HOST_KEY].newValue ?? {};
-      const storedHeight = Number(
-        heightsByHost[getFavoritesStorageKey()],
-      );
-      favoriteListHeight =
-        Number.isFinite(storedHeight) && storedHeight > 0
-          ? storedHeight
-          : null;
+      favoriteListHeight = readStoredHeight(changes[FAVORITES_HEIGHTS_BY_HOST_KEY].newValue, getPageStorageKey());
       refreshFavoritesUI();
     }
   });
@@ -4222,11 +4012,8 @@
         return;
       }
       const currentStorageKey = isSupportedPage()
-        ? getFavoritesStorageKey()
+        ? getPageStorageKey()
         : "";
-      const favoritesByHost = settings[FAVORITES_BY_HOST_KEY] ?? {};
-      const expandedByHost = settings[FAVORITES_EXPANDED_BY_HOST_KEY] ?? {};
-      const heightsByHost = settings[FAVORITES_HEIGHTS_BY_HOST_KEY] ?? {};
 
       // Apply only the current page-specific settings format.
       searchMode = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
@@ -4246,15 +4033,7 @@
       activeFavoritesStorageKey = currentStorageKey;
 
       // Load page-specific values only when starting on a supported route.
-      if (currentStorageKey) {
-        loadFavoriteState(favoritesByHost[currentStorageKey]);
-        favoritesExpanded = expandedByHost[currentStorageKey] !== false;
-        const storedHeight = Number(heightsByHost[currentStorageKey]);
-        favoriteListHeight =
-          Number.isFinite(storedHeight) && storedHeight > 0
-            ? storedHeight
-            : null;
-      }
+      if (currentStorageKey) applyFavoriteSettings(settings, currentStorageKey);
 
       applySearchMode();
       if (currentStorageKey) {

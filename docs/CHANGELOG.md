@@ -8,7 +8,9 @@ Reconstructed from this development chat, including recorded file changes. Dates
 - Settings switches for **Remember Resized Width**, **Pinned Packages**, and **Shared To** flip back if saving fails. Saved widths are cleared only after reset-on-refresh is actually saved.
 - A failed settings read when a page first loads no longer starts from empty favorites.
 - Designer sharing lookups stop adding a new loader probe on each failed attempt, and opening a Designer pipeline no longer errors on a missing version.
-- Marks deliberate code with one-line `Keep:` comments that name the version that introduced it. No changes to features, saved data formats, permissions, or service requests.
+- Marks deliberate code with one-line `Keep:` comments that name the version that introduced it.
+- Code cleanup with no intended behavior change: a new `shared.js` holds the page rules and resize gesture used by both page scripts; favorites loading, package/pipeline reordering, and the sidebar and favorites resize handles each share one implementation; the page helper routes messages through one listener; and the settings markup drops unused wrappers.
+- No changes to features, saved data formats, permissions, or service requests.
 
 ## 1.21.8 — 2026-10-07
 

@@ -20,44 +20,40 @@
       <!-- Keep everyday page options together in the same compact disclosure style. -->
       <details class="settings-card page-behavior-card" open>
         <summary>Page Behavior</summary>
-        <div aria-labelledby="width-setting-title">
-          <label class="setting-row" for="remember-width">
-            <span class="setting-copy">
-              <span class="setting-title" id="width-setting-title">
-                Remember Resized Width
-              </span>
-              <span class="setting-description">
-                Keep panel width after refresh.
-              </span>
+        <label class="setting-row" for="remember-width">
+          <span class="setting-copy">
+            <span class="setting-title" id="width-setting-title">
+              Remember Resized Width
             </span>
+            <span class="setting-description">
+              Keep panel width after refresh.
+            </span>
+          </span>
 
-            <!-- Keep the native checkbox accessible beneath the visual switch. -->
-            <span class="switch">
-              <input id="remember-width" type="checkbox" />
-              <span class="switch-track" aria-hidden="true"></span>
-            </span>
-          </label>
-        </div>
+          <!-- Keep the native checkbox accessible beneath the visual switch. -->
+          <span class="switch">
+            <input id="remember-width" type="checkbox" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
 
         <!-- Allow the remembered pinned-packages section to be hidden entirely. -->
-        <div aria-labelledby="favorites-setting-title">
-          <label class="setting-row" for="favorites-enabled">
-            <span class="setting-copy">
-              <span class="setting-title" id="favorites-setting-title">
-                Pinned Packages
-              </span>
-              <span class="setting-description">
-                Show pinned packages and pipelines.
-              </span>
+        <label class="setting-row" for="favorites-enabled">
+          <span class="setting-copy">
+            <span class="setting-title" id="favorites-setting-title">
+              Pinned Packages
             </span>
+            <span class="setting-description">
+              Show pinned packages and pipelines.
+            </span>
+          </span>
 
-            <!-- Keep the native checkbox accessible beneath the visual switch. -->
-            <span class="switch">
-              <input id="favorites-enabled" type="checkbox" />
-              <span class="switch-track" aria-hidden="true"></span>
-            </span>
-          </label>
-        </div>
+          <!-- Keep the native checkbox accessible beneath the visual switch. -->
+          <span class="switch">
+            <input id="favorites-enabled" type="checkbox" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
 
         <!-- Keep reference display with width and favorites, separate from sharing settings. -->
         <label class="setting-row" for="package-artifacts-enabled" title="Integration Packages only; Designer is unchanged. Refresh Integration Packages after enabling.">
@@ -74,18 +70,16 @@
         <!-- Separate navigation/display choices from the two optional sharing features. -->
         <hr class="page-behavior-divider" />
         <!-- Keep destination sharing details an opt-in named to match Shared From. -->
-        <div>
-          <label class="setting-row" for="shared-version-enabled">
-            <span class="setting-copy">
-              <span class="setting-title">Shared To</span>
-              <span class="setting-description">Sharing destinations in Designer.</span>
-            </span>
-            <span class="switch">
-              <input id="shared-version-enabled" type="checkbox" />
-              <span class="switch-track" aria-hidden="true"></span>
-            </span>
-          </label>
-        </div>
+        <label class="setting-row" for="shared-version-enabled">
+          <span class="setting-copy">
+            <span class="setting-title">Shared To</span>
+            <span class="setting-description">Sharing destinations in Designer.</span>
+          </span>
+          <span class="switch">
+            <input id="shared-version-enabled" type="checkbox" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
         <!-- Ownership collection stays off until the user accepts its local-data notice. -->
         <label class="setting-row" for="shared-from-enabled" title="Visit Designer in each source environment first. Refresh updates only the currently open Designer environment.">
           <span class="setting-copy">
