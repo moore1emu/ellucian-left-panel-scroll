@@ -5,7 +5,7 @@ Reconstructed from this development chat, including recorded file changes. Dates
 ## 1.21.9 — 2026-10-13
 
 - Saving a favorites height or a remembered panel width now keeps the page it started on and skips the save if the stored values cannot be read, so other pages' saved heights and widths are never overwritten.
-- Settings switches for **Remember Resized Width**, **Pinned Packages**, and **Shared To** flip back if saving fails. Saved widths are cleared only after reset-on-refresh is actually saved.
+- Settings switches for **Remember Resized Width**, **Pinned Packages**, and **Shared To** wait for saved values to load, stay disabled while saving, and return to the last saved value with a short message if saving fails. Saved widths are cleared only after reset-on-refresh is actually saved. Adds `tests/popup-switches.regression.js`, which checks that the displayed switch always matches the saved preference.
 - A failed settings read when a page first loads no longer starts from empty favorites.
 - Designer sharing lookups stop adding a new loader probe on each failed attempt, and opening a Designer pipeline no longer errors on a missing version.
 - Marks deliberate code with one-line `Keep:` comments that name the version that introduced it.

@@ -42,6 +42,8 @@
   const favoriteStatus = document.querySelector("#favorite-color-status");
   const resetFavoriteButton = document.querySelector("#reset-favorite-color");
   let appearanceLoaded = false;
+  // Hold each simple switch's last value confirmed by storage, for restoring after a failed save.
+  const confirmedSwitchValues = new WeakMap();
   // Keep: retain the custom choice while the disabled picker displays the linked icon color (1.18.0).
   let independentFavoriteColor = FavoriteAppearance.DEFAULT.color;
   // Keep the existing sidebar preference separate from the Designer package search.
@@ -102,6 +104,12 @@
       // Display the favorites preference, defaulting to the visible section.
       favoritesEnabledSwitch.checked =
         settings[FAVORITES_ENABLED_KEY] !== false;
+
+      // Treat the loaded values as confirmed before allowing any switch changes.
+      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch].forEach((input) => {
+        confirmedSwitchValues.set(input, input.checked);
+        input.disabled = false;
+      });
 
       // Restore both independent choices before allowing changes to be saved.
       searchModeSelect.value = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
@@ -289,11 +297,22 @@
     });
   });
 
-  // Keep: flip a switch back when its save fails so it never shows an unsaved choice (1.21.9).
-  function saveSwitch(input, key, onSaved) {
+  // Keep: disable a switch while saving and restore its last confirmed value on failure (1.21.9).
+  function saveSwitch(input, key, label, status, onSaved) {
+    const previous = confirmedSwitchValues.get(input);
     const value = input.checked;
+    input.disabled = true;
+    input.setAttribute('aria-busy', 'true');
+    status.textContent = '';
     chrome.storage.local.set({ [key]: value }, () => {
-      if (chrome.runtime.lastError) input.checked = !value;
+      const failed = Boolean(chrome.runtime.lastError);
+      // A failed write leaves storage unchanged, so show the last value that actually saved.
+      if (failed) input.checked = previous;
+      else confirmedSwitchValues.set(input, value);
+      input.disabled = false;
+      input.setAttribute('aria-busy', 'false');
+      if (failed) status.textContent = `Could not save ${label}. Please try again.`;
+      // Run success-only follow-up work, such as clearing saved widths, after the write lands.
       else onSaved?.(value);
     });
   }
@@ -301,19 +320,19 @@
   // Width behavior remains separate from the new record display switch.
   rememberWidthSwitch.addEventListener("change", () => {
     // Remove old widths only after reset-on-refresh is actually saved.
-    saveSwitch(rememberWidthSwitch, REMEMBER_WIDTH_KEY, (shouldRemember) => {
+    saveSwitch(rememberWidthSwitch, REMEMBER_WIDTH_KEY, 'Remember Resized Width', packageArtifactsStatus, (shouldRemember) => {
       if (!shouldRemember) chrome.storage.local.remove(SAVED_WIDTHS_KEY);
     });
   });
 
   // Apply optional sharing checks immediately to open Designer pages.
   sharedVersionSwitch.addEventListener("change", () => {
-    saveSwitch(sharedVersionSwitch, SHARED_VERSION_ENABLED_KEY);
+    saveSwitch(sharedVersionSwitch, SHARED_VERSION_ENABLED_KEY, 'Shared To', sharedFromStatus);
   });
 
   // Show or hide favorite controls immediately while retaining saved packages.
   favoritesEnabledSwitch.addEventListener("change", () => {
-    saveSwitch(favoritesEnabledSwitch, FAVORITES_ENABLED_KEY);
+    saveSwitch(favoritesEnabledSwitch, FAVORITES_ENABLED_KEY, 'Pinned Packages', packageArtifactsStatus);
   });
 
   // Save sidebar changes without changing the Designer pipeline preference.
