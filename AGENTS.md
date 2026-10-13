@@ -23,7 +23,7 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next version after 1.22.5 is 1.22.6. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next version after 1.22.6 is 1.22.7. Do not rename historical releases.
 - Preserve the root-level extension layout and the existing release filename `ellucian-left-panel-scroll.zip`. Keep only the latest ZIP/unpacked release in the configured outputs folder; retain any needed prior build in a separate recovery folder.
 - Put manifest.json at the ZIP root, with runtime assets and icons beside it. Include README.md, CHANGELOG.md, and PRIVACY.md inside the ZIP and identical copies beside it. Do not package tests, agent instructions, development dependencies, scratch files, or personal workflow notes.
 - GitHub keeps a concise root README, detailed guides/screenshots and changelog under docs/, and the full root PRIVACY.md at its existing store-linked URL. Do not replace that policy with a pointer or overwrite the short repository README with the longer packaged guide.

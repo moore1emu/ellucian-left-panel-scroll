@@ -57,7 +57,7 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:true}));
     await page.waitForFunction(() => !document.querySelector('fieldset').disabled && editor.getReadOnly() && getComputedStyle(document.querySelector('#flowItem_contentEdit')).pointerEvents === 'auto');
     // Text fields are readable/copyable while non-text and custom action controls remain locked.
-    assert.deepEqual(await page.evaluate(() => ({name:document.querySelector('#name').readOnly,description:document.querySelector('#description').readOnly,check:document.querySelector('#check').disabled,reset:document.querySelector('#reset').disabled,choice:document.querySelector('#choice').disabled,custom:document.querySelector('#custom').inert,link:document.querySelector('#action-link').inert,opacity:getComputedStyle(document.querySelector('#flowItem_contentEdit')).opacity})), {name:true,description:true,check:true,reset:true,choice:true,custom:true,link:true,opacity:'0.4'});
+    assert.deepEqual(await page.evaluate(() => ({name:document.querySelector('#name').readOnly,description:document.querySelector('#description').readOnly,check:document.querySelector('#check').disabled,reset:document.querySelector('#reset').disabled,choice:document.querySelector('#choice').disabled,custom:document.querySelector('#custom').inert,link:document.querySelector('#action-link').inert,opacity:getComputedStyle(document.querySelector('#flowItem_contentEdit')).opacity})), {name:true,description:true,check:true,reset:true,choice:true,custom:true,link:true,opacity:'1'});
     // Verify actual editor focus/keyboard selection and clipboard copying, not just DOM attributes.
     await context.grantPermissions(['clipboard-read','clipboard-write'], {origin:site});
     await page.locator('#code').click({position:{x:110,y:20}});
@@ -116,6 +116,24 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     assert.equal(await page.evaluate(() => document.querySelector('#custom').inert), false);
     assert.equal(await page.evaluate(() => document.querySelector('#check').disabled), false);
     assert.equal(await page.evaluate(() => document.querySelector('#late-field').readOnly), false);
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#flowItem_contentEdit')).opacity), '0.4', 'Native dimming returns on opt-out');
+    assert.equal(await page.evaluate(() => document.querySelector('#flowItem_contentEdit').style.opacity), '', 'No opacity override remains');
+    // An original inline opacity and its priority return exactly when viewing stops.
+    await page.evaluate(() => document.querySelector('#flowItem_contentEdit').style.setProperty('opacity','0.65','important'));
+    await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:true}));
+    await page.waitForFunction(() => !document.querySelector('fieldset').disabled && getComputedStyle(document.querySelector('#flowItem_contentEdit')).opacity === '1');
+    await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:false}));
+    await page.waitForFunction(() => document.querySelector('fieldset').disabled);
+    assert.deepEqual(await page.evaluate(() => {const p=document.querySelector('#flowItem_contentEdit');return [p.style.opacity,p.style.getPropertyPriority('opacity')];}), ['0.65','important']);
+    await page.evaluate(() => document.querySelector('#flowItem_contentEdit').style.removeProperty('opacity'));
+    // A newer native opacity must not be overwritten by stale restoration snapshots.
+    await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:true}));
+    await page.waitForFunction(() => !document.querySelector('fieldset').disabled);
+    await page.evaluate(() => document.querySelector('#flowItem_contentEdit').style.opacity='0.75');
+    await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:false}));
+    await page.waitForFunction(() => document.querySelector('fieldset').disabled);
+    assert.equal(await page.evaluate(() => document.querySelector('#flowItem_contentEdit').style.opacity), '0.75');
+    await page.evaluate(() => document.querySelector('#flowItem_contentEdit').style.removeProperty('opacity'));
     // Preserve an editor that was already read-only before the feature took ownership.
     await page.evaluate(() => editor.setReadOnly(true));
     await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:true}));
@@ -144,7 +162,7 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     assert.deepEqual(strip(finalStore), strip(initialStore), 'Only the new preference may be written');
     assert.ok(requests.every(url => url === site + '/fixture-ace.js' || url === site + designer || url.endsWith('/data-connect/home')), 'No service requests');
     assert.deepEqual(errors, []);
-    console.log('PASS published fitting details: real Ace copy/scroll, mutation protection, native drafts, opt-out, unsupported editor, route isolation, no data writes/service calls');
+    console.log('PASS published fitting details: undimmed read-only view, original/native opacity restoration, real Ace copy/scroll, mutation protection, native drafts, opt-out, unsupported editor, route isolation, no data writes/service calls');
   } finally {
     // Close only the disposable context; leave recovery artifacts available for inspection.
     await context.close();

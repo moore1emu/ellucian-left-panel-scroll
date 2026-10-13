@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.6 — 2026-10-13
+
+- Removes the blanket grey dimming while **View Published Fitting Details** is enabled, so published fitting text/code is easier to read. Native disabled action styling and all read-only protections remain.
+- Restores the original opacity and inline priority when viewing is disabled or the fitting changes, without overwriting a newer native opacity. Draft behavior, preference defaults, copying, storage, permissions, and service requests are unchanged.
+
 ## 1.22.5 — 2026-10-13
 
 - Adds optional **View Published Fitting Details** under Page Behavior, off by default. In Designer, published fitting text/code can be scrolled, selected, and copied without creating a draft.

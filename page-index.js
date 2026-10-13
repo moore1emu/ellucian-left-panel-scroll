@@ -699,6 +699,11 @@
       if (previous.pointerValue) previous.panel.style.setProperty('pointer-events', previous.pointerValue, previous.pointerPriority);
       else previous.panel.style.removeProperty('pointer-events');
     }
+    // Restore native dimming only if our viewing-mode opacity is still in place.
+    if (previous.panel.style.getPropertyValue('opacity') === '1' && !previous.panel.style.getPropertyPriority('opacity')) {
+      if (previous.opacityValue) previous.panel.style.setProperty('opacity', previous.opacityValue, previous.opacityPriority);
+      else previous.panel.style.removeProperty('opacity');
+    }
     for (const [type, handler] of previous.listeners) previous.panel.removeEventListener(type, handler, true);
   }
 
@@ -746,7 +751,8 @@
     }
     if (!fittingView) {
       fittingView = { panel, fieldset, controls: new Map(), editors: new Map(), listeners: [],
-        pointerValue: panel.style.getPropertyValue('pointer-events'), pointerPriority: panel.style.getPropertyPriority('pointer-events'), pointerApplied: 'auto' };
+        pointerValue: panel.style.getPropertyValue('pointer-events'), pointerPriority: panel.style.getPropertyPriority('pointer-events'), pointerApplied: 'auto',
+        opacityValue: panel.style.getPropertyValue('opacity'), opacityPriority: panel.style.getPropertyPriority('opacity') };
       // Capture editing/action events before native handlers without intercepting scrolling or copy.
       for (const type of ['keydown', 'beforeinput', 'input', 'change', 'paste', 'cut', 'drop', 'dragover', 'click', 'dblclick', 'mousedown', 'pointerdown']) {
         panel.addEventListener(type, guardFittingInteraction, true);
@@ -784,6 +790,8 @@
       if (fieldset.disabled) fieldset.disabled = false;
       panel.style.setProperty('pointer-events', 'auto');
       fittingView.pointerApplied = 'auto';
+      // Keep: viewing removes the blanket dimming, not the disabled styling of action controls (1.22.6).
+      if (panel.style.getPropertyValue('opacity') !== '1' || panel.style.getPropertyPriority('opacity')) panel.style.setProperty('opacity', '1');
     } catch (_error) {
       // Fail closed without exposing raw editor exceptions or configuration values.
       restoreFittingView();
