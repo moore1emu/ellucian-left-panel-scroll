@@ -80,17 +80,30 @@ globalThis.FavoritesData = (() => {
     if (value?.format !== 'integration-navigator-backup' || value.schemaVersion !== 1 || !Array.isArray(value.favorites) || value.favorites.length > 200 || !Array.isArray(value.unassignedFavorites) || value.unassignedFavorites.length > 200) throw new Error('Choose an Integration Navigator backup JSON file.');
     const favorites = value.favorites.map((entry) => ({ ...scope(entry), packages: items(entry.packages), expanded: entry.expanded !== false,
       height: Number.isFinite(entry.height) && entry.height >= 64 && entry.height <= 360 ? entry.height : null }));
+    // Keep: preserve migration ownership without retaining duplicate package data in new backups (1.22.4).
+    if (value.assignments !== undefined && (!Array.isArray(value.assignments) || value.assignments.length > 200)) throw new Error('Invalid favorite assignments.');
+    const assignmentMap = new Map();
+    for (const entry of value.assignments || []) {
+      const clean = scope(entry);
+      if (!favorites.some((group) => key(group) === key(clean))) throw new Error('The old-list assignment has no matching tenant list.');
+      const oldKey = legacyKey(clean);
+      if (assignmentMap.has(oldKey) && key(assignmentMap.get(oldKey)) !== key(clean)) throw new Error('Conflicting favorite assignments.');
+      assignmentMap.set(oldKey, clean);
+    }
     const unassignedFavorites = value.unassignedFavorites.map((entry) => {
       // Retain an existing migration association so restoring a backup cannot revive removed pins.
       const clean = scope({ ...entry, tenantId: 'unassigned' });
       const assignedTenantId = entry.assignedTenantId === undefined ? '' : scope({ ...clean, tenantId: entry.assignedTenantId }).tenantId;
       if (assignedTenantId && !favorites.some((group) => group.site === clean.site && group.page === clean.page && group.tenantId === assignedTenantId)) throw new Error('The old-list assignment has no matching tenant list.');
+      // Reject conflicting ownership before an older backup can modify any saved data.
+      const assignment = assignedTenantId ? scope({ ...clean, tenantId: assignedTenantId }) : null;
+      if (assignment && assignmentMap.has(legacyKey(clean)) && key(assignmentMap.get(legacyKey(clean))) !== key(assignment)) throw new Error('Conflicting favorite assignments.');
       return { site: clean.site, page: clean.page, packages: items(entry.packages), ...(assignedTenantId ? { assignedTenantId } : {}) };
     });
-    return { format: value.format, schemaVersion: 1, favorites, unassignedFavorites, environments: sources(value.environments || []) };
+    return { format: value.format, schemaVersion: 1, favorites, unassignedFavorites, assignments: [...assignmentMap.values()], environments: sources(value.environments || []) };
   }
 
-  // Export retained old lists too, so one-time assignment never destroys the recovery copy.
+  // Export unresolved recovery copies and compact assignment markers, not cleaned-up duplicate pins.
   function exportData(settings, version) {
     const favorites = Object.entries(settings[KEY] || {}).map(([storedKey, packages]) => ({ ...fromKey(storedKey), packages: items(packages),
       expanded: settings[EXPANDED]?.[storedKey] !== false, height: settings[HEIGHTS]?.[storedKey] ?? null }));
@@ -100,10 +113,16 @@ globalThis.FavoritesData = (() => {
       return { site: `https://${storedKey.slice(0, split)}`, page: storedKey.slice(split + 1), packages: items(packages),
         ...(assignment ? { assignedTenantId: fromKey(assignment).tenantId } : {}) };
     });
+    // Include only valid site/page associations; malformed markers must not masquerade as another list.
+    const assignments = Object.entries(settings[ASSIGNED] || {}).map(([oldKey, assignedKey]) => {
+      const clean = fromKey(assignedKey);
+      if (legacyKey(clean) !== oldKey) throw new Error('Invalid favorite assignment.');
+      return clean;
+    });
     const environments = Object.entries(settings.designerOwnershipCache || {}).map(([environmentId, entry]) => ({ environmentId, environment: entry.environment,
       lastCheckedAt: new Date(entry.checkedAt).toISOString(), packages: entry.packages.map((group) => group.name === null
         ? { name: 'Package Not Yet Recorded', packageNameRecorded: false, pipelines: group.pipelines } : group) }));
-    return { ...backup({ format: 'integration-navigator-backup', schemaVersion: 1, favorites, unassignedFavorites, environments }), extensionVersion: version, exportedAt: new Date().toISOString() };
+    return { ...backup({ format: 'integration-navigator-backup', schemaVersion: 1, favorites, unassignedFavorites, assignments, environments }), extensionVersion: version, exportedAt: new Date().toISOString() };
   }
   return Object.freeze({ KEY, LEGACY, EXPANDED, HEIGHTS, ASSIGNED, defaults, scope, key, fromKey, legacyKey, items, merge, backup, exportData });
 })();

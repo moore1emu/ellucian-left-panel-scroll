@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.4 — 2026-10-13
+
+- Retires an assigned old favorite copy only after reading back its saved tenant list and verifying that every old package/pipeline pin is present. Active favorites, order, layout, and Shared From data are unchanged.
+- Keeps unassigned, unmatched, malformed, or unverified copies. Failed verification or cleanup leaves recovery data intact and does not hide successfully saved favorites; later visits can retry.
+- JSON backups now keep compact `assignments` markers separately, without duplicate package/pipeline data for cleaned-up lists. Older backup files remain importable, and markers continue preventing removed pins from being automatically revived.
+- Cleanup runs behind the existing serialized favorite writer, with one read-back per eligible batch and no polling or extra service requests.
+
 ## 1.22.3 — 2026-10-13
 
 - Moves **Export JSON** into **Backup & Restore**, beside **Import JSON**, and makes that disclosure the last settings section.

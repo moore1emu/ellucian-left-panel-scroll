@@ -17,6 +17,8 @@ Favorites stay separate by site, tenant ID, and Packages/Designer page, includin
 
 Existing favorites carry over automatically when only one tenant is known on that domain. If multiple tenants are known, settings lets you choose which one owns the old list.
 
+Verified duplicate recovery copies are cleaned up automatically; unresolved copies stay saved. Backups retain small assignment markers so older files cannot automatically bring back removed pins.
+
 ## Install
 
 [Install from the Chrome Web Store](https://chromewebstore.google.com/detail/integration-navigator/dbmjmmgocklhjnadhmibaldicbgoignd). The same listing works in Chrome and Edge; Edge may ask you to allow extensions from other stores.

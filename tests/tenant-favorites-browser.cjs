@@ -141,7 +141,12 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     assert.equal(backup.schemaVersion, 1);
     assert.equal(backup.favorites.length, 3);
     assert.ok(backup.favorites.some((group) => group.tenantId === 'test-a' && group.page === 'designer'));
-    assert.equal(backup.unassignedFavorites.length, 2);
+    assert.equal(backup.unassignedFavorites.length, 0);
+    assert.equal(backup.assignments.length, 2);
+    // Cleanup removes only verified duplicate lists, retaining small migration markers and active pins.
+    const retired = await worker.evaluate(() => chrome.storage.local.get(['favoritePackagesByHost','favoriteTenantAssignments']));
+    assert.deepEqual(retired.favoritePackagesByHost, {});
+    assert.equal(Object.keys(retired.favoriteTenantAssignments).length, 2);
     backup.favorites[0].packages.push({ packageName: 'Imported Pin', packagePinned: true, pipelines: [], pipelinesExpanded: true });
     await popup.locator('#backup-file').setInputFiles({ name: 'fixture-backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
     await popup.locator('#backup-preview').waitFor();

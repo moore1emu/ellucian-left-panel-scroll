@@ -12,7 +12,7 @@
   let activeScope = null;
   let assignmentRead = 0;
 
-  // Offer assignment only for a loaded current tenant; old lists remain in their original storage.
+  // Offer assignment only for a loaded tenant; unverified old lists remain available for recovery.
   async function readLegacyAssignment() {
     const sequence = ++assignmentRead;
     document.querySelector('#legacy-favorites').hidden = true;
@@ -49,7 +49,7 @@
     try {
       const result = await chrome.runtime.sendMessage({ type: 'favorites-assign', tabId: activeTabId, scope: activeScope });
       if (!result?.ok) throw new Error(result?.error || 'Could not assign favorites.');
-      status.textContent = 'Old favorites assigned. Their original copy is preserved.';
+      status.textContent = 'Old favorites assigned to this tenant.';
       await readLegacyAssignment();
     } catch (error) { status.textContent = error.message || 'Refresh the Integration page and try again.'; }
     finally { assignButton.disabled = false; }

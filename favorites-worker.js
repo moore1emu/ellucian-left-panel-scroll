@@ -2,6 +2,52 @@
 
 // Serialize favorites writes and imports so separate tabs cannot overwrite another tenant's map.
 let pendingFavoriteUpdate = Promise.resolve();
+
+// Identify only correctly assigned recovery copies whose pins already exist in the active tenant list.
+function verifiedRecoveryCandidates(settings) {
+  const data = FavoritesData;
+  return Object.entries(settings[data.LEGACY] || {}).filter(([oldKey, packages]) => {
+    try {
+      const assignedKey = settings[data.ASSIGNED]?.[oldKey];
+      if (!assignedKey || data.key(data.fromKey(assignedKey)) !== assignedKey || data.legacyKey(data.fromKey(assignedKey)) !== oldKey || !Object.hasOwn(settings[data.KEY] || {}, assignedKey)) return false;
+      const current = data.items(settings[data.KEY][assignedKey]);
+      // Compare pin identities through the existing major-version merge rules, preserving active order/layout.
+      return JSON.stringify(data.merge(current, packages)) === JSON.stringify(current);
+    } catch (_error) {
+      // Unknown, malformed, mismatched, or incomplete copies remain untouched for recovery.
+      return false;
+    }
+  }).map(([oldKey]) => oldKey);
+}
+
+// Retire duplicates only after a durable read-back; cleanup failure must not hide successfully saved favorites.
+async function retireVerifiedRecoveryCopies(expected) {
+  const data = FavoritesData;
+  const candidates = verifiedRecoveryCandidates(expected);
+  if (!candidates.length) return;
+  try {
+    // Verify one batch, not each pipeline, behind the existing serialized favorites writer.
+    const saved = await chrome.storage.local.get({ [data.KEY]: {}, [data.LEGACY]: {}, [data.ASSIGNED]: {} });
+    const verified = new Set(verifiedRecoveryCandidates(saved));
+    const remaining = { ...saved[data.LEGACY] };
+    let changed = false;
+    for (const oldKey of candidates) {
+      const assignedKey = expected[data.ASSIGNED][oldKey];
+      // An unexpected read-back or changed association is not confirmation that deletion is safe.
+      if (!verified.has(oldKey) || saved[data.ASSIGNED]?.[oldKey] !== assignedKey ||
+          JSON.stringify(data.items(saved[data.KEY][assignedKey])) !== JSON.stringify(data.items(expected[data.KEY][assignedKey])) ||
+          JSON.stringify(data.items(remaining[oldKey])) !== JSON.stringify(data.items(expected[data.LEGACY][oldKey]))) continue;
+      delete remaining[oldKey];
+      changed = true;
+    }
+    // Keep: only duplicate recovery package data is removed; ownership markers and active favorites remain (1.22.4).
+    if (changed) await chrome.storage.local.set({ [data.LEGACY]: remaining });
+  } catch (_error) {
+    // Retain the copy for a future verified visit without exposing institution data in the log.
+    console.warn('Integration Navigator: old favorite copies could not be cleaned up. They remain saved.');
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id || !['favorites-prepare', 'favorites-save', 'favorites-assign', 'favorites-import'].includes(message?.type)) return;
   pendingFavoriteUpdate = pendingFavoriteUpdate.catch(() => {}).then(async () => {
@@ -28,6 +74,11 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         const existed = Object.hasOwn(pins, key);
         pins[key] = message.mode === 'replace' ? group.packages : data.merge(pins[key] || [], group.packages);
         if (!existed || message.mode === 'replace') { expanded[key] = group.expanded; heights[key] = group.height; }
+      }
+      // Restore compact markers without overriding ownership already confirmed in this browser.
+      for (const group of incoming.assignments) {
+        const oldKey = data.legacyKey(group);
+        if (!assigned[oldKey]) assigned[oldKey] = data.key(group);
       }
       // Retain old unassigned copies without replacing a list already associated with a tenant.
       const legacy = { ...settings[data.LEGACY] };
@@ -79,7 +130,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         }
       } else if (message.type === 'favorites-assign') {
         const oldKey = data.legacyKey(current);
-        if (assigned[oldKey]) throw new Error('This old list has already been assigned. Its backup is preserved.');
+        if (assigned[oldKey]) throw new Error('This old list has already been assigned.');
         pins[key] = data.merge(pins[key] || [], settings[data.LEGACY]?.[oldKey] || []);
         if (!Object.hasOwn(expanded, key)) expanded[key] = expanded[oldKey] !== false;
         if (!Object.hasOwn(heights, key)) heights[key] = heights[oldKey] ?? null;
@@ -110,6 +161,8 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       });
       await pendingOwnershipUpdate;
     } else if (favoriteWriteNeeded) await chrome.storage.local.set(writes);
+    // Use the committed maps, including untouched legacy data when this operation did not import it.
+    await retireVerifiedRecoveryCopies({ ...settings, ...writes });
     // Load the prepared snapshot only after migration succeeds, avoiding an empty-list upgrade flash.
     respond({ ok: true, ...(preparedKey ? { packages: pins[preparedKey], expanded: expanded[preparedKey] !== false,
       height: heights[preparedKey] ?? null } : {}) });
