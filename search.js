@@ -28,7 +28,7 @@
   const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
   const PACKAGE_ARTIFACTS_ENABLED_KEY = 'packageArtifactsEnabled';
   const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
-  const FAVORITES_BY_HOST_KEY = "favoritePackagesByHost";
+  const FAVORITES_BY_HOST_KEY = FavoritesData.KEY;
   const FAVORITES_EXPANDED_BY_HOST_KEY = "favoritesExpandedByHost";
   const FAVORITES_HEIGHTS_BY_HOST_KEY = "favoritesHeightsByHost";
 
@@ -82,6 +82,76 @@
   let draggedFavoriteName = "";
   let draggedFavoritePipeline = null;
   let activeFavoritesStorageKey = "";
+  // Keep: unknown or pending tenant storage cannot display or overwrite another list (1.22.0).
+  let favoritesLoaded = false;
+  let favoriteTenantId = '';
+  let favoriteTenantUrl = '';
+  let favoriteLoadSequence = 0;
+  let preferencesLoaded = false;
+  const favoriteContextRequests = new Map();
+
+  // Refresh only local tenant metadata on a DOM change or before a settings/worker operation.
+  function requestFavoriteContext(reply) {
+    if (!isSupportedPage() || ownershipExtensionDisconnected) { reply?.({ loaded: false }); return; }
+    const requestId = crypto.randomUUID();
+    const url = window.location.href;
+    // Keep one observer probe at a time; verified worker reads can join the same response.
+    if (favoriteContextRequests.size) {
+      const pending = [...favoriteContextRequests.values()][0];
+      if (pending.url === url) { if (reply) pending.replies.push(reply); return; }
+    }
+    const timer = window.setTimeout(() => {
+      const pending = favoriteContextRequests.get(requestId);
+      favoriteContextRequests.delete(requestId);
+      pending?.replies.forEach((callback) => callback({ loaded: false }));
+    }, 1000);
+    favoriteContextRequests.set(requestId, { url, timer, replies: reply ? [reply] : [] });
+    window.postMessage({ source: MESSAGE_SOURCE, type: 'favorite-context-request', requestId }, window.location.origin);
+  }
+
+  // A tenant change clears transient lists before any destination storage or source lookup.
+  function acceptFavoriteIdentity(message) {
+    if (message.pageUrl !== window.location.href) return false;
+    const tenantId = normalizeText(message.tenantId).trim();
+    if (tenantId !== favoriteTenantId || favoriteTenantUrl !== window.location.href) {
+      resetFavoriteScope();
+      favoriteTenantId = tenantId;
+      favoriteTenantUrl = window.location.href;
+      completeSearchIndex = [];
+      completeSearchIndexKey = '';
+      searchIndex = [];
+      if (ownershipTenantId !== tenantId) resetDesignerOwnership('restarted');
+      ownershipTenantId = tenantId;
+      loadFavoritesForCurrentPage();
+    }
+    return true;
+  }
+
+  // Keep sidebar sizing host/page based; only favorite and index identity gains the tenant.
+  function getFavoriteScope() {
+    if (!isSupportedPage() || !favoriteTenantId || favoriteTenantUrl !== window.location.href) return null;
+    return { site: window.location.origin, tenantId: favoriteTenantId,
+      page: window.location.pathname.toLowerCase().includes('/data-connect-designer') ? 'designer' : 'packages' };
+  }
+  function getFavoriteScopeKey() {
+    const scope = getFavoriteScope();
+    return scope ? FavoritesData.key(scope) : '';
+  }
+
+  // Hide stale stars immediately while the destination tenant's storage is being read.
+  function resetFavoriteScope() {
+    favoritesLoaded = false;
+    activeFavoritesStorageKey = '';
+    favoriteLoadSequence += 1;
+    loadFavoriteState([]);
+    favoritesExpanded = true;
+    favoriteListHeight = null;
+    // Cancel gestures and delayed navigation that began in the previous tenant's list.
+    draggedFavoriteName = '';
+    draggedFavoritePipeline = null;
+    navigationSequence += 1;
+    refreshFavoritesUI();
+  }
 
   // Track only the search control that currently needs outside-click handling.
   let activeSearchControl = null;
@@ -613,7 +683,10 @@
       return;
     }
 
-    const requestedStorageKey = getPageStorageKey();
+    const requestedStorageKey = getFavoriteScopeKey();
+    if (!requestedStorageKey || !preferencesLoaded) return;
+    const sequence = ++favoriteLoadSequence;
+    favoritesLoaded = false;
     activeFavoritesStorageKey = requestedStorageKey;
 
     // Keep: storage calls can throw after an extension reload even when the API still exists (1.19.7).
@@ -633,7 +706,7 @@
         },
         (settings) => {
           // Ignore stale replies before inspecting a potentially disconnected runtime.
-          if (ownershipExtensionDisconnected || !isSupportedPage() || getPageStorageKey() !== requestedStorageKey) return;
+          if (ownershipExtensionDisconnected || sequence !== favoriteLoadSequence || getFavoriteScopeKey() !== requestedStorageKey) return;
           try {
             const lastError = runtime.lastError;
             if (globalThis.chrome?.runtime !== runtime || !runtime.id || /Extension context invalidated/i.test(lastError?.message || '')) {
@@ -649,9 +722,9 @@
 
           // Restore the destination page's hierarchy, disclosure, and height only after a valid read.
           applyFavoriteSettings(settings, requestedStorageKey);
+          favoritesLoaded = true;
 
           applySearchMode();
-          requestSearchIndex();
         },
       );
     } catch (_error) {
@@ -983,48 +1056,32 @@
 
   // Persist the current page's complete favorite hierarchy without changing other pages.
   function saveFavorites() {
-    // Keep: snapshot the originating page and pins before navigation can change either one (1.19.4).
-    const storageKey = getPageStorageKey();
-    const favoriteState = structuredClone(serializeFavoriteState());
-    chrome.storage.local.get(
-      { [FAVORITES_BY_HOST_KEY]: {} },
-      (settings) => {
-        // A failed read must not replace other pages' saved favorites with an empty map.
-        if (chrome.runtime.lastError) return;
-        const favoritesByHost = {
-          ...settings[FAVORITES_BY_HOST_KEY],
-          // Preserve parent order, explicit package pins, pipeline pins, and open states.
-          [storageKey]: favoriteState,
-        };
-
-        chrome.storage.local.set({
-          [FAVORITES_BY_HOST_KEY]: favoritesByHost,
-        });
-      },
-    );
+    // Send a captured tenant-specific edit through the worker's serialized write queue.
+    persistFavoritePatch({ packages: structuredClone(serializeFavoriteState()) });
   }
+
+  // All favorite fields share one guarded save path; failed writes restore confirmed storage.
+  function persistFavoritePatch(patch) {
+    const scope = getFavoriteScope();
+    if (!favoritesLoaded || !scope || activeFavoritesStorageKey !== FavoritesData.key(scope)) return;
+    try {
+      chrome.runtime.sendMessage({ type: 'favorites-save', scope, ...patch }, (result) => {
+        try {
+          if (chrome.runtime.lastError || result?.ok !== true) {
+            console.warn('Integration Navigator: favorites could not be saved. Reopen settings and retry.');
+            loadFavoritesForCurrentPage();
+          }
+        } catch (_error) { stopDisconnectedOwnership(); }
+      });
+    } catch (_error) { stopDisconnectedOwnership(); }
+  }
+
 
   // Persist whether this environment's favorites section is expanded.
   function saveFavoritesExpandedState() {
-    // Keep: attach a delayed disclosure save to the page where the click occurred (1.19.4).
-    const storageKey = getPageStorageKey();
-    const expanded = favoritesExpanded;
-    chrome.storage.local.get(
-      { [FAVORITES_EXPANDED_BY_HOST_KEY]: {} },
-      (settings) => {
-        // Preserve saved disclosure states if the storage read fails.
-        if (chrome.runtime.lastError) return;
-        const expandedByHost = {
-          ...settings[FAVORITES_EXPANDED_BY_HOST_KEY],
-          [storageKey]: expanded,
-        };
-
-        chrome.storage.local.set({
-          [FAVORITES_EXPANDED_BY_HOST_KEY]: expandedByHost,
-        });
-      },
-    );
+    persistFavoritePatch({ expanded: favoritesExpanded });
   }
+
 
   // Calculate a practical maximum that still leaves room for the main package list.
   function getMaximumFavoritesListHeight() {
@@ -1074,32 +1131,13 @@
 
   // Save the completed vertical resize for the current environment.
   function saveFavoritesListHeight() {
-    if (favoriteListHeight === null) {
-      return;
-    }
-
-    // Keep: snapshot the page and height before the async read so navigation cannot misfile them (1.21.9).
-    const storageKey = getPageStorageKey();
-    const height = favoriteListHeight;
-    chrome.storage.local.get(
-      { [FAVORITES_HEIGHTS_BY_HOST_KEY]: {} },
-      (settings) => {
-        // Keep: a failed read must not replace other pages' saved heights (1.21.9).
-        if (chrome.runtime.lastError) return;
-        const heightsByHost = {
-          ...settings[FAVORITES_HEIGHTS_BY_HOST_KEY],
-          [storageKey]: height,
-        };
-
-        chrome.storage.local.set({
-          [FAVORITES_HEIGHTS_BY_HOST_KEY]: heightsByHost,
-        });
-      },
-    );
+    persistFavoritePatch({ height: favoriteListHeight });
   }
+
 
   // Add or remove one explicit package pin while retaining any pinned pipelines.
   function togglePackageFavorite(packageName) {
+    if (!favoritesLoaded || activeFavoritesStorageKey !== getFavoriteScopeKey()) return;
     const packageIdentity = normalizePackageIdentity(packageName);
     const savedName = Array.from(favoriteNames).find(
       (favoriteName) =>
@@ -1127,6 +1165,7 @@
 
   // Add or remove one pipeline pin and create or remove its implicit package parent.
   function togglePipelineFavorite(packageName, pipelineEntry) {
+    if (!favoritesLoaded || activeFavoritesStorageKey !== getFavoriteScopeKey()) return;
     const packageIdentity = normalizePackageIdentity(packageName);
     const pipeline = {
       name: normalizeText(pipelineEntry?.name).trim(),
@@ -2052,7 +2091,7 @@
 
   // Synchronize the favorites section and every visible package-row star.
   function updateFavoritesForPanel(panel) {
-    if (!favoritesEnabled) {
+    if (!favoritesEnabled || !favoritesLoaded || activeFavoritesStorageKey !== getFavoriteScopeKey()) {
       removeFavoritesFromPanel(panel);
       return;
     }
@@ -2765,6 +2804,11 @@
 
   // Accept manual refresh only from this extension's settings on the current Designer page.
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
+    // Settings and the worker can verify the current tenant without reading native payloads.
+    if (message?.type === 'favorites-context' && sender.id === chrome.runtime?.id && (!sender.tab || sender.url === chrome.runtime.getURL('popup.html'))) {
+      requestFavoriteContext((result) => respond({ url: window.location.href, scope: result?.loaded ? getFavoriteScope() : null, loaded: result?.loaded === true && favoritesLoaded }));
+      return true;
+    }
     // Settings may inspect status without collecting data or making a service request.
     if (message?.type === 'designer-ownership-status' && sender.id === chrome.runtime?.id && !sender.tab) {
       respond(getOwnershipStatus());
@@ -3626,12 +3670,15 @@
       updateDesignerOwnershipVisit();
 
       // Load the destination page's saved state after internal navigation.
-      const currentStorageKey = isSupportedPage()
-        ? getPageStorageKey()
-        : "";
-      if (currentStorageKey !== activeFavoritesStorageKey) {
+      const currentStorageKey = getFavoriteScopeKey();
+      if (favoriteTenantUrl !== window.location.href) {
+        favoriteTenantId = '';
+        favoriteTenantUrl = '';
+        resetFavoriteScope();
+        if (isSupportedPage()) requestSearchIndex();
+      }
+      if (currentStorageKey !== activeFavoritesStorageKey && currentStorageKey) {
         loadFavoritesForCurrentPage();
-        return;
       }
 
       applySearchMode();
@@ -3663,6 +3710,20 @@
   // Receive only current, validated index responses from the page-world helper.
   window.addEventListener("message", (event) => {
     if (event.source !== window || event.data?.source !== MESSAGE_SOURCE) {
+      return;
+    }
+
+    // Local tenant probes are correlated and route-bound, just like full index responses.
+    if (event.data.type === 'favorite-context-response') {
+      const pending = favoriteContextRequests.get(event.data.requestId);
+      if (!pending) return;
+      favoriteContextRequests.delete(event.data.requestId);
+      window.clearTimeout(pending.timer);
+      const changed = favoriteTenantId !== normalizeText(event.data.tenantId).trim();
+      if (pending.url === window.location.href && acceptFavoriteIdentity(event.data)) {
+        if (changed) requestSearchIndex();
+        pending.replies.forEach((reply) => reply({ loaded: favoritesLoaded }));
+      } else pending.replies.forEach((reply) => reply({ loaded: false }));
       return;
     }
 
@@ -3808,6 +3869,9 @@
     }
 
     window.clearTimeout(indexResponseTimer);
+    // Discard an index captured for another route, even when its request ID was current.
+    if (event.data.pageUrl !== window.location.href) return;
+    acceptFavoriteIdentity(event.data);
     const normalizedIndex = normalizeSearchIndex(event.data.packages);
     // A fresh inventory read also refreshes selected-package types after loaded data changes.
     if (isPackagesPage()) {
@@ -3850,7 +3914,7 @@
   });
 
   // Reuse content.js's sidebar observer instead of adding a second sidebar watcher.
-  window.addEventListener(DOM_CHANGE_EVENT, scheduleSearchUpdate);
+  window.addEventListener(DOM_CHANGE_EVENT, () => { requestFavoriteContext(); scheduleSearchUpdate(); });
 
   // Keep: reattach controls after restored pages, tab returns, or replaced app roots (1.12.0).
   function resumePageControls() {
@@ -3950,19 +4014,19 @@
 
     // Synchronize changes made by another tab in the same environment.
     if (changes[FAVORITES_BY_HOST_KEY]) {
-      loadFavoriteState(changes[FAVORITES_BY_HOST_KEY].newValue?.[getPageStorageKey()]);
+      if (favoritesLoaded) loadFavoriteState(changes[FAVORITES_BY_HOST_KEY].newValue?.[getFavoriteScopeKey()]);
       refreshFavoritesUI();
     }
 
     // Synchronize the expanded state across tabs in the same environment.
     if (changes[FAVORITES_EXPANDED_BY_HOST_KEY]) {
-      favoritesExpanded = changes[FAVORITES_EXPANDED_BY_HOST_KEY].newValue?.[getPageStorageKey()] !== false;
+      if (favoritesLoaded) favoritesExpanded = changes[FAVORITES_EXPANDED_BY_HOST_KEY].newValue?.[getFavoriteScopeKey()] !== false;
       refreshFavoritesUI();
     }
 
     // Synchronize a remembered list height changed in another tab.
     if (changes[FAVORITES_HEIGHTS_BY_HOST_KEY]) {
-      favoriteListHeight = readStoredHeight(changes[FAVORITES_HEIGHTS_BY_HOST_KEY].newValue, getPageStorageKey());
+      if (favoritesLoaded) favoriteListHeight = readStoredHeight(changes[FAVORITES_HEIGHTS_BY_HOST_KEY].newValue, getFavoriteScopeKey());
       refreshFavoritesUI();
     }
   });
@@ -4030,10 +4094,10 @@
       favoriteAppearance = FavoriteAppearance.normalize(settings[FavoriteAppearance.KEY]);
       iconAppearance = settings[FavoriteAppearance.ICON_KEY];
       FavoriteAppearance.apply(favoriteAppearance, iconAppearance, document.documentElement);
-      activeFavoritesStorageKey = currentStorageKey;
+      preferencesLoaded = true;
 
       // Load page-specific values only when starting on a supported route.
-      if (currentStorageKey) applyFavoriteSettings(settings, currentStorageKey);
+      if (getFavoriteScopeKey()) loadFavoritesForCurrentPage();
 
       applySearchMode();
       if (currentStorageKey) {

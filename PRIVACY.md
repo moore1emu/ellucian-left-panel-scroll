@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Integration Navigator · Updated October 7, 2026
+Integration Navigator · Updated October 13, 2026
 
 Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
@@ -26,7 +26,11 @@ Your settings, custom Experience site domains, icon background and letter colors
 
 If you enable Shared From, an additional bounded local cache saves package and pipeline names grouped by environment, the identifiers and labels of their observed Designer environments, and last-checked timestamps. It does not keep a duplicate flat list of the same pipelines. Previously saved names without package relationships are preserved in an explicitly unknown-package group, retaining their original last-checked times until that Designer environment is refreshed. No pipeline contents, credentials, or execution data are stored in this cache. It is shared between this extension's supported environments on the same browser so Integration Packages can identify sources learned from other Designer environments. Revisit Designer in each source environment to refresh its snapshot. The **Refresh** button next to **Export JSON** under Shared From uses only the active tab's identifier to request collection from that currently open Designer environment; it does not scan other tabs or contact other environments. Automatic startup waits briefly for loaded page data with a bounded retry budget, not continuous polling. Turning Shared From off clears this cache without deleting favorites or other settings.
 
-You may explicitly export the Shared From cache as a JSON file from settings. The file contains the extension version, export time, observed environment identifiers and labels, grouped package and pipeline names, and last-checked timestamps. Preserved names without a known package are clearly marked **Package Not Yet Recorded**. This is a local download, not an upload to the publisher or another service. It follows your browser's download preferences. Exported files are separate snapshots, do not update automatically, and are not deleted when you disable Shared From or remove the extension. You control where you keep or share those files; they may contain institution-specific names.
+Favorites also save the HTTPS site origin, current tenant identifier, and Packages/Designer page type to separate tenants sharing one domain. Identity is read from already-loaded page state without an additional service call. Unknown identity or an incomplete storage read does not reuse another tenant's list. Older host/page-only lists remain local until you explicitly assign each list to its current tenant; the original copy and assignment marker are retained for recovery.
+
+You may explicitly export a JSON backup from settings. The file contains the extension version and export time; favorite site origins, tenant identifiers, page types, package/pipeline names, version identifiers, ordering and layout choices; retained older unassigned favorite lists; and any saved Shared From environment identifiers, labels, grouped names, and last-checked timestamps. Preserved source names without a known package are marked **Package Not Yet Recorded**. This is a local download, not an upload to the publisher or another service, and follows your browser's download preferences.
+
+Import reads only a file you select and previews its tenant lists before you confirm. Merge preserves existing pin order; replacement requires separate confirmation and affects only matching lists in the file. Shared From restoration is optional and requires the existing local-data opt-in; it preserves observation times and does not replace newer snapshots with older ones. Import never grants website permissions or changes settings. Exported files are separate snapshots, do not update automatically, and are not deleted when you disable Shared From or remove the extension. You control where you keep or share those files; they may contain institution-specific names and tenant identifiers. Review them before sharing.
 
 ## Website permissions
 

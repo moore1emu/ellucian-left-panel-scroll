@@ -425,6 +425,13 @@ footer {
 .setting-row:has(input[aria-busy="true"]) { cursor: wait; }
 .switch input:disabled + .switch-track { opacity: 0.6; }
 
+/* Keep backups collapsed and long tenant/site previews inside the existing popup width. */
+.backup-card { flex-shrink: 0; padding: 10px 12px; }
+.backup-card summary { cursor: pointer; font-size: 14px; font-weight: 700; }
+.backup-card .card-description { overflow-wrap: anywhere; }
+.backup-card button { background: var(--background); border: 1px solid var(--border); border-radius: 4px; color: var(--text); cursor: pointer; font: 12px Arial, sans-serif; padding: 5px 7px; margin-top: 6px; }
+.backup-card .search-display-control { margin-top: 8px; }
+
 /* Use the same themed hover and keyboard focus treatment across settings controls. */
 .settings-card button:hover:not(:disabled) { border-color: var(--purple); }
 .settings-card :is(button, input, select, summary):focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }

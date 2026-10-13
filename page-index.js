@@ -8,6 +8,9 @@
   const INDEX_READY = "search-index-ready";
   const SHARED_STATUS_REQUEST = "shared-status-request";
   const SHARED_STATUS_RESPONSE = "shared-status-response";
+  // Bootstrap identity is usable only on its original tenant route, never after a route switch.
+  const bootstrapTenantContext = window.location.origin + window.location.pathname.split('/app/')[0].replace(/\/+$/u, '');
+  let liveTenantObserved = false;
 
   // Keep: page-world copies of shared.js rules; loading shared.js here would expose a global to Ellucian (1.21.9).
   // Keep: match both package-element and packageelement; Ellucian's pages use either spelling (pre-1.15.1).
@@ -172,7 +175,18 @@
 
   // Read the current tenant identifier without exposing the preloaded state.
   function getCurrentTenantId() {
+    // Prefer live component state: a vanity-site switch may leave bootstrap state unchanged.
+    const rows = [document.querySelector('li[data-level="1"]'), document.querySelector('[data-testid="master"]')].filter(Boolean);
+    for (const row of rows) {
+      const fiberKey = Object.keys(row).find((key) => key.startsWith('__reactFiber$'));
+      let fiber = fiberKey ? row[fiberKey] : null;
+      for (let depth = 0; fiber && depth < 60; depth += 1, fiber = fiber.return) {
+        const tenantId = normalizeText(fiber.stateNode?.state?.currentTenant).trim();
+        if (tenantId) { liveTenantObserved = true; return tenantId; }
+      }
+    }
     try {
+      if (liveTenantObserved || getPackageArtifactContext().replace(/\/+$/u, '') !== bootstrapTenantContext) return '';
       const preloadedState = window.__PRELOADED_STATE__;
       const parsedState =
         typeof preloadedState === "string"
@@ -182,17 +196,9 @@
       const tenantId = normalizeText(parsedState?.tenant);
       if (tenantId) return tenantId;
     } catch (_error) {
-      // Keep: continue with Designer's loaded state when preloaded state is unavailable (1.19.2).
+      // Keep: missing bootstrap state must not prevent using already-loaded component state (1.19.2).
     }
 
-    // Find the actual current environment already held by the Designer component.
-    const row = document.querySelector('li[data-level="1"]');
-    const fiberKey = row && Object.keys(row).find((key) => key.startsWith('__reactFiber$'));
-    let fiber = fiberKey ? row[fiberKey] : null;
-    for (let depth = 0; fiber && depth < 60; depth += 1, fiber = fiber.return) {
-      const tenantId = normalizeText(fiber.stateNode?.state?.currentTenant);
-      if (tenantId) return tenantId;
-    }
     return "";
   }
 
@@ -514,8 +520,9 @@
         indexAvailable:
           packageRowsFound > 0 && packages.length === packageRowsFound,
         packageRowsFound,
-        // Supply only existing environment identity for opted-in Designer cache status; no service call.
-        tenantId: ownershipEnabled && isDesignerPage() ? getCurrentTenantId() : '',
+        // Return only local tenant identity for favorites on both pages, without a service call.
+        tenantId: getCurrentTenantId(),
+        pageUrl: window.location.href,
         packages,
       },
       window.location.origin,
@@ -647,6 +654,9 @@
 
   // Route each message type to one handler; unknown types are ignored.
   const messageHandlers = {
+    // Verify tenant metadata without rebuilding the package index or making a service request.
+    'favorite-context-request': (message) => window.postMessage({ source: MESSAGE_SOURCE, type: 'favorite-context-response',
+      requestId: normalizeText(message.requestId), tenantId: getCurrentTenantId(), pageUrl: window.location.href }, window.location.origin),
     'package-artifacts-setting': handlePackageArtifactsSetting,
     'package-artifacts-request': handlePackageArtifactsRequest,
     [INDEX_REQUEST]: handleIndexRequest,

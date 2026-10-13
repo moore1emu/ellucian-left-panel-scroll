@@ -436,40 +436,19 @@
     // Expose the export's busy state without hiding its eventual error or setup guidance.
     exportSharedFromButton.setAttribute('aria-busy', 'true');
     sharedFromStatus.textContent = "";
-    chrome.storage.local.get({ [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
+    chrome.storage.local.get({ ...FavoritesData.defaults, [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
       try {
         // Report failed reads instead of downloading an empty or misleading file.
         if (chrome.runtime.lastError) throw new Error("Cache read failed.");
-        const cache = settings[OWNERSHIP_CACHE_KEY];
-        // Export only the documented source fields, with human-readable timestamps.
-        const environments = Object.entries(cache || {}).flatMap(([environmentId, entry]) => {
-          const checkedAt = Number(entry?.checkedAt);
-          if (typeof entry?.environment !== "string" || !Array.isArray(entry?.packages) || !Number.isFinite(checkedAt) || !Number.isFinite(new Date(checkedAt).getTime())) return [];
-          // Export only grouped names, distinguishing preserved names whose package is still unknown.
-          const packages = entry.packages.flatMap((group) => {
-            if ((group?.name !== null && typeof group?.name !== 'string') || !Array.isArray(group?.pipelines)) return [];
-            const names = group.pipelines.filter((name) => typeof name === 'string');
-            return [group.name === null
-              ? { name: 'Package Not Yet Recorded', packageNameRecorded: false, pipelines: names }
-              : { name: group.name, pipelines: names }];
-          });
-          return [{ environmentId, environment: entry.environment, lastCheckedAt: new Date(checkedAt).toISOString(),
-            packages }];
-        });
-        // Guide users to populate the cache before requesting another export.
-        if (!environments.length) {
-          sharedFromStatus.textContent = "No saved sources. Enable Shared From and visit Designer first.";
-          return;
-        }
-        const exportedAt = new Date().toISOString();
-        const snapshot = { extensionVersion: chrome.runtime.getManifest().version, exportedAt,
-          note: "Observed Designer ownership, not live sharing history. This file is a snapshot and does not update automatically.", environments };
+        // Include current tenant lists and retained old lists, even with no Shared From cache.
+        const snapshot = FavoritesData.exportData(settings, chrome.runtime.getManifest().version);
+        const exportedAt = snapshot.exportedAt;
         // Use a local JSON download without new permissions or any network upload.
         const file = new Blob([JSON.stringify(snapshot, null, 2) + "\r\n"], { type: "application/json" });
         const url = URL.createObjectURL(file);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `integration-navigator-shared-from-${exportedAt.slice(0, 10)}.json`;
+        link.download = `integration-navigator-backup-${exportedAt.slice(0, 10)}.json`;
         document.body.appendChild(link);
         try {
           // Let the browser choose the destination using normal download preferences.

@@ -13,7 +13,7 @@ Make Ellucian Integration Packages and Integration Designer easier to navigate i
 - Optionally show **Shared From** in Integration Packages using locally saved Designer sources.
 - Customize your toolbar icon, favorite shapes and colors, and search display.
 
-Favorites stay separate for each page and environment. Standard Experience Test and Production sites are supported, along with university vanity URLs you add in settings.
+Favorites stay separate by site, tenant ID, and Packages/Designer page, including multiple tenants behind one vanity domain. Export JSON backs up favorites and saved sources; Backup & Restore lets you preview and import them. Standard Experience Test and Production sites are supported, along with university vanity URLs you add in settings.
 
 ## Install
 
@@ -64,6 +64,8 @@ Read [AGENTS.md](AGENTS.md) before making changes. The synthetic settings regres
 npm install --no-save --package-lock=false playwright
 npx playwright install chromium
 node tests/popup-switches.regression.js
+node tests/tenant-favorites.cjs
+node tests/tenant-favorites-browser.cjs
 ```
 
 Check changed JavaScript with `node --check <filename>.js`. No build step is required to load the extension unpacked; exclude test tools and dependencies from release ZIPs.

@@ -106,7 +106,7 @@
         <!-- Keep both source actions together, outside the checkbox label so they cannot change consent. -->
         <div class="shared-from-actions">
           <button id="refresh-shared-from" type="button" disabled aria-label="Refresh Shared From Data" title="Visit Designer in each source environment first. Refresh sources from the current Designer environment.">Refresh</button>
-          <button id="export-shared-from" type="button" aria-label="Export Shared From JSON" title="Download a snapshot of saved Designer sources">Export JSON</button>
+          <button id="export-shared-from" type="button" aria-label="Export Favorites and Shared From JSON" title="Back up tenant favorites and saved Designer sources">Export JSON</button>
         </div>
         <p id="shared-from-status" class="icon-status" role="status" aria-live="polite"></p>
         <!-- Separate sharing controls and their feedback from search presentation. -->
@@ -130,6 +130,29 @@
           </select>
         </label>
         <p class="card-description">Beside Pipelines in the selected package.</p>
+      </details>
+
+      <!-- Preview restores and explicitly assign old favorites without crowding everyday settings. -->
+      <details class="settings-card backup-card">
+        <summary>Backup &amp; Restore</summary>
+        <p class="card-description">Favorites by site, tenant, and page.</p>
+        <button id="import-favorites" type="button">Import JSON</button>
+        <input id="backup-file" type="file" accept=".json,application/json" hidden />
+        <div id="backup-preview" hidden>
+          <p id="backup-summary" class="card-description"></p>
+          <label class="search-display-control" for="backup-mode"><span>Favorites</span>
+            <select id="backup-mode"><option value="merge">Merge (Keep Existing Order)</option><option value="replace">Replace Matching Lists</option></select>
+          </label>
+          <label class="card-description"><input id="backup-sources" type="checkbox" /> Also Restore Shared From Data</label>
+          <p class="card-description">Shared From must be enabled first. No settings or site permissions change.</p>
+          <button id="confirm-backup" type="button">Import Backup</button>
+          <button id="cancel-backup" type="button">Cancel</button>
+        </div>
+        <div id="legacy-favorites" hidden>
+          <p id="legacy-summary" class="card-description"></p>
+          <button id="assign-favorites" type="button">Use Old Favorites for This Tenant</button>
+        </div>
+        <p id="backup-status" class="icon-status" role="status" aria-live="polite"></p>
       </details>
 
       <!-- Keep optional personalization compact until the user opens it. -->
@@ -229,7 +252,9 @@
     <!-- Load the preference behavior after the popup controls exist. -->
     <script src="icon-appearance.js"></script>
     <script src="favorite-appearance.js"></script>
+    <script src="favorites-data.js"></script>
     <script src="popup.js"></script>
+    <script src="favorites-popup.js"></script>
     <script src="custom-sites.js"></script>
     <script src="custom-sites-popup.js"></script>
   </body>

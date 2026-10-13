@@ -46,7 +46,11 @@ Completed pipelines appear without waiting for a whole batch. A service timeout 
 
 ## Favorites Seem Missing
 
-Check that **Pinned Packages** is enabled. Favorites are separate for Packages and Designer, Test and Production, and different site domains. They are local to the browser; another browser or installation has its own saved data.
+Check that **Pinned Packages** is enabled. Favorites are separate by site, tenant ID, and Packages/Designer page, including tenants on a shared vanity URL. They are local to the browser; another browser or installation has its own saved data.
+
+When upgrading from host-only lists, open settings on the intended tenant/page and use **Backup & Restore → Use Old Favorites for This Tenant** once for each old page list. Original copies are preserved, not deleted. If the tenant is still loading or cannot be identified, favorites wait rather than guessing. Refresh after reloading the extension, let the page load, and reopen settings.
+
+Use **Export JSON** for a local backup and **Backup & Restore → Import JSON** to preview and merge it later. Check the site, tenant ID, and page in the preview; lists from a different domain do not transfer automatically. Shared From restoration is optional and requires the feature's existing opt-in. Older source-only exports do not contain the backup format or favorites needed for import.
 
 Unavailable packages or pipelines may be hidden without deleting their pins. Pipeline favorites follow their pinned major version, not a different major release. After an extension reload, refresh the Experience page before testing favorites again. Avoid uninstalling as a troubleshooting step because that removes local extension data.
 

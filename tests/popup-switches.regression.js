@@ -7,7 +7,7 @@ const path = require("path");
 const assert = require("assert");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = process.env.INTEGRATION_NAVIGATOR_SOURCE || path.resolve(__dirname, "..");
 const ORIGIN = "https://popup.test";
 
 // Stand-in for the extension APIs; storage writes wait until the test settles them.
@@ -97,7 +97,8 @@ async function expectMatches(page, item, expected, step) {
 }
 
 (async () => {
-  const browser = await chromium.launch();
+  // Allow a locally installed Chromium-based engine without changing any assertions.
+  const browser = await chromium.launch(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {});
   try {
     for (const item of SWITCHES) {
       const { page, errors } = await openPopup(browser, { [item.key]: false });

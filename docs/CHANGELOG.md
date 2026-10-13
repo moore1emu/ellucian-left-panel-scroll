@@ -2,6 +2,14 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.0 — 2026-10-13
+
+- Favorites are now separate by site, tenant ID, and Packages/Designer page, including multiple tenants on one vanity domain. Tenant identity comes from the already-loaded page; no extra service calls or permissions are needed.
+- Older host-only favorites are preserved. Open settings on the intended tenant/page and use **Backup & Restore → Use Old Favorites for This Tenant** once to assign that page's old list. The original copy stays available in exports.
+- **Export JSON** now backs up tenant favorites, pinned pipelines/order/layout, old unassigned lists, and saved Shared From observations, even when no sources are cached.
+- **Backup & Restore → Import JSON** previews tenant lists before applying them. Merge is the default; replacing matching lists requires confirmation. Restoring Shared From is optional, retains observation dates, requires the existing opt-in, and does not change settings or site permissions.
+- Favorites stay unavailable while tenant identity or saved data is unresolved. Delayed replies cannot load another tenant's pins; a serialized worker saves changes without overwriting other tenant lists.
+
 ## 1.21.9 — 2026-10-13
 
 - Saving a favorites height or a remembered panel width now keeps the page it started on and skips the save if the stored values cannot be read, so other pages' saved heights and widths are never overwritten.
