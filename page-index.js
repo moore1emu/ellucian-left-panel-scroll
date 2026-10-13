@@ -10,7 +10,7 @@
   const SHARED_STATUS_RESPONSE = "shared-status-response";
 
   // Keep: page-world copies of shared.js rules; loading shared.js here would expose a global to Ellucian (1.21.9).
-  // Keep: match both package-element and packageelement; Ellucian's pages use either spelling (1.15.1).
+  // Keep: match both package-element and packageelement; Ellucian's pages use either spelling (pre-1.15.1).
   const PACKAGE_ROW_SELECTOR = 'li[data-level="1"][package-element], li[data-level="1"][packageelement]';
   const isPackagesPage = () => /\/data-connect\/home\/?$/iu.test(window.location.pathname);
   const isDesignerPage = () => /\/data-connect-designer\/?$/iu.test(window.location.pathname);
@@ -23,7 +23,7 @@
   // A brief startup buffer bridges the early page script and the saved opt-in read at UI startup.
   let packageArtifactCaptureEnabled = null;
 
-  // Separate snapshots when Experience changes tenant, including on a vanity domain.
+  // Keep: separate snapshots when Experience changes tenant, including on a vanity domain (1.21.1).
   function getPackageArtifactContext() {
     return window.location.origin + window.location.pathname.split('/app/')[0];
   }
@@ -57,7 +57,7 @@
       packageArtifactCount -= packageArtifactSnapshots.get(oldest).pipelines.length;
       packageArtifactSnapshots.delete(oldest);
     }
-    // Notify a selected package once if its response arrived after the UI's first request.
+    // Keep: notify a selected package once if its response arrived after the UI's first request (1.21.1).
     if (context === getPackageArtifactContext()) window.postMessage({ source: MESSAGE_SOURCE, type: 'package-artifacts-ready', packageName: name }, window.location.origin);
   }
 
@@ -119,7 +119,7 @@
   const sharedArtifactNames = new Map();
   // Keep: one global six-request sharing budget, raised from three on request (1.20.3).
   const SHARING_REQUEST_LIMIT = 6;
-  // Start the deadline only when an actual sharing service call starts, not in its queue.
+  // Keep: start the deadline only when an actual sharing service call starts, not in its queue (1.20.9).
   const SHARING_REQUEST_TIMEOUT = 30000;
   // Share one request budget across batches, including destination-name lookups.
   const sharingRequestQueue = [];
@@ -182,7 +182,7 @@
       const tenantId = normalizeText(parsedState?.tenant);
       if (tenantId) return tenantId;
     } catch (_error) {
-      // Continue with Designer's loaded state when preloaded state is unavailable.
+      // Keep: continue with Designer's loaded state when preloaded state is unavailable (1.19.2).
     }
 
     // Find the actual current environment already held by the Designer component.
@@ -249,7 +249,7 @@
 
   // Free capacity only when the underlying service really finishes.
   function drainSharingRequests() {
-    // Disabling rejects waiting work without interrupting already-started requests.
+    // Keep: disabling rejects waiting work without interrupting already-started requests (1.20.2).
     if (!sharingEnabled) {
       rejectWaitingSharingRequests(sharingCancelledError);
       return;
@@ -284,7 +284,7 @@
 
   // Queue only new service calls; callers continue to reuse their cached promises.
   function queueSharingRequest(run, key) {
-    // Refreshing after a timeout must not duplicate an identical call still on the wire.
+    // Keep: refreshing after a timeout must not duplicate an identical call still on the wire (1.20.9).
     if (sharingServiceRequests.has(key)) return sharingServiceRequests.get(key);
     let request;
     const promise = new Promise((resolve, reject) => {
@@ -324,7 +324,7 @@
     return tenantPromise;
   }
 
-  // Scan loaded packages once per batch for exact validation and release history.
+  // Keep: scan loaded packages once per batch for exact validation and release history (1.20.2).
   function buildSharingInventory(entries) {
     const requestedNames = new Set(entries.map((entry) => entry.name));
     const currentVersions = new Map();
@@ -375,7 +375,7 @@
       const knownVersions = new Set([cleanVersion]);
       (inventory.histories.get(entry.name) || []).forEach((version) => {
         const clean = typeof version === 'string' && modules.semver.clean(version);
-        // Preserve same-major isolation while reusing the batch's inventory.
+        // Keep: preserve same-major isolation while reusing the batch's inventory (1.14.0).
         if (clean && cleanVersion && modules.semver.major(clean) === modules.semver.major(cleanVersion)) knownVersions.add(clean);
       });
       const versions = Array.from(knownVersions).filter(Boolean).sort(modules.semver.rcompare);
@@ -432,7 +432,7 @@
         const currentIndex = nextIndex;
         nextIndex += 1;
         results[currentIndex] = await getSharedStatus(entries[currentIndex], inventory);
-        // Publish each completed pipeline immediately, even when another pipeline is slow.
+        // Keep: publish each completed pipeline immediately, even when another pipeline is slow (1.20.9).
         onResult(results[currentIndex]);
       }
     }
@@ -484,10 +484,10 @@
     const row = Array.from(document.querySelectorAll(PACKAGE_ROW_SELECTOR))
       .find((element) => getPackageData(element)?.name === packageName);
     const data = row ? getPackageData(row) : null;
-    // Prefer the pre-filter response, requiring the selected published package version to match.
+    // Keep: prefer the pre-filter response, requiring the selected published package version to match (1.21.1).
     const snapshot = packageArtifactSnapshots.get(JSON.stringify([getPackageArtifactContext(), packageName]));
     const versionMatches = snapshot && (!data?.version || snapshot.packageVersion.replace(/^v/u, '') === normalizeText(data.version).replace(/^v/u, ''));
-    // Fall back only to already-loaded display fields; never fetch a missing response.
+    // Keep: fall back only to already-loaded display fields; never fetch a missing response (1.21.0).
     const pipelines = versionMatches ? snapshot.pipelines : Array.isArray(data?.pipelines) ? data.pipelines : null;
     window.postMessage({
       source: MESSAGE_SOURCE, type: 'package-artifacts-response',
@@ -659,7 +659,7 @@
     [SHARED_STATUS_REQUEST]: handleSharedStatusRequest,
   };
 
-  // Keep: accept only same-window messages tagged with this extension's source (1.15.1).
+  // Keep: accept only same-window messages tagged with this extension's source (1.4.0).
   window.addEventListener('message', (event) => {
     if (event.source !== window || event.data?.source !== MESSAGE_SOURCE) return;
     const type = event.data.type;

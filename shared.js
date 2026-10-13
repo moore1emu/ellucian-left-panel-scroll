@@ -10,7 +10,7 @@
   // Select the stable semantic marker shared by both Ellucian pages.
   const PANEL_SELECTOR = '[data-testid="master"]';
 
-  // Keep: match both pipeline-element and pipelineelement; Ellucian's pages use either spelling (1.15.1).
+  // Keep: match both pipeline-element and pipelineelement; Ellucian's pages use either spelling (pre-1.15.1).
   const PIPELINE_ROW_SELECTOR = 'li[data-level="2"][pipeline-element], li[data-level="2"][pipelineelement]';
 
   // Let search.js reuse content.js's sidebar observer instead of adding its own.
@@ -30,7 +30,7 @@
     return /\/data-connect\/home\/?$/iu.test(window.location.pathname);
   }
 
-  // Keep saved values separate for each host and for Packages versus Designer.
+  // Keep: save values separately for each host and for Packages versus Designer (1.7.2).
   function getPageStorageKey() {
     const pageName = window.location.pathname.toLowerCase().includes("/data-connect-designer") ? "designer" : "packages";
     return `${window.location.host}|${pageName}`;

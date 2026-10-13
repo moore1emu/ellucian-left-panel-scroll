@@ -17,7 +17,7 @@ globalThis.CustomSites = (() => {
       throw new Error("Enter a valid HTTPS website address.");
     }
 
-    // Reject credentials, wildcards, ports, and local/IP addresses rather than widening access.
+    // Keep: reject credentials, wildcards, ports, and local/IP addresses rather than widening access (1.17.0).
     const domain = /^(?:[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?\.)+[a-z](?:[a-z\d-]{0,61}[a-z\d])?$/i;
     if (url.protocol !== "https:" || url.username || url.password || url.port || !domain.test(url.hostname) || url.hostname.endsWith(".localhost")) {
       throw new Error("Use an HTTPS domain without credentials, wildcards, or a custom port.");
@@ -40,12 +40,12 @@ globalThis.CustomSites = (() => {
     return normalizeList(chrome.runtime.getManifest().content_scripts.flatMap((script) => script.matches));
   }
 
-  // Request only the exact host; do not include its subdomains or every HTTPS site.
+  // Keep: request only the exact host; do not include its subdomains or every HTTPS site (1.17.0).
   function pattern(origin) {
     return `${origin}/*`;
   }
 
-  // Recover exact approved domains when a permission prompt interrupted the popup.
+  // Keep: recover exact approved domains when a permission prompt interrupted the popup (1.18.0).
   async function readSites() {
     const saved = await chrome.storage.local.get({ [KEY]: [] });
     const granted = await chrome.permissions.getAll();

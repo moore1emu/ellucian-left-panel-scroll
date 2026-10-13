@@ -48,7 +48,7 @@
   const MIN_PIPELINE_NAME_WIDTH = 160;
   const MAX_PIPELINE_NAME_WIDTH = 12000;
   let packagePipelineNameWidth = MIN_PIPELINE_NAME_WIDTH;
-  // Fit each newly selected package independently, without persisting additional settings.
+  // Keep: fit each newly selected package independently, without persisting additional settings (1.20.1).
   let packagePipelineWidthKey = '';
   let packagePipelineAutoWidth = true;
   const packagePipelineTables = new WeakMap();
@@ -102,7 +102,7 @@
   let ownershipRequest = "";
   let ownershipSignature = "";
   let ownershipTimer = 0;
-  // Require a fresh complete index for each Designer visit, not a previous page's index.
+  // Keep: require a fresh complete index for each Designer visit, not a previous page's index (1.19.5).
   let ownershipPageKey = "";
   let ownershipIndexReady = false;
   let ownershipIndexAttempts = 0;
@@ -307,7 +307,7 @@
     return normalizePackageIdentity(value).replace(/^v(?=\d)/u, "");
   }
 
-  // Keep only the major component so a pin follows newer releases in that line.
+  // Keep: match on the major version only so a pin follows newer releases in that line (1.10.0).
   function getPipelineMajorVersion(value) {
     const normalizedVersion = normalizePipelineVersion(value);
     const majorMatch = normalizedVersion.match(/^\d+/u);
@@ -492,7 +492,7 @@
     });
   }
 
-  // Preserve previously verified children when Ellucian temporarily empties a row's data.
+  // Keep: preserve previously verified children when Ellucian temporarily empties a row's data (1.9.1).
   function mergeCompleteSearchIndexes(previousIndex, currentIndex) {
     const previousByIdentity = new Map(
       previousIndex.map((packageEntry) => [
@@ -660,7 +660,7 @@
     }
   }
 
-  // Use the visible package tree when private React properties are unavailable.
+  // Keep: use the visible package tree when private React properties are unavailable (1.5.0).
   function activateDomFallback() {
     // Keep the last complete index through transient package-row replacements.
     if (
@@ -734,7 +734,7 @@
       const name = pipelineRow.querySelector("span[title]")?.getAttribute("title");
       const version = pipelineRow.querySelector('span[id$="-chip"]')?.textContent;
 
-      // Ignore the display-only v prefix while still selecting the exact release.
+      // Keep: ignore the display-only v prefix while still selecting the exact release (1.15.1).
       return (
         name === pipelineEntry.name &&
         (!pipelineEntry.version || normalizePipelineVersion(version) === normalizePipelineVersion(pipelineEntry.version))
@@ -776,7 +776,7 @@
     let watchedRegion = null;
     let userScrolled = false;
 
-    // Stop adjusting immediately if the user starts scrolling the native package list.
+    // Keep: stop adjusting immediately if the user starts scrolling the native package list (1.16.1).
     const cancelForUserScroll = () => { userScrolled = true; };
     const cancelForKeyboardScroll = (event) => {
       if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(event.key)) userScrolled = true;
@@ -1651,13 +1651,13 @@
               // Accept a sole name match when Ellucian reformats its version value.
               (sameNamePipelines.length === 1 ? sameNamePipelines[0] : null);
 
-            // Keep the saved, previously verified child while Ellucian unloads its row.
+            // Keep: show the saved, previously verified child while Ellucian unloads its row (1.9.3).
             return [matchingPipeline ?? savedPipeline];
           },
         );
         const packagePinned = favoritePackageIdentities.has(identity);
 
-        // Hide unavailable child-only groups while retaining their stored identities.
+        // Keep: hide unavailable child-only groups while retaining their stored identities (1.8.0).
         if (!packagePinned && !favoritePipelines.length) {
           return [];
         }
@@ -1681,7 +1681,7 @@
         name: packageEntry.name,
         packagePinned: packageEntry.packagePinned,
         pipelinesExpanded: packageEntry.pipelinesExpanded,
-        // A newer minor/patch release must refresh both its badge and navigation target.
+        // Keep: a newer minor/patch release must refresh both its badge and navigation target (1.20.1).
         pipelines: packageEntry.favoritePipelines.map((pipeline) => [
           getPipelineIdentity(pipeline), pipeline.name, pipeline.originalName, pipeline.version,
         ]),
@@ -2674,11 +2674,11 @@
     const respond = ownershipManualResponse;
     ownershipManualResponse = null;
     publishOwnershipStatus();
-    // Log only actionable fixed codes, not routine cancellation, names, or API payloads.
+    // Keep: log only actionable fixed codes, not routine cancellation, names, or API payloads (1.20.9).
     const failureCodes = ['not-ready', 'lookup-failed', 'save-failed', 'storage-read', 'storage-write',
       'site-access', 'incomplete-data', 'source-limit', 'cache-full', 'document-unavailable'];
     if (result?.ok === false && failureCodes.includes(result.reason)) console.warn(`Integration Navigator: Shared From refresh failed (${result.reason}).`);
-    // Closing settings must not cancel collection or create a console error.
+    // Keep: closing settings must not cancel collection or create a console error (1.19.5).
     if (respond) {
       try { respond(result); } catch (_error) { /* The popup may already be closed. */ }
     }
@@ -2746,7 +2746,7 @@
     if (ownershipAttempts >= 2) return;
     ownershipAttempts += 1;
     ownershipRequest = crypto.randomUUID();
-    // Retry a missed or not-yet-ready lookup once, then wait for a genuine revisit.
+    // Keep: retry a missed or not-yet-ready lookup once, then wait for a genuine revisit (1.19.2).
     ownershipTimer = window.setTimeout(() => {
       ownershipRequest = "";
       // Leaving Designer or disabling the option must not restart collection.
@@ -2888,7 +2888,7 @@
     if (!table && extras.length) {
       const emptyHeading = document.getElementById('packageTable-no-pipelines');
       if (!emptyHeading) return;
-      // Hide the full native panel, not just its figcaption; the illustration and reserved space live outside the caption.
+      // Keep: hide the whole native empty panel; its illustration and spacing sit outside the caption (1.21.2).
       const empty = emptyHeading.closest('#packageTable-empty') || emptyHeading.closest('figure, [role="figure"]') || emptyHeading.parentElement;
       empty.dataset.ellucianArtifactEmpty = 'true';
       const wrapper = document.createElement('div');
@@ -2905,7 +2905,7 @@
         header.appendChild(cell);
       });
       wrapper.appendChild(table);
-      // Keep the replacement outside the hidden panel so React's original empty state stays restorable.
+      // Keep: place the replacement outside the hidden panel so React's original empty state stays restorable (1.21.2).
       empty.after(wrapper);
     }
     const header = table?.querySelector('thead tr');
@@ -2969,7 +2969,7 @@
           const label = document.createElement('span');
           label.dataset.ellucianArtifactName = 'true';
           label.textContent = text;
-          // Use the browser's own tooltip and delay, with one line of guidance only on this name.
+          // Keep: use the browser's own tooltip and delay, with one line of guidance only on this name (1.21.4).
           label.setAttribute('title', 'For Reference Only; Cannot Be Run From This Page.');
           cell.replaceChildren(label);
         } else if (index === 1) cell.dataset.ellucianTypeCell = 'true';
@@ -3090,7 +3090,7 @@
       state = { context, signature: '', compactWidth: 0, handle: null };
       packagePipelineTables.set(table, state);
     }
-    // Leave existing markers untouched rather than rewriting every row on unrelated updates.
+    // Keep: leave existing markers untouched rather than rewriting every row on unrelated updates (1.20.1).
     if (table.dataset.ellucianPipelineTable !== 'true') table.dataset.ellucianPipelineTable = 'true';
     if (table.parentElement.dataset.ellucianPipelineScroll !== 'true') table.parentElement.dataset.ellucianPipelineScroll = 'true';
     if (nameHeader.dataset.ellucianNameCell !== 'true') nameHeader.dataset.ellucianNameCell = 'true';
@@ -3341,7 +3341,7 @@
     for (let offset = 0; offset < entries.length; offset += 25) {
       const batch = entries.slice(offset, offset + 25);
       const requestId = `shared-${++sharedStatusRequestCounter}`;
-      // Tag pending results so an older response cannot overwrite a fresh check.
+      // Keep: tag pending results so an older response cannot overwrite a fresh check (1.15.0).
       batch.forEach(({ key }) => sharedStatusCache.set(key, { pending: true, requestId }));
       // Bound only message delivery; acknowledged queue time is not a network timeout.
       const timer = window.setTimeout(() => {
@@ -3852,7 +3852,7 @@
   // Reuse content.js's sidebar observer instead of adding a second sidebar watcher.
   window.addEventListener(DOM_CHANGE_EVENT, scheduleSearchUpdate);
 
-  // Reattach controls after restored pages, tab returns, or replaced app roots.
+  // Keep: reattach controls after restored pages, tab returns, or replaced app roots (1.12.0).
   function resumePageControls() {
     // Rechecking after a genuine visit refreshes timestamps without a polling timer.
     updateDesignerOwnershipVisit(true);
@@ -3870,9 +3870,9 @@
     if (event.isTrusted) navigationSequence += 1;
   }, true);
 
-  // Keep: observe table updates separately because sidebar-only events miss pagination (1.15.1).
+  // Keep: observe table updates separately because sidebar-only events miss pagination (1.13.0).
   const detailObserver = new MutationObserver((mutations) => {
-    // Both share flows refresh once on return, even when the user cancels.
+    // Keep: both share flows refresh once on return, even when the user cancels (1.15.0).
     checkShareCompletion();
     const changed = mutations.some((mutation) => {
       const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
@@ -3881,7 +3881,7 @@
     });
     if (changed) scheduleSearchUpdate();
   });
-  // Keep: include modal visibility changes for dialogs that remain mounted when closed (1.15.1).
+  // Keep: include modal visibility changes for dialogs that remain mounted when closed (1.15.0).
   detailObserver.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['hidden', 'aria-hidden'] });
 
   // Apply popup changes immediately to the open Ellucian page.
@@ -4020,7 +4020,7 @@
       designerSearchMode = normalizeSearchMode(settings[DESIGNER_SEARCH_MODE_KEY]);
       sharedVersionEnabled = settings[SHARED_VERSION_ENABLED_KEY] === true;
       sharedFromEnabled = settings[SHARED_FROM_ENABLED_KEY] === true;
-      // Use the prior choice only while the worker persists the one-time upgrade.
+      // Keep: use the prior choice only while the worker persists the one-time upgrade (1.21.5).
       packageArtifactsEnabled = typeof settings[PACKAGE_ARTIFACTS_ENABLED_KEY] === 'boolean'
         ? settings[PACKAGE_ARTIFACTS_ENABLED_KEY] : sharedFromEnabled;
       packageArtifactPreferencesLoaded = true;

@@ -42,7 +42,7 @@
   const favoriteStatus = document.querySelector("#favorite-color-status");
   const resetFavoriteButton = document.querySelector("#reset-favorite-color");
   let appearanceLoaded = false;
-  // Retain the custom choice while the disabled picker displays the linked icon color.
+  // Keep: retain the custom choice while the disabled picker displays the linked icon color (1.18.0).
   let independentFavoriteColor = FavoriteAppearance.DEFAULT.color;
   // Keep the existing sidebar preference separate from the Designer package search.
   const searchModeSelect = document.querySelector("#search-display-mode");
@@ -86,12 +86,12 @@
       refreshSharedFromButton.disabled = false;
       readOwnershipStatus();
 
-      // Existing users keep their previous choice once; new installs start with reference rows off.
+      // Keep: existing users keep their previous choice once; new installs start with reference rows off (1.21.5).
       if (typeof settings[PACKAGE_ARTIFACTS_ENABLED_KEY] === 'boolean') {
         packageArtifactsSwitch.checked = settings[PACKAGE_ARTIFACTS_ENABLED_KEY];
         packageArtifactsSwitch.disabled = false;
       } else {
-        // The worker owns the upgrade; wait so it cannot overwrite a newly clicked switch.
+        // Keep: the worker owns the upgrade; wait so it cannot overwrite a newly clicked switch (1.21.5).
         chrome.runtime.sendMessage({ type: 'package-artifacts-preferences' }).then((response) => {
           if (typeof response?.enabled !== 'boolean') throw new Error('Display preference unavailable.');
           packageArtifactsSwitch.checked = response.enabled;
@@ -341,7 +341,7 @@
     });
   }
 
-  // Opening the confirmation must not enable collection or write any ownership data.
+  // Keep: opening the confirmation must not enable collection or write any ownership data (1.19.0).
   sharedFromSwitch.addEventListener("change", () => {
     sharedFromStatus.textContent = "";
     sharedFromConfirmation.hidden = !sharedFromSwitch.checked;

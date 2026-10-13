@@ -26,7 +26,7 @@ function updateIcon() {
     const settings = await chrome.storage.local.get({ [IconAppearance.KEY]: IconAppearance.DEFAULT });
     const appearance = IconAppearance.normalize(settings[IconAppearance.KEY]);
 
-    // Reuse the crisp black-E toolbar artwork when resetting to the default.
+    // Keep: reuse the crisp black-E toolbar artwork when resetting to the default (1.16.1).
     if (IconAppearance.isDefault(appearance)) {
       const path = Object.fromEntries(IconAppearance.SIZES.map((size) => [size, `icons/toolbar${size}.png`]));
       await chrome.action.setIcon({ path });
@@ -57,7 +57,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && Object.hasOwn(changes, CustomSites.KEY)) restoreSites();
 });
 
-// Keep site completion in the worker; closing the popup does not cancel the operation.
+// Keep: finish site setup in the worker; closing the popup does not cancel it (1.18.0).
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.type !== CustomSites.MESSAGE || sender.id !== chrome.runtime.id || sender.tab) return;
   updateSites(message.removeOrigin).then(
@@ -87,7 +87,7 @@ async function readOwnershipContext(sender) {
 function upgradeOwnershipCache() {
   pendingOwnershipUpdate = pendingOwnershipUpdate.catch(() => {}).then(async () => {
     const settings = await chrome.storage.local.get({ sharedFromEnabled: false, packageArtifactsEnabled: null, designerOwnershipCache: {} });
-    // Preserve the old display choice once; later source changes never change this independent setting.
+    // Keep: preserve the old display choice once; later source changes never change this independent setting (1.21.5).
     if (typeof settings.packageArtifactsEnabled !== 'boolean') {
       await chrome.storage.local.set({ packageArtifactsEnabled: settings.sharedFromEnabled === true });
     }
@@ -99,7 +99,7 @@ function upgradeOwnershipCache() {
       if (Array.isArray(entry?.packages) || !Array.isArray(entry?.pipelines)) continue;
       const pipelines = [...new Set(entry.pipelines.filter((name) => typeof name === 'string' && name.trim()).map((name) => name.trim().slice(0, 500)))].sort();
       cache[tenantId] = { environment: entry.environment, checkedAt: entry.checkedAt,
-        // A null name explicitly means the package has not yet been observed.
+        // Keep: a null name explicitly means the package has not yet been observed (1.19.9).
         packages: pipelines.length ? [{ name: null, pipelines }] : [] };
       changed = true;
     }
@@ -166,7 +166,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     const cache = { ...settings.designerOwnershipCache, [tenantId]: { environment, packages, checkedAt: Date.now() } };
     // Bound this optional cache without requesting additional storage permission.
     if (JSON.stringify(cache).length > 1000000) throw new Error("Source cache is full. Turn Shared From off to clear it.");
-    // Recheck the same document after asynchronous work so navigation or opt-out cancels the save.
+    // Keep: recheck the same document after asynchronous work so navigation or opt-out cancels the save (1.20.7).
     failureStage = 'document-unavailable';
     const current = await readOwnershipContext(sender);
     failureStage = 'storage-read';
@@ -177,7 +177,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     await chrome.storage.local.set({ designerOwnershipCache: cache });
   });
   pendingOwnershipUpdate.then(() => respond({ ok: true }), (error) => {
-    // Recognize only our own fixed validation messages; unknown service errors stay private.
+    // Keep: recognize only our own fixed validation messages; unknown service errors stay private (1.20.9).
     const knownFailures = {
       'Designer document is unavailable.': 'document-unavailable',
       'Not a Designer page.': 'left-designer',
@@ -196,7 +196,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   return true;
 });
 
-// Clearing is queued behind writes, so disabling cannot leave a late snapshot behind.
+// Keep: clearing is queued behind writes, so disabling cannot leave a late snapshot behind (1.19.0).
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local" || changes.sharedFromEnabled?.newValue !== false) return;
   pendingOwnershipUpdate = pendingOwnershipUpdate.catch(() => {}).then(() => chrome.storage.local.remove("designerOwnershipCache"))

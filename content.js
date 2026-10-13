@@ -23,7 +23,7 @@
   const REMEMBER_WIDTH_KEY = "rememberWidth";
   const SAVED_WIDTHS_KEY = "savedWidths";
 
-  // Default to resetting the width on every refresh, as requested.
+  // Keep: default to resetting the width on every refresh, as requested (1.2.0).
   let rememberWidth = false;
   let savedWidthForCurrentPage = null;
   let savedWidthsByPage = {};
@@ -349,7 +349,7 @@
     });
   }
 
-  // Re-clamp a user width when the browser becomes narrower, then recalculate height.
+  // Keep: re-clamp a user width when the browser becomes narrower, then recalculate height (1.5.0).
   function handleViewportResize() {
     document
       .querySelectorAll(
@@ -366,7 +366,7 @@
   window.addEventListener("resize", handleViewportResize, { passive: true });
   window.addEventListener("scroll", schedulePanelAdjustment, { passive: true });
   window.addEventListener("popstate", schedulePanelAdjustment);
-  // Browser-restored documents need their panel geometry recalculated.
+  // Keep: browser-restored documents need their panel geometry recalculated (1.11.1).
   window.addEventListener("pageshow", schedulePanelAdjustment);
   window.addEventListener(LAYOUT_REQUEST_EVENT, schedulePanelAdjustment);
 
