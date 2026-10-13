@@ -22,6 +22,20 @@
   // Store only the optional preference and per-site width when remembering is enabled.
   const REMEMBER_WIDTH_KEY = "rememberWidth";
   const SAVED_WIDTHS_KEY = "savedWidths";
+  // Keep the published-view preference independent from sidebar size and sharing.
+  const FITTING_DETAILS_ENABLED_KEY = 'fittingDetailsEnabled';
+  let fittingDetailsEnabled = false;
+  let fittingPreferenceRevision = 0;
+
+  // Ask the existing MAIN helper to change only the current fitting's UI locks.
+  function sendFittingDetailsSetting() {
+    window.postMessage({ source: 'ellucian-left-panel-scroll', type: 'fitting-details-setting', enabled: fittingDetailsEnabled }, window.location.origin);
+  }
+
+  // Handle either script load order without repeating a storage read or adding polling.
+  window.addEventListener('message', (event) => {
+    if (event.source === window && event.data?.source === 'ellucian-left-panel-scroll' && event.data.type === 'search-index-ready') sendFittingDetailsSetting();
+  });
 
   // Keep: default to resetting the width on every refresh, as requested (1.2.0).
   let rememberWidth = false;
@@ -406,6 +420,12 @@
 
   // React immediately when the popup changes the remember/reset preference.
   chrome.storage.onChanged.addListener((changes, storageArea) => {
+    // Let a live setting change win over an older startup callback.
+    if (storageArea === 'local' && changes[FITTING_DETAILS_ENABLED_KEY]) {
+      fittingPreferenceRevision += 1;
+      fittingDetailsEnabled = changes[FITTING_DETAILS_ENABLED_KEY].newValue === true;
+      sendFittingDetailsSetting();
+    }
     if (storageArea !== "local" || !changes[REMEMBER_WIDTH_KEY]) {
       return;
     }
@@ -433,8 +453,12 @@
     {
       [REMEMBER_WIDTH_KEY]: false,
       [SAVED_WIDTHS_KEY]: {},
+      [FITTING_DETAILS_ENABLED_KEY]: false,
     },
     (settings) => {
+      // Use the initial value only if no newer settings event has arrived.
+      if (!fittingPreferenceRevision) fittingDetailsEnabled = settings[FITTING_DETAILS_ENABLED_KEY] === true;
+      sendFittingDetailsSetting();
       rememberWidth = Boolean(settings[REMEMBER_WIDTH_KEY]);
       savedWidthsByPage = settings[SAVED_WIDTHS_KEY] ?? {};
       activeWidthStorageKey = isSupportedPage()

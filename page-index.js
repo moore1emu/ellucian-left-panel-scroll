@@ -654,12 +654,191 @@
     }
   }
 
+  // Keep only UI lock snapshots; never read, cache, or transmit fitting contents.
+  let fittingViewingEnabled = false;
+  let fittingView = null;
+  let fittingViewFrame = 0;
+  let fittingViewObserver = null;
+  const FITTING_PANEL = '#flowItem_contentEdit';
+  const FITTING_FIELDS = 'input, textarea, select, button, [contenteditable], [role="button"], [role="combobox"], a[href]';
+
+  // Require the observed published marker rather than guessing from disabled controls alone.
+  function isPublishedFitting() {
+    return /\/data-connect-designer\/pipelineDesigner\/?$/iu.test(window.location.pathname) &&
+      document.getElementById('action_save')?.getAttribute('aria-label') === 'Create draft from published pipeline.' &&
+      document.getElementById('action_publish')?.disabled === true;
+  }
+
+  // Snapshot each property once and avoid writes that could retrigger native rendering.
+  function setFittingLock(node, property, value) {
+    let properties = fittingView.controls.get(node);
+    if (!properties) { properties = new Map(); fittingView.controls.set(node, properties); }
+    if (!properties.has(property)) properties.set(property, { original: node[property], applied: value });
+    if (node[property] !== value) node[property] = value;
+  }
+
+  // Restore only locks still owned by this feature, leaving later native changes intact.
+  function restoreFittingView() {
+    const previous = fittingView;
+    if (!previous) return;
+    fittingView = null;
+    // Lock a published fieldset again before removing individual protections; never disable a draft.
+    if (isPublishedFitting() && previous.fieldset.isConnected && !previous.fieldset.disabled) previous.fieldset.disabled = true;
+    for (const [node, properties] of previous.controls) {
+      for (const [property, snapshot] of properties) {
+        if (node[property] === snapshot.applied) node[property] = snapshot.original;
+      }
+    }
+    // Return an existing Ace instance to its original mode without touching its session/value.
+    for (const [editor, original] of previous.editors) {
+      try { if (!editor.destroyed && editor.getReadOnly() === true) editor.setReadOnly(original); }
+      catch (_error) { /* A native editor destroyed during navigation needs no restoration. */ }
+    }
+    // Remove only our pointer override; preserve any newer style set by the application.
+    if (previous.panel.style.getPropertyValue('pointer-events') === previous.pointerApplied) {
+      if (previous.pointerValue) previous.panel.style.setProperty('pointer-events', previous.pointerValue, previous.pointerPriority);
+      else previous.panel.style.removeProperty('pointer-events');
+    }
+    for (const [type, handler] of previous.listeners) previous.panel.removeEventListener(type, handler, true);
+  }
+
+  // Permit navigation, selection, and copying, but not editor shortcuts or text mutations.
+  function guardFittingInteraction(event) {
+    if (!fittingView) return;
+    if (!isPublishedFitting()) { restoreFittingView(); return; }
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const action = target?.closest('button, select, [role="button"], [role="combobox"], a[href], input:not([readonly])');
+    let blocked = ['beforeinput', 'input', 'change', 'paste', 'cut', 'drop', 'dragover'].includes(event.type) || Boolean(action);
+    if (event.type === 'keydown') {
+      // Keep: ordinary copying works, but undo, delete-line, replace, and typing cannot modify a published fitting (1.22.5).
+      const navigation = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown', 'Tab', 'Escape', 'Shift', 'Control', 'Alt', 'Meta'];
+      const copyOrSelect = (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && (['a', 'c'].includes(event.key.toLowerCase()) || event.key === 'Insert');
+      blocked ||= !(navigation.includes(event.key) || copyOrSelect);
+    }
+    if (blocked) { event.preventDefault(); event.stopImmediatePropagation(); }
+  }
+
+  // Apply a reversible view mode only after all native editors can be explicitly locked.
+  function updateFittingView() {
+    fittingViewFrame = 0;
+    const panel = document.querySelector(FITTING_PANEL);
+    const fieldset = panel?.querySelector('#flowItem_contentEdit_fieldset');
+    if (!fittingViewingEnabled || !isPublishedFitting() || !fieldset || (!fieldset.disabled && fittingView?.fieldset !== fieldset)) {
+      restoreFittingView();
+      return;
+    }
+    // A replaced panel gets its own snapshots; old nodes must not hold session state alive.
+    if (fittingView?.panel !== panel || fittingView?.fieldset !== fieldset) restoreFittingView();
+    const editors = [];
+    for (const element of panel.querySelectorAll('.ace_editor')) {
+      // Use Ace's existing container binding; never create an editor or inspect React/application state.
+      const editor = element.env?.editor;
+      let supported = false;
+      // A stale/destroyed native binding must fail closed, not throw from the observer.
+      try { supported = typeof editor?.getReadOnly === 'function' && typeof editor?.setReadOnly === 'function' && typeof editor.getReadOnly() === 'boolean'; }
+      catch (_error) { /* Treat an unreadable editor mode as unsupported. */ }
+      if (!supported) {
+        restoreFittingView();
+        console.warn('[Integration Navigator] FITTING_VIEW_EDITOR_UNAVAILABLE');
+        return;
+      }
+      editors.push(editor);
+    }
+    if (!fittingView) {
+      fittingView = { panel, fieldset, controls: new Map(), editors: new Map(), listeners: [],
+        pointerValue: panel.style.getPropertyValue('pointer-events'), pointerPriority: panel.style.getPropertyPriority('pointer-events'), pointerApplied: 'auto' };
+      // Capture editing/action events before native handlers without intercepting scrolling or copy.
+      for (const type of ['keydown', 'beforeinput', 'input', 'change', 'paste', 'cut', 'drop', 'dragover', 'click', 'dblclick', 'mousedown', 'pointerdown']) {
+        panel.addEventListener(type, guardFittingInteraction, true);
+        fittingView.listeners.push([type, guardFittingInteraction]);
+      }
+    }
+    try {
+      // Release replaced fitting controls/editors instead of retaining every earlier selection.
+      for (const [node, properties] of fittingView.controls) {
+        if (panel.contains(node)) continue;
+        for (const [property, snapshot] of properties) if (node[property] === snapshot.applied) node[property] = snapshot.original;
+        fittingView.controls.delete(node);
+      }
+      for (const [editor, original] of fittingView.editors) {
+        if (editors.includes(editor)) continue;
+        try { if (!editor.destroyed && editor.getReadOnly()) editor.setReadOnly(original); }
+        catch (_error) { /* Destroyed native editors hold no reusable view state. */ }
+        fittingView.editors.delete(editor);
+      }
+      // Lock code before allowing focus; this also prevents Ace's mouse-driven editing commands.
+      for (const editor of editors) {
+        if (!fittingView.editors.has(editor)) fittingView.editors.set(editor, editor.getReadOnly());
+        if (!editor.getReadOnly()) editor.setReadOnly(true);
+      }
+      for (const node of panel.querySelectorAll(FITTING_FIELDS)) {
+        // Read-only text remains focusable for selection/copy; passwords and non-text controls stay disabled.
+        const textField = node.tagName === 'TEXTAREA' || (node.tagName === 'INPUT' && ['text', 'search', 'email', 'url', 'tel', 'number'].includes(node.type));
+        if (textField && !node.disabled) setFittingLock(node, 'readOnly', true);
+        else if ('disabled' in node) setFittingLock(node, 'disabled', true);
+        // Custom dropdowns/actions may be divs rather than native disabled form elements.
+        if (node.matches('[role="button"], [role="combobox"], a[href]')) setFittingLock(node, 'inert', true);
+        if (node.hasAttribute('contenteditable')) setFittingLock(node, 'contentEditable', 'false');
+      }
+      // Keep: a disabled fieldset blocks Ace focus/copy, so replace it only after individual locks are ready (1.22.5).
+      if (fieldset.disabled) fieldset.disabled = false;
+      panel.style.setProperty('pointer-events', 'auto');
+      fittingView.pointerApplied = 'auto';
+    } catch (_error) {
+      // Fail closed without exposing raw editor exceptions or configuration values.
+      restoreFittingView();
+      console.warn('[Integration Navigator] FITTING_VIEW_LOCK_FAILED');
+    }
+  }
+
+  // Batch relevant native re-renders, blocking pointer input while new locks are prepared.
+  function scheduleFittingView() {
+    if (fittingView) { fittingView.panel.style.setProperty('pointer-events', 'none'); fittingView.pointerApplied = 'none'; }
+    if (!fittingViewFrame) fittingViewFrame = window.requestAnimationFrame(updateFittingView);
+  }
+
+  // Observe only while opted in, and filter out unrelated page mutations before scheduling work.
+  function handleFittingDetailsSetting(message) {
+    fittingViewingEnabled = message.enabled === true;
+    if (!fittingViewingEnabled) {
+      fittingViewObserver?.disconnect();
+      fittingViewObserver = null;
+      if (fittingViewFrame) window.cancelAnimationFrame(fittingViewFrame);
+      fittingViewFrame = 0;
+      restoreFittingView();
+      return;
+    }
+    if (!fittingViewObserver && document.body) {
+      fittingViewObserver = new MutationObserver((mutations) => {
+        // Outside the fitting route, restore once and avoid scanning unrelated Experience content.
+        if (!/\/data-connect-designer\/pipelineDesigner\/?$/iu.test(window.location.pathname)) { restoreFittingView(); return; }
+        const relevant = mutations.some((mutation) => {
+          if (mutation.type === 'attributes') return mutation.target.id === 'action_save' || mutation.target.id === 'action_publish' || mutation.target.closest?.(FITTING_PANEL);
+          // Ace redraws line spans during scrolling; those cannot add/change form controls.
+          if (mutation.target.closest?.('.ace_editor')) return [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
+            node instanceof Element && (node.matches('.ace_text-input') || node.querySelector('.ace_text-input')));
+          if (mutation.target.closest?.(FITTING_PANEL)) return true;
+          return [...mutation.addedNodes, ...mutation.removedNodes].some((node) => node instanceof Element &&
+            (node.matches(`${FITTING_PANEL}, #action_save, #action_publish`) || node.querySelector(`${FITTING_PANEL}, #action_save, #action_publish`)));
+        });
+        if (relevant) scheduleFittingView();
+      });
+      fittingViewObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'aria-label'] });
+    }
+    scheduleFittingView();
+  }
+
+  // Restore promptly on browser navigation; SPA panel replacements use the scoped observer.
+  window.addEventListener('popstate', () => { if (fittingViewingEnabled) scheduleFittingView(); });
+  window.addEventListener('pagehide', restoreFittingView);
+
   // Route each message type to one handler; unknown types are ignored.
   const messageHandlers = {
     // Verify tenant metadata without rebuilding the package index or making a service request.
     'favorite-context-request': (message) => window.postMessage({ source: MESSAGE_SOURCE, type: 'favorite-context-response',
       requestId: normalizeText(message.requestId), tenantId: getCurrentTenantId(), pageUrl: window.location.href }, window.location.origin),
     'package-artifacts-setting': handlePackageArtifactsSetting,
+    'fitting-details-setting': handleFittingDetailsSetting,
     'package-artifacts-request': handlePackageArtifactsRequest,
     [INDEX_REQUEST]: handleIndexRequest,
     'designer-ownership-setting': handleOwnershipSetting,

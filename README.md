@@ -1,5 +1,7 @@
 # Integration Navigator
 
+For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
+
 Make Ellucian Integration Packages and Integration Designer easier to navigate in Chrome and Microsoft Edge.
 
 ## What It Does
@@ -10,6 +12,7 @@ Make Ellucian Integration Packages and Integration Designer easier to navigate i
 - Automatically fit pipeline-name columns, with manual resizing when needed.
 - Optionally show the latest published APIs and Sub-Pipelines as read-only main-table records with a **Type** column, independently of Shared From.
 - Optionally show **Shared To** in Designer, highlighting version mismatches in red.
+- Optionally scroll, select, and copy published fitting text/code in Designer while editing stays locked.
 - Optionally show **Shared From** in Integration Packages using locally saved Designer sources.
 - Customize your toolbar icon, favorite shapes and colors, and search display.
 
@@ -65,12 +68,13 @@ This extension is not affiliated with or supported by Ellucian.
 Read [AGENTS.md](AGENTS.md) before making changes. The synthetic settings regression needs Node.js and Playwright with Chromium; it does not use your installed extension or Ellucian account.
 
 ```sh
-npm install --no-save --package-lock=false playwright
+npm install --no-save --package-lock=false playwright ace-builds
 npx playwright install chromium
 node tests/popup-switches.regression.js
 node tests/tenant-favorites.cjs
 node tests/tenant-context.cjs
 node tests/tenant-favorites-browser.cjs
+node tests/published-fitting-details.cjs
 ```
 
 Check changed JavaScript with `node --check <filename>.js`. No build step is required to load the extension unpacked; exclude test tools and dependencies from release ZIPs.

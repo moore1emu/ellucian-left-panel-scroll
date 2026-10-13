@@ -12,7 +12,8 @@ const ORIGIN = "https://popup.test";
 
 // Stand-in for the extension APIs; storage writes wait until the test settles them.
 function installChromeStub() {
-  const store = {};
+  // Mirror the worker's initialized default so this fixture does not show a false migration failure.
+  const store = { packageArtifactsEnabled: false };
   const pending = [];
   const later = (callback) => setTimeout(callback, 0);
   const runtime = {
@@ -54,6 +55,8 @@ const SWITCHES = [
   { id: "remember-width", key: "rememberWidth", label: "Remember Resized Width", status: "package-artifacts-status" },
   { id: "favorites-enabled", key: "favoritesEnabled", label: "Pinned Packages", status: "package-artifacts-status" },
   { id: "shared-version-enabled", key: "sharedVersionEnabled", label: "Shared To", status: "shared-from-status" },
+  // The new opt-in must preserve the same failed-save/rapid-click guarantees.
+  { id: "fitting-details-enabled", key: "fittingDetailsEnabled", label: "View Published Fitting Details", status: "fitting-details-status" },
 ];
 
 async function openPopup(browser, savedValues) {
@@ -102,6 +105,27 @@ async function expectMatches(page, item, expected, step) {
   try {
     for (const item of SWITCHES) {
       const { page, errors } = await openPopup(browser, { [item.key]: false });
+      // Keep the new label and help compact in the actual 360px settings layout.
+      if (item.id === 'fitting-details-enabled') {
+        await page.setViewportSize({ width: 360, height: 580 });
+        const layout = await page.evaluate(() => {
+          const row=document.querySelector('label[for="fitting-details-enabled"]');
+          const title=row.querySelector('.setting-title'), help=row.querySelector('.setting-description');
+          return {width:document.documentElement.scrollWidth, titleHeight:title.getBoundingClientRect().height,
+            titleLine:parseFloat(getComputedStyle(title).lineHeight),helpHeight:help.getBoundingClientRect().height,
+            helpLine:parseFloat(getComputedStyle(help).lineHeight)};
+        });
+        assert.ok(layout.width <= 360, 'Settings must not overflow horizontally');
+        assert.ok(layout.titleHeight <= layout.titleLine + 1 && layout.helpHeight <= layout.helpLine + 1, 'Viewing title/help must each stay on one line');
+        // Optional local previews are not public assets or store screenshots.
+        if (process.env.INTEGRATION_NAVIGATOR_PREVIEW) {
+          await page.locator('label[for="fitting-details-enabled"]').scrollIntoViewIfNeeded();
+          for (const colorScheme of ['light','dark']) {
+            await page.emulateMedia({colorScheme});
+            await page.screenshot({path:path.join(process.env.INTEGRATION_NAVIGATOR_PREVIEW,`settings-${colorScheme}.png`)});
+          }
+        }
+      }
       await expectMatches(page, item, false, "after load");
 
       // The reported bug: rapid ON/OFF while pending, then every write fails; the switch must show the saved OFF.

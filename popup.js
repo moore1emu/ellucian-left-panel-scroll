@@ -12,6 +12,8 @@
   const SHARED_VERSION_ENABLED_KEY = "sharedVersionEnabled";
   const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
   const PACKAGE_ARTIFACTS_ENABLED_KEY = 'packageArtifactsEnabled';
+  // Store only the opt-in, never the published fitting's source or values.
+  const FITTING_DETAILS_ENABLED_KEY = 'fittingDetailsEnabled';
   const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
 
   // Locate the popup controls after the static popup document loads.
@@ -21,6 +23,9 @@
   const sharedFromSwitch = document.querySelector("#shared-from-enabled");
   const packageArtifactsSwitch = document.querySelector('#package-artifacts-enabled');
   const packageArtifactsStatus = document.querySelector('#package-artifacts-status');
+  // Reuse the confirmed-value switch saver for this independent Designer option.
+  const fittingDetailsSwitch = document.querySelector('#fitting-details-enabled');
+  const fittingDetailsStatus = document.querySelector('#fitting-details-status');
   const sharedFromConfirmation = document.querySelector("#shared-from-confirmation");
   const sharedFromStatus = document.querySelector("#shared-from-status");
   const sharedFromCacheStatus = document.querySelector('#shared-from-cache-status');
@@ -75,6 +80,7 @@
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SHARED_FROM_ENABLED_KEY]: false,
       [PACKAGE_ARTIFACTS_ENABLED_KEY]: null,
+      [FITTING_DETAILS_ENABLED_KEY]: false,
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [IconAppearance.KEY]: IconAppearance.DEFAULT,
@@ -84,6 +90,7 @@
       // Display the width preference and its explanatory status.
       rememberWidthSwitch.checked = Boolean(settings[REMEMBER_WIDTH_KEY]);
       sharedVersionSwitch.checked = settings[SHARED_VERSION_ENABLED_KEY] === true;
+      fittingDetailsSwitch.checked = settings[FITTING_DETAILS_ENABLED_KEY] === true;
       // Restore opt-in without collecting anything while the popup initializes.
       sharedFromSwitch.checked = settings[SHARED_FROM_ENABLED_KEY] === true;
       sharedFromSwitch.disabled = false;
@@ -108,7 +115,7 @@
         settings[FAVORITES_ENABLED_KEY] !== false;
 
       // Treat the loaded values as confirmed before allowing any switch changes.
-      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch].forEach((input) => {
+      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch].forEach((input) => {
         confirmedSwitchValues.set(input, input.checked);
         input.disabled = false;
       });
@@ -330,6 +337,11 @@
   // Apply optional sharing checks immediately to open Designer pages.
   sharedVersionSwitch.addEventListener("change", () => {
     saveSwitch(sharedVersionSwitch, SHARED_VERSION_ENABLED_KEY, 'Shared To', sharedFromStatus);
+  });
+
+  // Apply published viewing to open Designer pages without touching other preferences.
+  fittingDetailsSwitch.addEventListener('change', () => {
+    saveSwitch(fittingDetailsSwitch, FITTING_DETAILS_ENABLED_KEY, 'View Published Fitting Details', fittingDetailsStatus);
   });
 
   // Show or hide favorite controls immediately while retaining saved packages.

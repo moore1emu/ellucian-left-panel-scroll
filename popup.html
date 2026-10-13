@@ -110,6 +110,18 @@
         <p id="shared-from-status" class="icon-status" role="status" aria-live="polite"></p>
         <!-- Separate sharing controls and their feedback from search presentation. -->
         <hr class="page-behavior-divider" />
+        <!-- Keep published fitting viewing optional and separate from sharing consent. -->
+        <label class="setting-row" for="fitting-details-enabled" title="Designer published fittings only. Scroll, select, and copy; editing and fitting actions remain locked.">
+          <span class="setting-copy">
+            <span class="setting-title">View Published Fitting Details</span>
+            <span class="setting-description">Scroll and copy in Designer.</span>
+          </span>
+          <span class="switch">
+            <input id="fitting-details-enabled" type="checkbox" disabled />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="fitting-details-status" class="icon-status" role="status" aria-live="polite"></p>
         <!-- Keep the two search areas independent without adding tall option cards. -->
         <label class="search-display-control" for="search-display-mode">
           <span class="setting-title">Package Sidebar Search</span>

@@ -48,7 +48,13 @@ Clipped favorite names have the browser's native full-name tooltip; fully visibl
 
 ### Page Behavior
 
-The section has three groups separated by thin dividers: width memory, pinned favorites, and **Show APIs & Sub-Pipelines**; **Shared To** and **Shared From**; then the two search dropdowns. Both sharing features are off by default. Search titles use the same size and weight as the other setting titles.
+The section groups width memory, pinned favorites, and **Show APIs & Sub-Pipelines**; **Shared To** and **Shared From**; then published fitting viewing and the two search dropdowns. Both sharing features and published fitting viewing are off by default. Search titles use the same size and weight as the other setting titles.
+
+### Published Fitting Details — Designer
+
+Enable **Page Behavior → View Published Fitting Details** to scroll, select, and copy text/code in a published fitting without creating a draft. It is off by default and independent of sharing settings. Code/text remains read-only; checkboxes, dropdowns, reset buttons, and other fitting actions remain disabled. The grey appearance is retained. Draft editing is unchanged. Switching off or leaving the published fitting restores native UI locks.
+
+Normal selection and Ctrl+A/Ctrl+C work in supported Ace editors. Editing shortcuts, typing, paste, cut, and drop are blocked. If the existing editor cannot be safely identified, it stays locked; refresh the page and retry, or report the issue without confidential source code. The feature saves only its preference, not fitting contents, and adds no service requests.
 
 ### Shared To — Designer
 

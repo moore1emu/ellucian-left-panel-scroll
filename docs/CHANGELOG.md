@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.5 — 2026-10-13
+
+- Adds optional **View Published Fitting Details** under Page Behavior, off by default. In Designer, published fitting text/code can be scrolled, selected, and copied without creating a draft.
+- Replaces the blanket published-fieldset lock with individual read-only text/code and disabled action controls. Preserves dimmed styling, blocks editing shortcuts/paste/cut/drop, leaves drafts unchanged, and restores native locks when switched off or leaving the fitting.
+- Unknown/unavailable Ace editors stay locked. Only the preference is saved; no fitting content, credentials, new permissions, polling, or extra service requests are added.
+
 ## 1.22.4 — 2026-10-13
 
 - Retires an assigned old favorite copy only after reading back its saved tenant list and verifying that every old package/pipeline pin is present. Active favorites, order, layout, and Shared From data are unchanged.

@@ -34,6 +34,8 @@ Import reads only a file you select and previews its tenant lists before you con
 
 ## Website permissions
 
+**View Published Fitting Details** is an independent, off-by-default Designer setting. When enabled, it changes only the already-loaded published fitting's UI locks to allow scrolling, selection, and copying. Text/code remains read-only, action controls remain disabled, and drafts are unchanged. Only the boolean preference is stored; the feature does not retrieve, cache, export, or transmit fitting contents, read credentials, add permissions, or make service requests. Copying is initiated by you through the normal editor/browser clipboard controls. Disabling it restores native UI locks.
+
 The two standard Experience sites remain enabled. For a custom site, the extension requests optional scripting access and permission for that exact HTTPS domain only after you choose to add or allow it. It also reads the extension's current site permissions to recover previously approved exact HTTPS custom domains into the removable list; this recovery grants no new access and ignores wildcard permissions and the two standard sites. Declaring optional HTTPS access lets users supply their own domains; it does not automatically grant access to every website or its subdomains. Only packaged extension scripts are registered, and the navigation controls remain limited to the supported Integration Packages/Designer routes. No browsing-history permission is requested.
 
 ## Sharing and tracking
