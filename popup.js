@@ -27,6 +27,8 @@
   let cacheStatusTabId = null;
   let cacheStatusRead = 0;
   const exportSharedFromButton = document.querySelector("#export-shared-from");
+  // Keep export feedback beside the moved backup actions, not under the independent source refresh.
+  const backupStatus = document.querySelector('#backup-status');
   const refreshSharedFromButton = document.querySelector("#refresh-shared-from");
   const versionLabel = document.querySelector("#extension-version");
   const iconColorInput = document.querySelector("#icon-color");
@@ -435,7 +437,7 @@
     exportSharedFromButton.disabled = true;
     // Expose the export's busy state without hiding its eventual error or setup guidance.
     exportSharedFromButton.setAttribute('aria-busy', 'true');
-    sharedFromStatus.textContent = "";
+    backupStatus.textContent = "";
     chrome.storage.local.get({ ...FavoritesData.defaults, [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
       try {
         // Report failed reads instead of downloading an empty or misleading file.
@@ -453,14 +455,14 @@
         try {
           // Let the browser choose the destination using normal download preferences.
           link.click();
-          sharedFromStatus.textContent = "Download requested. Exported files do not update automatically.";
+          backupStatus.textContent = "Download requested. Exported files do not update automatically.";
         } finally {
           // Remove temporary controls and release the buffer after browser hand-off.
           link.remove();
           window.setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
       } catch (_error) {
-        sharedFromStatus.textContent = "Could not export. Please try again.";
+        backupStatus.textContent = "Could not export. Please try again.";
       } finally {
         // Allow retries after an empty cache, cancelled download, or temporary failure.
         exportSharedFromButton.disabled = false;

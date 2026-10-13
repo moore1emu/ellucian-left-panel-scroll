@@ -115,10 +115,29 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     }
     await popup.locator('#assign-favorites').click();
     await popup.waitForFunction(() => document.querySelector('#backup-status').textContent.includes('assigned'));
+    // Keep portable backup actions together in the final section, with source Refresh unmoved.
+    assert.deepEqual(await popup.locator('main > details > summary').allTextContents(), ['Page Behavior', 'Icon & Favorites', 'Custom Sites', 'Backup & Restore']);
+    assert.equal(await popup.locator('.backup-card #export-shared-from').count(), 1);
+    assert.equal(await popup.locator('.backup-card #import-favorites').count(), 1);
+    assert.equal(await popup.locator('.page-behavior-card #export-shared-from').count(), 0);
+    assert.deepEqual(await popup.locator('.shared-from-actions button').allTextContents(), ['Refresh']);
+    const refreshFeedback = await popup.locator('#shared-from-status').textContent();
     const downloadEvent = popup.waitForEvent('download');
     await popup.locator('#export-shared-from').click();
     const download = await downloadEvent;
     const backup = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
+    assert.ok((await popup.locator('#backup-status').textContent()).includes('Download requested'));
+    assert.equal(await popup.locator('#shared-from-status').textContent(), refreshFeedback, 'Export does not replace independent refresh feedback');
+    // Verify retry guidance stays beside the moved button, without overwriting saved data.
+    await popup.evaluate(() => {
+      const original = chrome.storage.local.get;
+      chrome.storage.local.get = (_defaults, callback) => { chrome.storage.local.get = original; callback({favoritePackagesByTenant:{invalid:'malformed'}}); };
+    });
+    await popup.locator('#export-shared-from').click();
+    await popup.waitForFunction(() => document.querySelector('#backup-status').textContent === 'Could not export. Please try again.');
+    assert.equal(await popup.locator('#export-shared-from').isEnabled(), true);
+    assert.equal(await popup.locator('#export-shared-from').getAttribute('aria-busy'), 'false');
+    assert.equal(await popup.locator('#shared-from-status').textContent(), refreshFeedback);
     assert.equal(backup.schemaVersion, 1);
     assert.equal(backup.favorites.length, 3);
     assert.ok(backup.favorites.some((group) => group.tenantId === 'test-a' && group.page === 'designer'));
@@ -132,6 +151,36 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await popup.waitForFunction(() => document.querySelector('#backup-status').textContent.includes('imported'));
     const restored = (await read()).favoritePackagesByTenant;
     assert.ok(Object.values(restored).some((groups) => groups.some((group) => group.packageName === 'Imported Pin')));
+    // Source Refresh still uses its existing real-worker flow and leaves backup feedback alone.
+    const importFeedback = await popup.locator('#backup-status').textContent();
+    // A toolbar popup has no sender.tab; use the synthetic worker to preserve that same sender shape.
+    await popup.exposeFunction('fixtureRefreshSources', () => worker.evaluate((id) => chrome.tabs.sendMessage(id, {type:'designer-ownership-refresh'}), tabId));
+    await popup.evaluate(() => {
+      const send = chrome.tabs.sendMessage.bind(chrome.tabs);
+      chrome.tabs.sendMessage = (...args) => args[1]?.type === 'designer-ownership-refresh' ? window.fixtureRefreshSources() : send(...args);
+    });
+    // Accept consent through the synthetic settings UI so its switch and status reflect the saved choice.
+    await popup.locator('label[for="shared-from-enabled"]').click();
+    await popup.locator('#confirm-shared-from').click();
+    await popup.waitForFunction(() => !document.querySelector('#refresh-shared-from').disabled);
+    // Wait for the automatic opt-in refresh before requesting the separate manual retry.
+    await popup.waitForFunction(() => document.querySelector('#shared-from-cache-status').textContent.startsWith('Cached'));
+    await popup.locator('#refresh-shared-from').click();
+    await popup.waitForFunction(() => document.querySelector('#shared-from-status').textContent === 'Shared From data refreshed.');
+    assert.equal(await popup.locator('#backup-status').textContent(), importFeedback);
+    // Optionally capture synthetic settings previews without putting personal paths in the test.
+    if (process.env.INTEGRATION_NAVIGATOR_ARTIFACT_DIR) {
+      const previews = path.resolve(process.env.INTEGRATION_NAVIGATOR_ARTIFACT_DIR);
+      fs.mkdirSync(previews, {recursive:true});
+      await popup.setViewportSize({width:360,height:640});
+      await popup.locator('.page-behavior-card summary').click();
+      // Collapsed behavior and open backups must fit without horizontal overflow or wrapped action labels.
+      assert.equal(await popup.evaluate(() => document.body.scrollWidth <= document.body.clientWidth), true);
+      for (const colorScheme of ['light','dark']) {
+        await popup.emulateMedia({colorScheme});
+        await popup.screenshot({path:path.join(previews,`backup-settings-${colorScheme}.png`)});
+      }
+    }
     await popup.close();
     // A fresh document and hard reload must restore Designer pins without going through Home.
     const beforeDirect = await read();
@@ -167,7 +216,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     assert.equal(await page.evaluate(() => __messages.length), count, 'No idle polling');
     assert.equal(requests.filter((url) => url.startsWith('https:')).length, 3, 'Only the three explicit fixture navigations make requests');
     assert.deepEqual(errors, []);
-    console.log('PASS: direct Designer manager identity/reload, unique search field IDs, automatic recovery, second-tenant isolation, ambiguous Designer assignment, actual popup backup/restore, and zero idle polling/service lookups.');
+    console.log('PASS: last-section backup actions, independent export/refresh feedback and retry, real popup export/import/refresh, direct Designer reload/cache, tenant recovery/isolation, and zero idle polling/service lookups.');
 
     async function assertPin(tenantId, pageName) {
       const deadline = Date.now() + 10000;

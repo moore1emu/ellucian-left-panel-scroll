@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.3 — 2026-10-13
+
+- Moves **Export JSON** into **Backup & Restore**, beside **Import JSON**, and makes that disclosure the last settings section.
+- Leaves **Refresh** beneath Shared From in Page Behavior. Export success/failure messages now appear with the backup controls instead of replacing refresh feedback.
+- Backup contents, tenant-scoped favorites, source-cache consent, refresh behavior, and permissions are unchanged.
+
 ## 1.22.2 — 2026-10-13
 
 - Fixes favorites and opted-in Shared From collection on direct Designer loads when the page has no preloaded tenant global. Reads the existing live Designer manager, so going through Experience Home is no longer needed for that case.

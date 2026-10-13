@@ -30,7 +30,7 @@ Enable **Shared From**, accept its local-data notice, and visit Designer in each
 
 Version 1.22.2 also fixes tenant detection on direct Designer loads where favorites/source collection previously appeared only after navigating through Experience Home. It reads the current Designer environment without changing saved favorites or needing extra service requests.
 
-For a retry, stay in the source Designer environment and select **Refresh** next to **Export JSON** under Shared From under Page Behavior. Hover over the setting or button for setup guidance. The button collects only that environment, not every environment at once.
+For a retry, stay in the source Designer environment and select **Page Behavior → Shared From → Refresh**. Hover over the setting or button for setup guidance. The button collects only that environment, not every environment at once. Export JSON is in Backup & Restore, the last settings section.
 
 Settings shows that environment's last successful **Cached MM-DD-YY** date, **No Cache**, or **Caching…**. A failed retry does not replace a saved date. **Status Unavailable** is different from an empty cache: refresh the page after an extension reload and confirm Shared From is enabled.
 
@@ -52,7 +52,7 @@ Check that **Pinned Packages** is enabled. Favorites are separate by site, tenan
 
 Version 1.22.1 restores host-only favorites automatically to the actual loaded tenant if it is the only tenant known on that domain. If multiple tenants are known, open settings on the intended tenant/page and use **Backup & Restore → Use Old Favorites for This Tenant**. Original copies are preserved, not deleted. A later tenant never inherits the first tenant's old pins. If the tenant is still loading or cannot be identified, favorites wait rather than guessing. Refresh after reloading the extension, let the page load, and reopen settings if needed. Do not uninstall or clear extension data to recover a list.
 
-Use **Export JSON** for a local backup and **Backup & Restore → Import JSON** to preview and merge it later. Check the site, tenant ID, and page in the preview; lists from a different domain do not transfer automatically. Shared From restoration is optional and requires the feature's existing opt-in. Older source-only exports do not contain the backup format or favorites needed for import.
+Use **Backup & Restore → Export JSON** for a local backup and **Import JSON** in the same section to preview and merge it later. Check the site, tenant ID, and page in the preview; lists from a different domain do not transfer automatically. Shared From restoration is optional and requires the feature's existing opt-in. Older source-only exports do not contain the backup format or favorites needed for import.
 
 Unavailable packages or pipelines may be hidden without deleting their pins. Pipeline favorites follow their pinned major version, not a different major release. After an extension reload, refresh the Experience page before testing favorites again. Avoid uninstalling as a troubleshooting step because that removes local extension data.
 
