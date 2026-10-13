@@ -43,7 +43,10 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     await worker.evaluate(() => pendingOwnershipUpdate);
     await worker.evaluate(() => chrome.storage.local.set({
-      favoritePackagesByHost: { 'experience-test.elluciancloud.com|packages': [{ packageName: 'Old Pin', packagePinned: true, pipelines: [] }] },
+      favoritePackagesByHost: {
+        'experience-test.elluciancloud.com|packages': [{ packageName: 'test-a Package', packagePinned: true, pipelines: [] }],
+        'experience-test.elluciancloud.com|designer': [{ packageName: 'Old Designer Pin', packagePinned: true, pipelines: [] }],
+      },
     }));
     const page = await context.newPage();
     const errors = [];
@@ -51,9 +54,8 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     page.setDefaultTimeout(10000);
     await page.goto(site + route);
     const pin = () => page.locator('li[data-level="1"] button[aria-label^="Pin Package:"]');
-    await pin().waitFor();
-    assert.equal(await page.locator('.ellucian-favorite-select').count(), 0, 'Old lists must not be silently assigned');
-    await pin().click();
+    await page.locator('li[data-level="1"] button[aria-label^="Unpin Package:"]').waitFor();
+    await page.locator('.ellucian-favorite-select').filter({ hasText: 'test-a Package' }).waitFor();
     const read = () => worker.evaluate(() => chrome.storage.local.get('favoritePackagesByTenant'));
     await assertPin('test-a', 'packages');
     // Switching tenants with an unchanged vanity-style URL must separate the list and ignore bootstrap identity.
@@ -77,7 +79,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await page.waitForFunction(() => !document.querySelector('.ellucian-favorites-section'));
     assert.equal(await page.locator('li button[aria-label^="Pin Package:"]').count(), 0);
     assert.equal(Object.keys((await read()).favoritePackagesByTenant).length, 3);
-    await page.evaluate(() => switchTenant('test-a'));
+    await page.evaluate(() => switchTenant('test-a', 'designer'));
     await page.locator('.ellucian-favorite-select').waitFor();
     // Exercise the real settings assignment, local download, and import preview in this profile.
     const popup = await context.newPage();
@@ -110,7 +112,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     assert.equal(backup.schemaVersion, 1);
     assert.equal(backup.favorites.length, 3);
     assert.ok(backup.favorites.some((group) => group.tenantId === 'test-a' && group.page === 'designer'));
-    assert.equal(backup.unassignedFavorites.length, 1);
+    assert.equal(backup.unassignedFavorites.length, 2);
     backup.favorites[0].packages.push({ packageName: 'Imported Pin', packagePinned: true, pipelines: [], pipelinesExpanded: true });
     await popup.locator('#backup-file').setInputFiles({ name: 'fixture-backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
     await popup.locator('#backup-preview').waitFor();
@@ -128,7 +130,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     assert.equal(await page.evaluate(() => __messages.length), count, 'No idle polling');
     assert.equal(requests.filter((url) => url.startsWith('https:')).length, 1, 'Tenant scoping requires no additional service requests');
     assert.deepEqual(errors, []);
-    console.log('PASS: real-manifest tenant switches, SPA page isolation, unknown identity, actual popup assignment/download/import, and zero idle polling/network lookups.');
+    console.log('PASS: real-manifest automatic recovery, second-tenant isolation, ambiguous Designer assignment, actual popup backup/restore, and zero idle polling/service lookups.');
 
     async function assertPin(tenantId, pageName) {
       const deadline = Date.now() + 10000;

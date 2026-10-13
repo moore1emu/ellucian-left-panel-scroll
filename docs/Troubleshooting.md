@@ -48,7 +48,7 @@ Completed pipelines appear without waiting for a whole batch. A service timeout 
 
 Check that **Pinned Packages** is enabled. Favorites are separate by site, tenant ID, and Packages/Designer page, including tenants on a shared vanity URL. They are local to the browser; another browser or installation has its own saved data.
 
-When upgrading from host-only lists, open settings on the intended tenant/page and use **Backup & Restore → Use Old Favorites for This Tenant** once for each old page list. Original copies are preserved, not deleted. If the tenant is still loading or cannot be identified, favorites wait rather than guessing. Refresh after reloading the extension, let the page load, and reopen settings.
+Version 1.22.1 restores host-only favorites automatically to the actual loaded tenant if it is the only tenant known on that domain. If multiple tenants are known, open settings on the intended tenant/page and use **Backup & Restore → Use Old Favorites for This Tenant**. Original copies are preserved, not deleted. A later tenant never inherits the first tenant's old pins. If the tenant is still loading or cannot be identified, favorites wait rather than guessing. Refresh after reloading the extension, let the page load, and reopen settings if needed. Do not uninstall or clear extension data to recover a list.
 
 Use **Export JSON** for a local backup and **Backup & Restore → Import JSON** to preview and merge it later. Check the site, tenant ID, and page in the preview; lists from a different domain do not transfer automatically. Shared From restoration is optional and requires the feature's existing opt-in. Older source-only exports do not contain the backup format or favorites needed for import.
 

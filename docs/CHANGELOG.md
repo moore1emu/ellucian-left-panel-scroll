@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.1 — 2026-10-13
+
+- Existing host-only favorites now carry over automatically to the actual loaded tenant when it is the only tenant known on that domain. Packages and Designer lists remain separate; existing tenant pins are merged, and the original copies stay preserved.
+- If multiple tenants are already known for the domain, **Backup & Restore → Use Old Favorites for This Tenant** remains the explicit choice. A tenant visited without pins is still remembered, so a later tenant never inherits the first one's old list.
+- Prepares migration before showing favorites, retries safely after failed reads/writes, and does not repeat a completed migration or revive pins removed afterward. No guessed tenant IDs, new permissions, extra service requests, or idle polling.
+- JSON backups preserve old-list assignment associations. Restoring a current tenant list does not reapply its older recovery copy, including older backups with one matching list.
+
 ## 1.22.0 — 2026-10-13
 
 - Favorites are now separate by site, tenant ID, and Packages/Designer page, including multiple tenants on one vanity domain. Tenant identity comes from the already-loaded page; no extra service calls or permissions are needed.

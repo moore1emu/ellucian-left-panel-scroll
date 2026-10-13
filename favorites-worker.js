@@ -3,12 +3,13 @@
 // Serialize favorites writes and imports so separate tabs cannot overwrite another tenant's map.
 let pendingFavoriteUpdate = Promise.resolve();
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
-  if (sender.id !== chrome.runtime.id || !['favorites-save', 'favorites-assign', 'favorites-import'].includes(message?.type)) return;
+  if (sender.id !== chrome.runtime.id || !['favorites-prepare', 'favorites-save', 'favorites-assign', 'favorites-import'].includes(message?.type)) return;
   pendingFavoriteUpdate = pendingFavoriteUpdate.catch(() => {}).then(async () => {
     const data = FavoritesData;
     // Only an extension popup can import backups or confirm assignment of an old list.
     const popupSender = sender.url === chrome.runtime.getURL('popup.html');
-    if (message.type !== 'favorites-save' && sender.tab && !popupSender) throw new Error('Open settings to restore favorites.');
+    if (!['favorites-save', 'favorites-prepare'].includes(message.type) && sender.tab && !popupSender) throw new Error('Open settings to restore favorites.');
+    if (message.type === 'favorites-prepare' && !sender.tab) throw new Error('Open an Integration page first.');
     const settings = await chrome.storage.local.get(data.defaults);
     const pins = { ...settings[data.KEY] };
     const expanded = { ...settings[data.EXPANDED] };
@@ -16,6 +17,8 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     const assigned = { ...settings[data.ASSIGNED] };
     const writes = {};
     let importedSources = null;
+    let preparedKey = '';
+    let favoriteWriteNeeded = true;
     if (message.type === 'favorites-import') {
       const incoming = data.backup(message.backup);
       if (!['merge', 'replace'].includes(message.mode)) throw new Error('Choose Merge or Replace.');
@@ -31,23 +34,50 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       for (const group of incoming.unassignedFavorites) {
         const key = data.legacyKey(group);
         legacy[key] = data.merge(legacy[key] || [], group.packages);
+        // Current tenant lists in a backup are authoritative; do not reapply their older recovery copies.
+        const matchingLists = incoming.favorites.filter((entry) => entry.site === group.site && entry.page === group.page);
+        const assignedTenantId = group.assignedTenantId || (matchingLists.length === 1 ? matchingLists[0].tenantId : '');
+        if (!assigned[key] && assignedTenantId) assigned[key] = data.key({ site: group.site, page: group.page, tenantId: assignedTenantId });
       }
       writes[data.LEGACY] = legacy;
       if (message.restoreSources === true) importedSources = incoming.environments;
     } else {
       // Verify against the isolated, current document rather than a stale SPA MessageSender URL.
-      const pageSender = message.type === 'favorites-save' && sender.tab;
+      const pageSender = ['favorites-save', 'favorites-prepare'].includes(message.type) && sender.tab;
       const tabId = pageSender ? sender.tab.id : message.tabId;
       if (!Number.isInteger(tabId) || (pageSender && (sender.frameId !== 0 || !sender.documentId))) throw new Error('Open an Integration page first.');
       const context = await chrome.tabs.sendMessage(tabId, { type: 'favorites-context' }, pageSender ? { documentId: sender.documentId, frameId: 0 } : { frameId: 0 });
       const current = data.scope(context?.scope);
       const key = data.key(current);
-      if (key !== data.key(message.scope) || !context.loaded || !context.url || new URL(context.url).origin !== current.site) throw new Error('Tenant changed or is still loading. Try again.');
+      if (key !== data.key(message.scope) || (message.type !== 'favorites-prepare' && !context.loaded) || !context.url || new URL(context.url).origin !== current.site) throw new Error('Tenant changed or is still loading. Try again.');
       const url = new URL(context.url);
       if (!['/data-connect/home', '/data-connect-designer'].some((path) => url.pathname.toLowerCase().includes(path))) throw new Error('Open an Integration page first.');
       if (pageSender && new URL(sender.url).origin !== current.site) throw new Error('Favorite site changed.');
       if (!CustomSites.defaults().includes(current.site) && (!(await CustomSites.readSites()).includes(current.site) || !await chrome.permissions.contains({ origins: [CustomSites.pattern(current.site)] }))) throw new Error('Enable access to this site first.');
-      if (message.type === 'favorites-assign') {
+      if (message.type === 'favorites-prepare') {
+        preparedKey = key;
+        favoriteWriteNeeded = !Object.hasOwn(pins, key);
+        // Record a verified visit even without pins, so a later tenant is not mistaken for the first.
+        if (favoriteWriteNeeded) pins[key] = [];
+        const knownTenants = new Set([current.tenantId]);
+        for (const storedKey of Object.keys(pins)) {
+          try {
+            const storedScope = data.fromKey(storedKey);
+            if (storedScope.site === current.site) knownTenants.add(storedScope.tenantId);
+          } catch (_error) { /* A malformed unrelated key cannot choose a migration destination. */ }
+        }
+        // Keep: use the actual first detected tenant only; known multi-tenant domains still require assignment (1.22.1).
+        const oldKey = data.legacyKey(current);
+        const oldItems = settings[data.LEGACY]?.[oldKey];
+        if (knownTenants.size === 1 && !assigned[oldKey] && Array.isArray(oldItems) && oldItems.length) {
+          pins[key] = data.merge(pins[key], oldItems);
+          assigned[oldKey] = key;
+          // Carry the old layout only when the new list has not already been adjusted.
+          if (!Object.hasOwn(expanded, key)) expanded[key] = expanded[oldKey] !== false;
+          if (!Object.hasOwn(heights, key)) heights[key] = heights[oldKey] ?? null;
+          favoriteWriteNeeded = true;
+        }
+      } else if (message.type === 'favorites-assign') {
         const oldKey = data.legacyKey(current);
         if (assigned[oldKey]) throw new Error('This old list has already been assigned. Its backup is preserved.');
         pins[key] = data.merge(pins[key] || [], settings[data.LEGACY]?.[oldKey] || []);
@@ -79,8 +109,10 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         await chrome.storage.local.set({ ...writes, designerOwnershipCache: cache });
       });
       await pendingOwnershipUpdate;
-    } else await chrome.storage.local.set(writes);
-    respond({ ok: true });
+    } else if (favoriteWriteNeeded) await chrome.storage.local.set(writes);
+    // Load the prepared snapshot only after migration succeeds, avoiding an empty-list upgrade flash.
+    respond({ ok: true, ...(preparedKey ? { packages: pins[preparedKey], expanded: expanded[preparedKey] !== false,
+      height: heights[preparedKey] ?? null } : {}) });
   }).catch((error) => {
     // Report a short known failure without logging package names or personal site URLs.
     respond({ ok: false, error: error.message || 'Could not save favorites. Try again.' });

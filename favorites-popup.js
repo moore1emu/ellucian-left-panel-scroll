@@ -67,12 +67,12 @@
       pendingBackup = data.backup(JSON.parse(await file.text()));
       const groups = pendingBackup.favorites;
       const labels = groups.map((group) => `${group.site} · ${group.tenantId} · ${group.page} (${group.packages.length} packages)`);
-      document.querySelector('#backup-summary').textContent = `${groups.length} tenant lists, ${pendingBackup.unassignedFavorites.length} old unassigned lists, ${pendingBackup.environments.length} source environments. ${labels.join('; ')}`;
+      document.querySelector('#backup-summary').textContent = `${groups.length} tenant lists, ${pendingBackup.unassignedFavorites.length} retained old lists, ${pendingBackup.environments.length} source environments. ${labels.join('; ')}`;
       document.querySelector('#backup-mode').value = 'merge';
       sourceSwitch.checked = false;
       sourceSwitch.disabled = !pendingBackup.environments.length;
       preview.hidden = false;
-      status.textContent = 'Review the tenant lists before importing. Old lists remain unassigned.';
+      status.textContent = 'Review the tenant lists before importing. Older recovery copies will not replace current tenant lists.';
     } catch (error) { status.textContent = error.message || 'Could not read this backup.'; }
     finally { fileInput.value = ''; }
   });

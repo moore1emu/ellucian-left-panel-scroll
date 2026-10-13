@@ -692,19 +692,14 @@
     // Keep: storage calls can throw after an extension reload even when the API still exists (1.19.7).
     try {
       const runtime = globalThis.chrome?.runtime;
-      const storage = globalThis.chrome?.storage?.local;
-      if (!runtime?.id || typeof storage?.get !== 'function') {
+      if (!runtime?.id || typeof runtime?.sendMessage !== 'function') {
         stopDisconnectedOwnership();
         return;
       }
-      // Read only this browser's saved navigation state, keeping existing defaults unchanged.
-      storage.get(
-        {
-          [FAVORITES_BY_HOST_KEY]: {},
-          [FAVORITES_EXPANDED_BY_HOST_KEY]: {},
-          [FAVORITES_HEIGHTS_BY_HOST_KEY]: {},
-        },
-        (settings) => {
+      // Prepare the actual tenant's list in the serialized worker before showing its first controls.
+      runtime.sendMessage(
+        { type: 'favorites-prepare', scope: getFavoriteScope() },
+        (result) => {
           // Ignore stale replies before inspecting a potentially disconnected runtime.
           if (ownershipExtensionDisconnected || sequence !== favoriteLoadSequence || getFavoriteScopeKey() !== requestedStorageKey) return;
           try {
@@ -714,14 +709,19 @@
               return;
             }
             // Keep: a failed read is not an empty favorites list; never load its fallback defaults (1.19.7).
-            if (lastError || !settings) return;
+            if (lastError || result?.ok !== true || !Array.isArray(result.packages)) {
+              console.warn('Integration Navigator: favorites could not be loaded. Refresh this page to retry.');
+              return;
+            }
           } catch (_error) {
             stopDisconnectedOwnership();
             return;
           }
 
           // Restore the destination page's hierarchy, disclosure, and height only after a valid read.
-          applyFavoriteSettings(settings, requestedStorageKey);
+          applyFavoriteSettings({ [FAVORITES_BY_HOST_KEY]: { [requestedStorageKey]: result.packages },
+            [FAVORITES_EXPANDED_BY_HOST_KEY]: { [requestedStorageKey]: result.expanded },
+            [FAVORITES_HEIGHTS_BY_HOST_KEY]: { [requestedStorageKey]: result.height } }, requestedStorageKey);
           favoritesLoaded = true;
 
           applySearchMode();
@@ -2806,7 +2806,7 @@
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
     // Settings and the worker can verify the current tenant without reading native payloads.
     if (message?.type === 'favorites-context' && sender.id === chrome.runtime?.id && (!sender.tab || sender.url === chrome.runtime.getURL('popup.html'))) {
-      requestFavoriteContext((result) => respond({ url: window.location.href, scope: result?.loaded ? getFavoriteScope() : null, loaded: result?.loaded === true && favoritesLoaded }));
+      requestFavoriteContext((result) => respond({ url: window.location.href, scope: result?.verified ? getFavoriteScope() : null, loaded: result?.loaded === true && favoritesLoaded }));
       return true;
     }
     // Settings may inspect status without collecting data or making a service request.
@@ -3722,7 +3722,7 @@
       const changed = favoriteTenantId !== normalizeText(event.data.tenantId).trim();
       if (pending.url === window.location.href && acceptFavoriteIdentity(event.data)) {
         if (changed) requestSearchIndex();
-        pending.replies.forEach((reply) => reply({ loaded: favoritesLoaded }));
+        pending.replies.forEach((reply) => reply({ verified: true, loaded: favoritesLoaded }));
       } else pending.replies.forEach((reply) => reply({ loaded: false }));
       return;
     }

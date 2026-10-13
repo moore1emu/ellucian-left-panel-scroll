@@ -12,13 +12,14 @@ let failedRead = false;
 let failedWrite = false;
 let writes = 0;
 let current;
+let tabContexts = null;
 const site = 'https://experience.example.edu';
 const sender = { id: 'fixture', tab: { id: 1 }, frameId: 0, documentId: 'document', url: site + '/one/app/data-connect/home' };
 const popup = { id: 'fixture' };
 const fixture = vm.createContext({ URL, Date, console, pendingOwnershipUpdate: Promise.resolve(),
   CustomSites: { defaults: () => [site] },
   chrome: { runtime: { id: 'fixture', getURL: (name) => `chrome-extension://fixture/${name}`, onMessage: { addListener: (fn) => { handler = fn; } } },
-    tabs: { sendMessage: async () => current },
+    tabs: { sendMessage: async (tabId) => tabContexts?.[tabId] || current },
     storage: { local: {
       get: async (defaults) => { if (failedRead) throw new Error('Synthetic read failure.'); return clone({ ...defaults, ...settings }); },
       set: async (values) => { if (failedWrite) throw new Error('Synthetic write failure.'); settings = { ...settings, ...clone(values) }; writes++; },
@@ -31,10 +32,100 @@ const data = fixture.FavoritesData;
 const scope = (tenantId, page = 'packages') => ({ site, tenantId, page });
 const group = (packageName, pipeline = '') => ({ packageName, packagePinned: !pipeline,
   pipelines: pipeline ? [{ name: pipeline, originalName: '', version: 'v1.0.3' }] : [], pipelinesExpanded: true });
-const send = (message, origin = sender) => new Promise((resolve) => { assert.equal(handler(message, origin, resolve), true); });
+// Chrome serializes replies across contexts; mirror that boundary instead of comparing VM prototypes.
+const send = (message, origin = sender) => new Promise((resolve) => { assert.equal(handler(message, origin, (result) => resolve(clone(result))), true); });
 const enter = (tenantId, page = 'packages') => { current = { scope: scope(tenantId, page), loaded: true, url: `${site}/${tenantId}/app/${page === 'packages' ? 'data-connect/home' : 'data-connect-designer'}` }; };
 
 (async () => {
+  // Restore old lists automatically for the first known actual tenant, merging into 1.22.0 pins.
+  const packageOldKey = data.legacyKey(scope('test-a'));
+  const designerOldKey = data.legacyKey(scope('test-a', 'designer'));
+  const oldLists = { [packageOldKey]: [group('Old Package', 'Old Child')], [designerOldKey]: [group('Old Designer')] };
+  settings = { [data.LEGACY]: clone(oldLists), [data.KEY]: { [data.key(scope('test-a'))]: [group('Already Pinned')] },
+    [data.EXPANDED]: { [packageOldKey]: false }, [data.HEIGHTS]: { [packageOldKey]: 180 } };
+  enter('test-a'); current.loaded = false;
+  const prepared = await send({ type: 'favorites-prepare', scope: current.scope });
+  assert.equal(prepared.ok, true);
+  assert.deepEqual(prepared.packages.map((entry) => entry.packageName), ['Already Pinned', 'Old Package']);
+  assert.equal(prepared.packages[1].packagePinned, false);
+  assert.equal(prepared.packages[1].pipelines[0].name, 'Old Child');
+  assert.equal(prepared.expanded, false);
+  assert.equal(prepared.height, 180);
+  assert.deepEqual(settings[data.LEGACY], oldLists, 'The original host/page lists remain untouched');
+  const preparedWrites = writes;
+  await send({ type: 'favorites-prepare', scope: current.scope });
+  assert.equal(writes, preparedWrites, 'A completed migration and repeated visit do not rewrite storage');
+  enter('test-a', 'designer'); current.loaded = false;
+  const designerPrepared = await send({ type: 'favorites-prepare', scope: current.scope });
+  assert.equal(designerPrepared.packages[0].packageName, 'Old Designer');
+  assert.equal(settings[data.KEY][data.key(scope('test-a'))][1].packageName, 'Old Package');
+  // A second tenant never inherits either retained copy, even after the first tenant unpins everything.
+  enter('test-b'); current.loaded = false;
+  assert.deepEqual((await send({ type: 'favorites-prepare', scope: current.scope })).packages, []);
+
+  // Backup restoration preserves consumed-copy markers, including older backups with one matching list.
+  const recoveryBackup = clone(data.exportData(settings, '1.22.1'));
+  assert.equal(recoveryBackup.unassignedFavorites.find((entry) => entry.page === 'packages').assignedTenantId, 'test-a');
+  settings = {};
+  assert.equal((await send({ type: 'favorites-import', backup: recoveryBackup, mode: 'merge' }, popup)).ok, true);
+  assert.deepEqual((await send({ type: 'favorites-prepare', scope: current.scope })).packages, []);
+  const olderRecovery = clone(recoveryBackup);
+  olderRecovery.favorites = olderRecovery.favorites.filter((entry) => entry.tenantId === 'test-a');
+  olderRecovery.unassignedFavorites.forEach((entry) => delete entry.assignedTenantId);
+  settings = {};
+  assert.equal((await send({ type: 'favorites-import', backup: olderRecovery, mode: 'merge' }, popup)).ok, true);
+  assert.deepEqual((await send({ type: 'favorites-prepare', scope: current.scope })).packages, []);
+  settings[data.KEY][data.key(scope('test-a'))] = [];
+  enter('test-a'); current.loaded = false;
+  assert.deepEqual((await send({ type: 'favorites-prepare', scope: current.scope })).packages, []);
+
+  // Known multiple tenants, including empty/imported scopes, require explicit assignment.
+  settings = { [data.LEGACY]: clone(oldLists), [data.KEY]: { [data.key(scope('test-a', 'designer'))]: [], [data.key(scope('test-b'))]: [] } };
+  enter('test-a'); current.loaded = false;
+  assert.deepEqual((await send({ type: 'favorites-prepare', scope: current.scope })).packages, []);
+  assert.equal(settings[data.ASSIGNED]?.[packageOldKey], undefined);
+  current.loaded = true;
+  assert.equal((await send({ type: 'favorites-assign', scope: current.scope, tabId: 1 }, popup)).ok, true);
+  assert.equal(settings[data.KEY][data.key(current.scope)][0].packageName, 'Old Package');
+
+  // A tenant seen without pins is retained; later-added old data cannot be inherited by a second tenant.
+  settings = {};
+  enter('test-a'); current.loaded = false;
+  await send({ type: 'favorites-prepare', scope: current.scope });
+  settings[data.LEGACY] = clone(oldLists);
+  enter('test-b'); current.loaded = false;
+  assert.deepEqual((await send({ type: 'favorites-prepare', scope: current.scope })).packages, []);
+  assert.equal(settings[data.ASSIGNED]?.[packageOldKey], undefined);
+
+  // Failed migration reads/writes or unknown identity cannot consume the original list or mark it assigned.
+  settings = { [data.LEGACY]: clone(oldLists) };
+  enter('test-a'); current.loaded = false;
+  const migrationBefore = clone(settings);
+  failedRead = true;
+  assert.equal((await send({ type: 'favorites-prepare', scope: current.scope })).ok, false);
+  failedRead = false; failedWrite = true;
+  assert.equal((await send({ type: 'favorites-prepare', scope: current.scope })).ok, false);
+  failedWrite = false;
+  const actualScope = current.scope; current.scope = null;
+  assert.equal((await send({ type: 'favorites-prepare', scope: actualScope })).ok, false);
+  assert.deepEqual(settings, migrationBefore);
+  current.scope = actualScope;
+  assert.equal((await send({ type: 'favorites-prepare', scope: current.scope })).ok, true);
+
+  // Two tabs arriving together share the serialized decision: only the first inherits the old list.
+  settings = { [data.LEGACY]: clone(oldLists) };
+  tabContexts = { 1: { scope: scope('test-a'), loaded: false, url: `${site}/a/app/data-connect/home` },
+    2: { scope: scope('test-b'), loaded: false, url: `${site}/b/app/data-connect/home` } };
+  const simultaneous = await Promise.all([
+    send({ type: 'favorites-prepare', scope: scope('test-a') }),
+    send({ type: 'favorites-prepare', scope: scope('test-b') }, { ...sender, tab: { id: 2 }, documentId: 'second-document' }),
+  ]);
+  assert.equal(simultaneous[0].packages[0].packageName, 'Old Package');
+  assert.deepEqual(simultaneous[1].packages, []);
+  assert.deepEqual(settings[data.LEGACY], oldLists);
+  tabContexts = null;
+  // Reset only synthetic state before exercising the original save/import regression scenarios.
+  settings = {};
   // Two test tenants on one vanity site and the Designer page must have different tuples.
   assert.notEqual(data.key(scope('test-a')), data.key(scope('test-b')));
   assert.notEqual(data.key(scope('test-a')), data.key(scope('test-a', 'designer')));
@@ -74,7 +165,7 @@ const enter = (tenantId, page = 'packages') => { current = { scope: scope(tenant
   // A backup round trip retains tenant IDs, pipeline order, disclosure, and unknown source packages.
   settings.designerOwnershipCache = { 'test-a': { environment: 'Test A', checkedAt: Date.now() - 1000,
     packages: [{ name: null, pipelines: ['Unknown Package Child'] }] } };
-  const exported = clone(data.exportData(settings, '1.22.0'));
+  const exported = clone(data.exportData(settings, '1.22.1'));
   assert.equal(exported.favorites.length, 3);
   assert.equal(exported.unassignedFavorites.length, 1);
   assert.equal(exported.environments[0].packages[0].packageNameRecorded, false);
@@ -111,8 +202,9 @@ const enter = (tenantId, page = 'packages') => { current = { scope: scope(tenant
   const loader = vm.createContext({ ownershipExtensionDisconnected: false, preferencesLoaded: true,
     favoriteLoadSequence: 0, favoritesLoaded: false, activeFavoritesStorageKey: '',
     FAVORITES_BY_HOST_KEY: data.KEY, FAVORITES_EXPANDED_BY_HOST_KEY: data.EXPANDED, FAVORITES_HEIGHTS_BY_HOST_KEY: data.HEIGHTS,
-    isSupportedPage: () => true, getFavoriteScopeKey: () => loader.key,
-    chrome: { runtime: { id: 'fixture' }, storage: { local: { get: (_defaults, callback) => reads.push(callback) } } },
+    isSupportedPage: () => true, getFavoriteScopeKey: () => loader.key, getFavoriteScope: () => data.fromKey(loader.key),
+    console: { warn() {} },
+    chrome: { runtime: { id: 'fixture', sendMessage: (_message, callback) => reads.push(callback) } },
     applyFavoriteSettings: (values, key) => { loader.saved = values[data.KEY]?.[key]; },
     applySearchMode() {}, stopDisconnectedOwnership: () => { loader.disconnected = true; },
   });
@@ -120,16 +212,16 @@ const enter = (tenantId, page = 'packages') => { current = { scope: scope(tenant
   loader.key = data.key(scope('test-a')); loader.loadFavoritesForCurrentPage();
   loader.key = data.key(scope('test-b')); loader.loadFavoritesForCurrentPage();
   loader.key = data.key(scope('test-a')); loader.loadFavoritesForCurrentPage();
-  reads[0]({ [data.KEY]: { [loader.key]: [group('Stale A')] } });
-  reads[1]({ [data.KEY]: { [data.key(scope('test-b'))]: [group('Stale B')] } });
+  reads[0]({ ok: true, packages: [group('Stale A')] });
+  reads[1]({ ok: true, packages: [group('Stale B')] });
   assert.equal(loader.saved, undefined);
   assert.equal(loader.favoritesLoaded, false);
-  reads[2]({ [data.KEY]: { [loader.key]: [group('Current A')] } });
+  reads[2]({ ok: true, packages: [group('Current A')] });
   assert.equal(loader.saved[0].packageName, 'Current A');
   assert.equal(loader.favoritesLoaded, true);
   loader.chrome.runtime.lastError = { message: 'Synthetic read failure' };
   loader.loadFavoritesForCurrentPage(); reads[3]({});
   assert.equal(loader.saved[0].packageName, 'Current A');
   assert.equal(loader.favoritesLoaded, false, 'Failed reads cannot enable edits from fallback data');
-  console.log('PASS: tenant isolation, legacy assignment, JSON round trip, merge/replace, consent, and failed storage.');
+  console.log('PASS: automatic single-tenant recovery, ambiguous-domain assignment, empty-tenant tracking, no repeat writes/revival, isolation, backup/restore, and failed/delayed storage.');
 })().catch((error) => { console.error(error); process.exitCode = 1; });

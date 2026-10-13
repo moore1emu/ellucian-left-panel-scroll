@@ -81,9 +81,11 @@ globalThis.FavoritesData = (() => {
     const favorites = value.favorites.map((entry) => ({ ...scope(entry), packages: items(entry.packages), expanded: entry.expanded !== false,
       height: Number.isFinite(entry.height) && entry.height >= 64 && entry.height <= 360 ? entry.height : null }));
     const unassignedFavorites = value.unassignedFavorites.map((entry) => {
-      // Old lists have no tenant identity: keep them unassigned, never infer a destination.
+      // Retain an existing migration association so restoring a backup cannot revive removed pins.
       const clean = scope({ ...entry, tenantId: 'unassigned' });
-      return { site: clean.site, page: clean.page, packages: items(entry.packages) };
+      const assignedTenantId = entry.assignedTenantId === undefined ? '' : scope({ ...clean, tenantId: entry.assignedTenantId }).tenantId;
+      if (assignedTenantId && !favorites.some((group) => group.site === clean.site && group.page === clean.page && group.tenantId === assignedTenantId)) throw new Error('The old-list assignment has no matching tenant list.');
+      return { site: clean.site, page: clean.page, packages: items(entry.packages), ...(assignedTenantId ? { assignedTenantId } : {}) };
     });
     return { format: value.format, schemaVersion: 1, favorites, unassignedFavorites, environments: sources(value.environments || []) };
   }
@@ -94,7 +96,9 @@ globalThis.FavoritesData = (() => {
       expanded: settings[EXPANDED]?.[storedKey] !== false, height: settings[HEIGHTS]?.[storedKey] ?? null }));
     const unassignedFavorites = Object.entries(settings[LEGACY] || {}).map(([storedKey, packages]) => {
       const split = storedKey.lastIndexOf('|');
-      return { site: `https://${storedKey.slice(0, split)}`, page: storedKey.slice(split + 1), packages: items(packages) };
+      const assignment = settings[ASSIGNED]?.[storedKey];
+      return { site: `https://${storedKey.slice(0, split)}`, page: storedKey.slice(split + 1), packages: items(packages),
+        ...(assignment ? { assignedTenantId: fromKey(assignment).tenantId } : {}) };
     });
     const environments = Object.entries(settings.designerOwnershipCache || {}).map(([environmentId, entry]) => ({ environmentId, environment: entry.environment,
       lastCheckedAt: new Date(entry.checkedAt).toISOString(), packages: entry.packages.map((group) => group.name === null

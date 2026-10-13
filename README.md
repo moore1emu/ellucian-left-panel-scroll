@@ -15,6 +15,8 @@ Make Ellucian Integration Packages and Integration Designer easier to navigate i
 
 Favorites stay separate by site, tenant ID, and Packages/Designer page, including multiple tenants behind one vanity domain. Export JSON backs up favorites and saved sources; Backup & Restore lets you preview and import them. Standard Experience Test and Production sites are supported, along with university vanity URLs you add in settings.
 
+Existing favorites carry over automatically when only one tenant is known on that domain. If multiple tenants are known, settings lets you choose which one owns the old list.
+
 ## Install
 
 [Install from the Chrome Web Store](https://chromewebstore.google.com/detail/integration-navigator/dbmjmmgocklhjnadhmibaldicbgoignd). The same listing works in Chrome and Edge; Edge may ask you to allow extensions from other stores.
