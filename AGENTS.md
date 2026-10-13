@@ -1,4 +1,6 @@
-# Integration Navigator: working notes
+# Integration Navigator: agent instructions
+
+Instructions for any coding agent (Codex, Claude, or others) working in this repository.
 
 ## Branches and releases
 - Do all work on the `develop` branch. `main` holds only versions the owner has tested and published to the Chrome Web Store.
@@ -13,4 +15,5 @@
 ## Files
 - `shared.js`: page rules and the resize gesture shared by `content.js` and `search.js` (isolated world).
 - `page-index.js` runs in the page's own world, so it keeps its own copies of shared constants; keep the two in sync.
+- No build step, package manager, or test suite; check syntax with `node --check <file>.js` before committing.
 - Source files use CRLF line endings; preserve them when editing.
