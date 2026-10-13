@@ -55,3 +55,15 @@ Both sharing features are off by default. Shared From requires your consent and 
 Support: [moore.life@gmail.com](mailto:moore.life@gmail.com).
 
 This extension is not affiliated with or supported by Ellucian.
+
+## Development Checks
+
+Read [AGENTS.md](AGENTS.md) before making changes. The synthetic settings regression needs Node.js and Playwright with Chromium; it does not use your installed extension or Ellucian account.
+
+```sh
+npm install --no-save --package-lock=false playwright
+npx playwright install chromium
+node tests/popup-switches.regression.js
+```
+
+Check changed JavaScript with `node --check <filename>.js`. No build step is required to load the extension unpacked; exclude test tools and dependencies from release ZIPs.
