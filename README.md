@@ -67,6 +67,7 @@ npm install --no-save --package-lock=false playwright
 npx playwright install chromium
 node tests/popup-switches.regression.js
 node tests/tenant-favorites.cjs
+node tests/tenant-context.cjs
 node tests/tenant-favorites-browser.cjs
 ```
 

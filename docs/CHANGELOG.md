@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.2 — 2026-10-13
+
+- Fixes favorites and opted-in Shared From collection on direct Designer loads when the page has no preloaded tenant global. Reads the existing live Designer manager, so going through Experience Home is no longer needed for that case.
+- Preserves tenant/page isolation, original favorite recovery copies, and saved pins. Uses targeted element lookups only, without full-page scanning, polling, extra service requests, or new permissions.
+- Gives both search fields unique IDs to resolve the browser's missing form-field identity warning, with no changes to search behavior or presentation.
+- Adds regression coverage for direct Designer entry/reload, live tenant switching, root replacement, retained Designer state on Packages, and automatic source caching.
+
 ## 1.22.1 — 2026-10-13
 
 - Existing host-only favorites now carry over automatically to the actual loaded tenant when it is the only tenant known on that domain. Packages and Designer lists remain separate; existing tenant pins are merged, and the original copies stay preserved.

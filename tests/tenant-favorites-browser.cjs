@@ -8,21 +8,31 @@ const extension = process.env.INTEGRATION_NAVIGATOR_SOURCE || path.join(__dirnam
 const site = 'https://experience-test.elluciancloud.com';
 const route = '/fixture/app/all-accounts/Ellucian/data-connect/home';
 const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height:40px}</style>
-  <div data-testid="master"><div id="home_title-packages">PACKAGES</div><div><ul role="tree"></ul></div></div><main></main>
+  <div data-testid="master"><div id="home_title-packages">PACKAGES</div><div><ul role="tree"></ul></div></div>
+  <main id="pipelineManager-main-customBlock"><h1 id="packageDetails-title">Package: Fixture</h1><h2>Pipelines:</h2></main>
   <script>
-  window.__PRELOADED_STATE__={tenant:'stale-bootstrap'};
+  // Direct Designer entry has no bootstrap global, matching the observed native page.
+  if(!location.pathname.includes('data-connect-designer')) window.__PRELOADED_STATE__={tenant:'stale-bootstrap'};
+  // Resolve environment labels locally so opt-in source caching can be tested without any service traffic.
+  window.webpackChunkdata_connect_designer=[];
+  window.webpackChunkdata_connect_designer.push=(entry)=>entry[2]((name)=>name.includes('ServerHelper')?{JR:async()=>({label:'Fixture Test'})}:{});
   window.switchTenant=(tenant,page='packages')=>{
     if(page==='designer') history.pushState({},'', '/fixture/app/all-accounts/Ellucian/data-connect-designer/');
     else history.pushState({},'', '${route}');
     const list=document.querySelector('ul');list.innerHTML='';
     const row=document.createElement('li');row.dataset.level='1';row.dataset.nodeid=tenant;
     row.setAttribute('package-element','');row.innerHTML='<div class="MuiTreeItem-content"><span class="MuiTreeItem-label">'+tenant+' Package</span></div>';
-    row.__reactProps$fixture={'package-element':{name:tenant+' Package',pipelines:[]}};
-    row.__reactFiber$fixture={stateNode:{state:{currentTenant:tenant}}};list.appendChild(row);
+    row.__reactProps$fixture={'package-element':{name:tenant+' Package',pipelines:[{name:tenant+' Pipeline',version:'1.0.0'}]}};
+    // Designer's real tenant owner is outside sidebar ancestry; Packages still exposes its row state.
+    row.__reactFiber$fixture=page==='designer'?{}:{stateNode:{state:{currentTenant:tenant}}};list.appendChild(row);
+    // Retain a stale Designer root on Packages to verify route-specific lookup, not just priority.
+    const owner={stateNode:{state:{currentTenant:page==='designer'?tenant:'stale-designer-root'}}};
+    let manager=owner;for(let depth=0;depth<4;depth++) manager={return:manager};
+    document.querySelector('#pipelineManager-main-customBlock').__reactFiber$fixture=manager;
     dispatchEvent(new Event('ellucian-left-panel-dom-changed'));
   };
   window.__messages=[];addEventListener('message',e=>{if(e.data?.source==='ellucian-left-panel-scroll') __messages.push(e.data.type)});
-  switchTenant('test-a');
+  switchTenant('test-a',location.pathname.includes('data-connect-designer')?'designer':'packages');
   </script>`;
 
 (async () => {
@@ -75,7 +85,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await assertPin('test-a', 'designer');
     assert.equal(Object.keys((await read()).favoritePackagesByTenant).length, 3);
     // Missing live identity after a switch cannot fall back to the old bootstrap tenant.
-    await page.evaluate(() => { document.querySelector('li').__reactFiber$fixture.stateNode.state.currentTenant=''; dispatchEvent(new Event('ellucian-left-panel-dom-changed')); });
+    await page.evaluate(() => switchTenant('', 'designer'));
     await page.waitForFunction(() => !document.querySelector('.ellucian-favorites-section'));
     assert.equal(await page.locator('li button[aria-label^="Pin Package:"]').count(), 0);
     assert.equal(Object.keys((await read()).favoritePackagesByTenant).length, 3);
@@ -123,14 +133,41 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     const restored = (await read()).favoritePackagesByTenant;
     assert.ok(Object.values(restored).some((groups) => groups.some((group) => group.packageName === 'Imported Pin')));
     await popup.close();
+    // A fresh document and hard reload must restore Designer pins without going through Home.
+    const beforeDirect = await read();
+    // Consent is enabled only in this disposable profile; the user's settings remain untouched.
+    await worker.evaluate(() => chrome.storage.local.set({sharedFromEnabled:true}));
+    const direct = await context.newPage();
+    direct.on('pageerror', (error) => errors.push(error.message));
+    await direct.goto(site + '/fixture/app/all-accounts/Ellucian/data-connect-designer/');
+    await direct.locator('.ellucian-favorite-select').filter({ hasText: 'test-a Package' }).waitFor();
+    assert.equal(await direct.evaluate(() => typeof window.__PRELOADED_STATE__), 'undefined');
+    await direct.reload();
+    await direct.locator('.ellucian-favorite-select').filter({ hasText: 'test-a Package' }).waitFor();
+    assert.deepEqual(await read(), beforeDirect, 'Direct reload preserves saved tenant lists exactly');
+    // Both injected search fields have distinct form identities without changing their labels.
+    const fields = await direct.locator('input[type="search"]').evaluateAll((inputs) => inputs.map((input) => input.id));
+    assert.equal(fields.length, 2);
+    assert.ok(fields.every(Boolean));
+    assert.equal(new Set(fields).size, fields.length);
+    // The same direct-entry identity also lets existing Shared From collection finish automatically.
+    const sourceDeadline=Date.now()+10000;
+    let sources;
+    do {
+      sources=await worker.evaluate(()=>chrome.storage.local.get('designerOwnershipCache'));
+      if(sources.designerOwnershipCache?.['test-a']?.packages?.some(pkg=>pkg.name==='test-a Package'&&pkg.pipelines.includes('test-a Pipeline'))) break;
+      await direct.waitForTimeout(50);
+    } while(Date.now()<sourceDeadline);
+    assert.ok(sources.designerOwnershipCache?.['test-a']?.packages?.some(pkg=>pkg.pipelines.includes('test-a Pipeline')), 'Direct Designer load automatically saves its opted-in source observations');
+    await direct.close();
     // After startup settles, no timer periodically probes tenant data or issues service requests.
     await page.waitForTimeout(1200);
     const count = await page.evaluate(() => __messages.length);
     await page.waitForTimeout(1200);
     assert.equal(await page.evaluate(() => __messages.length), count, 'No idle polling');
-    assert.equal(requests.filter((url) => url.startsWith('https:')).length, 1, 'Tenant scoping requires no additional service requests');
+    assert.equal(requests.filter((url) => url.startsWith('https:')).length, 3, 'Only the three explicit fixture navigations make requests');
     assert.deepEqual(errors, []);
-    console.log('PASS: real-manifest automatic recovery, second-tenant isolation, ambiguous Designer assignment, actual popup backup/restore, and zero idle polling/service lookups.');
+    console.log('PASS: direct Designer manager identity/reload, unique search field IDs, automatic recovery, second-tenant isolation, ambiguous Designer assignment, actual popup backup/restore, and zero idle polling/service lookups.');
 
     async function assertPin(tenantId, pageName) {
       const deadline = Date.now() + 10000;

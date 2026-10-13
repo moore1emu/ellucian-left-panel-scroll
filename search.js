@@ -2356,6 +2356,8 @@
 
     const input = document.createElement("input");
     input.type = "search";
+    // Give each sidebar field its own identity for browser form checks and accessibility.
+    input.id = `ellucian-package-search-${crypto.randomUUID()}`;
     input.className = "ellucian-search-input";
     input.placeholder = "Search packages and pipelines";
     input.setAttribute("aria-label", "Search packages and pipelines");
@@ -3472,6 +3474,8 @@
     iconButton.innerHTML = '<svg class="ellucian-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="M14.5 14.5L20 20"/></svg>';
     const input = document.createElement('input');
     input.type = 'search';
+    // Keep the independent Designer search identifiable without sharing sidebar field IDs.
+    input.id = `ellucian-designer-search-${crypto.randomUUID()}`;
     input.placeholder = 'Search pipelines';
     input.setAttribute('aria-label', 'Search pipelines in this package');
     input.autocomplete = 'off';

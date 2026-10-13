@@ -176,7 +176,9 @@
   // Read the current tenant identifier without exposing the preloaded state.
   function getCurrentTenantId() {
     // Prefer live component state: a vanity-site switch may leave bootstrap state unchanged.
-    const rows = [document.querySelector('li[data-level="1"]'), document.querySelector('[data-testid="master"]')].filter(Boolean);
+    // Keep: direct Designer loads expose currentTenant on the manager, outside sidebar ancestry (1.22.2).
+    const rows = [isDesignerPage() ? document.querySelector('#pipelineManager-main-customBlock') : null,
+      document.querySelector('li[data-level="1"]'), document.querySelector('[data-testid="master"]')].filter(Boolean);
     for (const row of rows) {
       const fiberKey = Object.keys(row).find((key) => key.startsWith('__reactFiber$'));
       let fiber = fiberKey ? row[fiberKey] : null;
