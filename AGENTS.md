@@ -4,6 +4,7 @@
 
 - Make surgical changes within the owner's request. Preserve deliberate behavior and useful comments; ask before broader refactoring, architecture changes, or consequential behavior changes.
 - Use `develop` for test builds. Owner-authorized review branches may feed into develop. Keep main unchanged until the owner confirms the intended release works and explicitly authorizes merging. Testing, store submission, store approval, and GitHub merging are separate steps.
+- Codex and Claude both use `develop` by default. Refresh the remote head before editing and pushing; preserve other agents' commits and uncommitted work. Coordinate overlapping changes and never force-push over another agent's work. Use a separate agent branch only when the owner explicitly requests it.
 - Use draft pull requests to track unconfirmed development. Preserve individual version commits when an approved merge is performed. Do not enable auto-merge or publish/upload a store update without authorization.
 
 ## Comments and Execution Worlds
