@@ -2,6 +2,15 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.0.0 — 2026-10-14 — Development Checkpoint
+
+- Starts v2 on develop; main and the packaged 1.22.6 release remain unchanged. This is source-only development, not a store-ready release.
+- Regroups settings into Navigation, Integration Packages, Integration Designer, Icon & Favorites, Custom Sites, and Export & Backup. Preserves existing preference keys, source consent, refresh, JSON backups/imports, and favorite records. Save errors stay beside the controls they describe.
+- Adds a small, dismissible What's New card on the next settings opening after a version update. Dismissal remembers only that version; no automatic tabs, polling, or changes to favorites/source data. Failed saves allow retry.
+- Adds offline exporter planning: exact cached package/pipeline ownership by default, latest stable published version per name/type, API/Sub-Pipeline handling, safe folder names, and local uncompressed ZIP generation with unchanged source bytes. Uses no credentials, service requests, or extra permissions.
+- The ZIP download action remains disabled. Authenticated download wiring, preview/confirmation/progress/cancel, final partial-failure behavior, and the advanced temporary override are still pending. Stable semantic versions only and a 64 MB/10,000-file draft limit are explicit development limitations, not a claim of complete export support.
+- Pure exporter/update tests and synthetic light/dark popup checks cover filtering, version selection, 120-package/pipeline metadata, ZIP interoperability, one-line layout, failed dismissal/reload, and preference preservation. No live downloads or signed-in account tests are claimed.
+
 ## 1.22.6 — 2026-10-13
 
 - Removes the blanket grey dimming while **View Published Fitting Details** is enabled, so published fitting text/code is easier to read. Native disabled action styling and all read-only protections remain.

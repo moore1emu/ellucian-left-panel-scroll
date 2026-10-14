@@ -13,13 +13,23 @@
         <span class="header-icon" aria-hidden="true">E</span>
         <div class="header-copy">
           <h1>Integration Navigator</h1>
-          <span>Navigation settings</span>
+          <span>Settings</span>
         </div>
       </header>
 
-      <!-- Keep everyday page options together in the same compact disclosure style. -->
-      <details class="settings-card page-behavior-card" open>
-        <summary>Page Behavior</summary>
+      <!-- Show update notes only after an update, until this version is dismissed. -->
+      <section id="update-summary" class="settings-card update-summary-card" aria-labelledby="update-summary-title" hidden>
+        <div class="update-summary-heading">
+          <h2 id="update-summary-title">What's New</h2>
+          <button id="dismiss-update-summary" type="button" aria-label="Dismiss update summary">Dismiss</button>
+        </div>
+        <ul id="update-summary-items"></ul>
+        <p id="update-summary-status" class="icon-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- Keep global navigation choices together without changing their saved keys. -->
+      <details class="settings-card behavior-card navigation-card" open>
+        <summary>Navigation</summary>
         <label class="setting-row" for="remember-width">
           <span class="setting-copy">
             <span class="setting-title" id="width-setting-title">
@@ -55,11 +65,26 @@
           </span>
         </label>
 
-        <!-- Keep reference display with width and favorites, separate from sharing settings. -->
+        <!-- Sidebar search belongs to navigation because it applies to both pages. -->
+        <label class="search-display-control" for="search-display-mode">
+          <span class="setting-title">Package Sidebar Search</span>
+          <select id="search-display-mode" disabled>
+            <option value="box">Search Box</option>
+            <option value="icon">Icon</option>
+            <option value="hidden">Hidden</option>
+          </select>
+        </label>
+        <p id="navigation-status" class="icon-status" role="status" aria-live="polite"></p>
+      </details>
+
+      <!-- Describe Packages-only displays where users expect to find them. -->
+      <details class="settings-card behavior-card packages-card">
+        <summary>Integration Packages</summary>
+        <!-- Keep reference display independent of Designer-source consent. -->
         <label class="setting-row" for="package-artifacts-enabled" title="Integration Packages only; Designer is unchanged. Refresh Integration Packages after enabling.">
           <span class="setting-copy">
             <span class="setting-title">Show APIs &amp; Sub-Pipelines</span>
-            <span class="setting-description">Integration Packages only.</span>
+            <span class="setting-description">Show reference-only records.</span>
           </span>
           <span class="switch">
             <input id="package-artifacts-enabled" type="checkbox" disabled />
@@ -67,24 +92,11 @@
           </span>
         </label>
         <p id="package-artifacts-status" class="icon-status" role="status" aria-live="polite"></p>
-        <!-- Separate navigation/display choices from the two optional sharing features. -->
-        <hr class="page-behavior-divider" />
-        <!-- Keep destination sharing details an opt-in named to match Shared From. -->
-        <label class="setting-row" for="shared-version-enabled">
-          <span class="setting-copy">
-            <span class="setting-title">Shared To</span>
-            <span class="setting-description">Sharing destinations in Designer.</span>
-          </span>
-          <span class="switch">
-            <input id="shared-version-enabled" type="checkbox" disabled />
-            <span class="switch-track" aria-hidden="true"></span>
-          </span>
-        </label>
         <!-- Ownership collection stays off until the user accepts its local-data notice. -->
         <label class="setting-row" for="shared-from-enabled" title="Visit Designer in each source environment first. Refresh updates only the currently open Designer environment.">
           <span class="setting-copy">
             <span class="setting-title">Shared From</span>
-            <span class="setting-description">Sources in Integration Packages.</span>
+            <span class="setting-description">Remember Designer sources.</span>
             <!-- Display only the currently open Designer environment's cache status. -->
             <span id="shared-from-cache-status" class="setting-description" role="status" aria-live="polite" hidden></span>
           </span>
@@ -108,13 +120,28 @@
           <button id="refresh-shared-from" type="button" disabled aria-label="Refresh Shared From Data" title="Visit Designer in each source environment first. Refresh sources from the current Designer environment.">Refresh</button>
         </div>
         <p id="shared-from-status" class="icon-status" role="status" aria-live="polite"></p>
-        <!-- Separate sharing controls and their feedback from search presentation. -->
-        <hr class="page-behavior-divider" />
+      </details>
+
+      <!-- Keep Designer-only viewing, destination sharing, and pipeline search together. -->
+      <details class="settings-card behavior-card designer-card">
+        <summary>Integration Designer</summary>
+        <!-- Destination checks retain their existing independent opt-in and storage key. -->
+        <label class="setting-row" for="shared-version-enabled">
+          <span class="setting-copy">
+            <span class="setting-title">Shared To</span>
+            <span class="setting-description">Show sharing destinations.</span>
+          </span>
+          <span class="switch">
+            <input id="shared-version-enabled" type="checkbox" disabled />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="shared-to-status" class="icon-status" role="status" aria-live="polite"></p>
         <!-- Keep published fitting viewing optional and separate from sharing consent. -->
         <label class="setting-row" for="fitting-details-enabled" title="Designer published fittings only. Scroll, select, and copy; editing and fitting actions remain locked.">
           <span class="setting-copy">
             <span class="setting-title">View Published Fitting Details</span>
-            <span class="setting-description">Scroll and copy in Designer.</span>
+            <span class="setting-description">Read and copy published text/code.</span>
           </span>
           <span class="switch">
             <input id="fitting-details-enabled" type="checkbox" disabled />
@@ -122,16 +149,7 @@
           </span>
         </label>
         <p id="fitting-details-status" class="icon-status" role="status" aria-live="polite"></p>
-        <!-- Keep the two search areas independent without adding tall option cards. -->
-        <label class="search-display-control" for="search-display-mode">
-          <span class="setting-title">Package Sidebar Search</span>
-          <select id="search-display-mode" disabled>
-            <option value="box">Search Box</option>
-            <option value="icon">Icon</option>
-            <option value="hidden">Hidden</option>
-          </select>
-        </label>
-        <p class="card-description">Beside PACKAGES on both pages.</p>
+        <!-- Retain the independent selected-package search preference. -->
         <label class="search-display-control" for="designer-search-display-mode">
           <span class="setting-title">Designer Pipeline Search</span>
           <select id="designer-search-display-mode" disabled>
@@ -140,7 +158,6 @@
             <option value="hidden">Hidden</option>
           </select>
         </label>
-        <p class="card-description">Beside Pipelines in the selected package.</p>
       </details>
 
       <!-- Keep optional personalization compact until the user opens it. -->
@@ -220,10 +237,20 @@
 
       <!-- Keep: group export/import in the last settings section, with Refresh left under Shared From (1.22.3). -->
       <details class="settings-card backup-card">
-        <summary>Backup &amp; Restore</summary>
+        <summary>Export &amp; Backup</summary>
+        <!-- Keep this unfinished download action visibly disabled in the first development checkpoint. -->
+        <div class="pipeline-export-section">
+          <h2>Pipeline Export</h2>
+          <p class="card-description">Download your latest published pipelines.</p>
+          <p class="export-setup-notice">Shared From setup is required.</p>
+          <button id="export-pipelines" type="button" disabled aria-describedby="pipeline-export-status">Export Pipelines ZIP</button>
+          <p id="pipeline-export-status" class="icon-status">Exporter in development.</p>
+        </div>
+        <!-- JSON backups remain independent of ZIP pipeline downloads. -->
+        <h2>Backup &amp; Restore</h2>
         <p class="card-description">Back up favorites and saved sources.</p>
-        <button id="export-shared-from" type="button" aria-label="Export Favorites and Shared From JSON" title="Back up tenant favorites and saved Designer sources">Export JSON</button>
-        <button id="import-favorites" type="button">Import JSON</button>
+        <button id="export-shared-from" type="button" aria-label="Export Favorites and Shared From JSON" title="Back up tenant favorites and saved Designer sources">Export Backup JSON</button>
+        <button id="import-favorites" type="button">Import Backup JSON</button>
         <input id="backup-file" type="file" accept=".json,application/json" hidden />
         <div id="backup-preview" hidden>
           <p id="backup-summary" class="card-description"></p>
@@ -269,5 +296,8 @@
     <script src="favorites-popup.js"></script>
     <script src="custom-sites.js"></script>
     <script src="custom-sites-popup.js"></script>
+    <!-- Dismissal saves only a version marker, never settings, favorites, or source data. -->
+    <script src="update-summary.js"></script>
+    <script src="update-summary-popup.js"></script>
   </body>
 </html>

@@ -1,5 +1,7 @@
 # User Guide
 
+> This guide describes the released v1 features. Develop's initial 2.0.0 checkpoint regroups these controls; see [v2 Development](V2-Development.md) for the new layout and unfinished exporter. It is not a store-ready release.
+
 [Back to the README](../README.md) · [Troubleshooting](Troubleshooting.md)
 
 ## Getting Started

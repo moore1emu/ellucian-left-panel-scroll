@@ -5,6 +5,7 @@
 - Make surgical changes within the owner's request. Preserve deliberate behavior and useful comments; ask before broader refactoring, architecture changes, or consequential behavior changes.
 - Use `develop` for test builds. Owner-authorized review branches may feed into develop. Keep main unchanged until the owner confirms the intended release works and explicitly authorizes merging. Testing, store submission, store approval, and GitHub merging are separate steps.
 - Codex and Claude both use `develop` by default. Refresh the remote head before editing and pushing; preserve other agents' commits and uncommitted work. Coordinate overlapping changes and never force-push over another agent's work. Use a separate agent branch only when the owner explicitly requests it.
+- Develop now carries v2 work; main remains the confirmed v1 release. For owner-requested v1 fixes, branch from main and bring the approved fix into develop too. Do not release incomplete v2 code as a v1 update.
 - Use draft pull requests to track unconfirmed development. Preserve individual version commits when an approved merge is performed. Do not enable auto-merge or publish/upload a store update without authorization.
 
 ## Comments and Execution Worlds
@@ -24,7 +25,8 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next version after 1.22.6 is 1.22.7. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 checkpoint after 2.0.0 is 2.0.1, while v1 maintenance can use 1.22.7. Do not rename historical releases.
+- Source-only v2 checkpoints must identify unfinished features in README/docs/V2-Development.md and keep incomplete download actions disabled. Do not overwrite the existing release artifacts or claim a store-ready ZIP until a complete candidate is tested and packaged.
 - Preserve the root-level extension layout and the existing release filename `ellucian-left-panel-scroll.zip`. Keep only the latest ZIP/unpacked release in the configured outputs folder; retain any needed prior build in a separate recovery folder.
 - Put manifest.json at the ZIP root, with runtime assets and icons beside it. Include README.md, CHANGELOG.md, and PRIVACY.md inside the ZIP and identical copies beside it. Do not package tests, agent instructions, development dependencies, scratch files, or personal workflow notes.
 - GitHub keeps a concise root README, detailed guides/screenshots and changelog under docs/, and the full root PRIVACY.md at its existing store-linked URL. Do not replace that policy with a pointer or overwrite the short repository README with the longer packaged guide.

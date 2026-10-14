@@ -1,7 +1,7 @@
 "use strict";
 
 // Load the same validation and drawing rules used by the settings preview.
-importScripts("icon-appearance.js", "custom-sites.js", "favorites-data.js", "favorites-worker.js");
+importScripts("icon-appearance.js", "custom-sites.js", "favorites-data.js", "favorites-worker.js", "update-summary.js");
 let pendingIconUpdate = Promise.resolve();
 
 // Serialize site changes so a removal cannot race an earlier registration request.
@@ -47,6 +47,11 @@ function updateIcon() {
 chrome.runtime.onInstalled.addListener(updateIcon);
 chrome.runtime.onStartup.addListener(updateIcon);
 chrome.runtime.onInstalled.addListener(restoreSites);
+// Queue a small summary for the next settings opening, never an automatic tab or data lookup.
+chrome.runtime.onInstalled.addListener((details) => {
+  UpdateSummary.recordUpdate(details, chrome.storage.local, chrome.runtime.getManifest().version)
+    .catch(() => console.warn("[Integration Navigator] UPDATE_SUMMARY_SAVE_FAILED"));
+});
 chrome.runtime.onStartup.addListener(restoreSites);
 chrome.permissions.onAdded.addListener(restoreSites);
 chrome.permissions.onRemoved.addListener(restoreSites);

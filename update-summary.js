@@ -1,0 +1,33 @@
+(() => {
+  "use strict";
+
+  // Keep release markers separate from settings, favorite records, and source observations.
+  const PENDING_KEY = "pendingUpdateSummary";
+  const SEEN_KEY = "seenUpdateSummaryVersion";
+
+  // Describe only completed behavior; the first v2 checkpoint is not a finished exporter.
+  const NOTES = Object.freeze({
+    "2.0.0": Object.freeze([
+      "Settings are grouped by navigation, Packages, and Designer.",
+      "ZIP pipeline export is in development; downloads are not enabled yet.",
+      "JSON backup and restore remain available under Export & Backup.",
+    ]),
+  });
+
+  // Repeated manual reloads must not redisplay a version already dismissed.
+  async function recordUpdate(details, storage, version) {
+    if (details?.reason !== "update" || details.previousVersion === version || !NOTES[version]) return;
+    const saved = await storage.get({ [SEEN_KEY]: "" });
+    if (saved[SEEN_KEY] === version) return;
+    await storage.set({ [PENDING_KEY]: { version } });
+  }
+
+  // Reject stale markers so an older popup cannot display another release's notes.
+  function notesFor(saved, version) {
+    if (saved?.[PENDING_KEY]?.version !== version || saved?.[SEEN_KEY] === version) return [];
+    return NOTES[version] || [];
+  }
+
+  // The worker and popup share only these small, deterministic release rules.
+  globalThis.UpdateSummary = Object.freeze({ PENDING_KEY, SEEN_KEY, recordUpdate, notesFor });
+})();

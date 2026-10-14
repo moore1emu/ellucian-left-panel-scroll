@@ -23,6 +23,9 @@
   const sharedFromSwitch = document.querySelector("#shared-from-enabled");
   const packageArtifactsSwitch = document.querySelector('#package-artifacts-enabled');
   const packageArtifactsStatus = document.querySelector('#package-artifacts-status');
+  // Keep navigation and Designer errors beside their own controls after regrouping.
+  const navigationStatus = document.querySelector('#navigation-status');
+  const sharedToStatus = document.querySelector('#shared-to-status');
   // Reuse the confirmed-value switch saver for this independent Designer option.
   const fittingDetailsSwitch = document.querySelector('#fitting-details-enabled');
   const fittingDetailsStatus = document.querySelector('#fitting-details-status');
@@ -329,14 +332,14 @@
   // Width behavior remains separate from the new record display switch.
   rememberWidthSwitch.addEventListener("change", () => {
     // Remove old widths only after reset-on-refresh is actually saved.
-    saveSwitch(rememberWidthSwitch, REMEMBER_WIDTH_KEY, 'Remember Resized Width', packageArtifactsStatus, (shouldRemember) => {
+    saveSwitch(rememberWidthSwitch, REMEMBER_WIDTH_KEY, 'Remember Resized Width', navigationStatus, (shouldRemember) => {
       if (!shouldRemember) chrome.storage.local.remove(SAVED_WIDTHS_KEY);
     });
   });
 
   // Apply optional sharing checks immediately to open Designer pages.
   sharedVersionSwitch.addEventListener("change", () => {
-    saveSwitch(sharedVersionSwitch, SHARED_VERSION_ENABLED_KEY, 'Shared To', sharedFromStatus);
+    saveSwitch(sharedVersionSwitch, SHARED_VERSION_ENABLED_KEY, 'Shared To', sharedToStatus);
   });
 
   // Apply published viewing to open Designer pages without touching other preferences.
@@ -346,7 +349,7 @@
 
   // Show or hide favorite controls immediately while retaining saved packages.
   favoritesEnabledSwitch.addEventListener("change", () => {
-    saveSwitch(favoritesEnabledSwitch, FAVORITES_ENABLED_KEY, 'Pinned Packages', packageArtifactsStatus);
+    saveSwitch(favoritesEnabledSwitch, FAVORITES_ENABLED_KEY, 'Pinned Packages', navigationStatus);
   });
 
   // Save sidebar changes without changing the Designer pipeline preference.

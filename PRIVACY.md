@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Integration Navigator · Updated October 13, 2026
+Integration Navigator · Updated October 14, 2026 (v2 development checkpoint)
 
 Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
@@ -21,6 +21,8 @@ The extension does not read, copy, or store your password or bearer token. It do
 Shared From is a separate, optional feature that is off by default. It requires accepting a local-data notice before collection begins. On Designer pages you visit, it reads the already-loaded package and pipeline names and uses the existing authenticated page helper to resolve that current environment's label. Grouping pipelines by their package requires no additional service requests. It does not contact every environment from one page or fetch pipeline contents. Integration Packages matches names against these locally observed Designer sources. This is an ownership inference, not a live record of sharing activity, and may be stale or unavailable.
 
 ## Local storage
+
+The v2 development checkpoint also saves small version markers to show and dismiss What's New on the next settings opening after an update. These markers contain only extension version numbers and stay local. Opening or dismissing notes does not collect sources, reset preferences, or open a browser tab. Pipeline ZIP downloads are not yet enabled in this checkpoint; the offline ZIP/planning module has no session access or network calls.
 
 Your settings, custom Experience site domains, icon background and letter colors, icon letters, favorite icon shape, color and match-icon preference, column widths, favorite package and pipeline names, favorite version identifiers, ordering, and favorites layout preferences are saved in the browser's local extension storage. They are not synchronized by the extension to other devices or sent to the publisher. Pasted custom URLs are reduced to their HTTPS domain; paths, query strings, and fragments are not saved. Temporary search indexes and sharing results remain in page memory.
 

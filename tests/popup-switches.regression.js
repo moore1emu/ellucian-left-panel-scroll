@@ -52,9 +52,9 @@ function installChromeStub() {
 }
 
 const SWITCHES = [
-  { id: "remember-width", key: "rememberWidth", label: "Remember Resized Width", status: "package-artifacts-status" },
-  { id: "favorites-enabled", key: "favoritesEnabled", label: "Pinned Packages", status: "package-artifacts-status" },
-  { id: "shared-version-enabled", key: "sharedVersionEnabled", label: "Shared To", status: "shared-from-status" },
+  { id: "remember-width", key: "rememberWidth", label: "Remember Resized Width", status: "navigation-status" },
+  { id: "favorites-enabled", key: "favoritesEnabled", label: "Pinned Packages", status: "navigation-status" },
+  { id: "shared-version-enabled", key: "sharedVersionEnabled", label: "Shared To", status: "shared-to-status" },
   // The new opt-in must preserve the same failed-save/rapid-click guarantees.
   { id: "fitting-details-enabled", key: "fittingDetailsEnabled", label: "View Published Fitting Details", status: "fitting-details-status" },
 ];
@@ -72,6 +72,8 @@ async function openPopup(browser, savedValues) {
   await page.addInitScript(installChromeStub);
   await page.addInitScript((values) => { Object.assign(window.__store, values); }, savedValues);
   await page.goto(`${ORIGIN}/popup.html`);
+  // Open regrouped cards in this fixture so hidden controls receive real pointer input.
+  await page.locator(".behavior-card").evaluateAll((cards) => cards.forEach((card) => { card.open = true; }));
   await page.waitForFunction(() => !document.querySelector("#remember-width").disabled);
   return { page, errors };
 }
