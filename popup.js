@@ -12,6 +12,8 @@
   const SHARED_VERSION_ENABLED_KEY = "sharedVersionEnabled";
   const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
   const PACKAGE_ARTIFACTS_ENABLED_KEY = 'packageArtifactsEnabled';
+  // Store only the opt-in, never the published fitting's source or values.
+  const FITTING_DETAILS_ENABLED_KEY = 'fittingDetailsEnabled';
   const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
 
   // Locate the popup controls after the static popup document loads.
@@ -21,12 +23,17 @@
   const sharedFromSwitch = document.querySelector("#shared-from-enabled");
   const packageArtifactsSwitch = document.querySelector('#package-artifacts-enabled');
   const packageArtifactsStatus = document.querySelector('#package-artifacts-status');
+  // Reuse the confirmed-value switch saver for this independent Designer option.
+  const fittingDetailsSwitch = document.querySelector('#fitting-details-enabled');
+  const fittingDetailsStatus = document.querySelector('#fitting-details-status');
   const sharedFromConfirmation = document.querySelector("#shared-from-confirmation");
   const sharedFromStatus = document.querySelector("#shared-from-status");
   const sharedFromCacheStatus = document.querySelector('#shared-from-cache-status');
   let cacheStatusTabId = null;
   let cacheStatusRead = 0;
   const exportSharedFromButton = document.querySelector("#export-shared-from");
+  // Keep export feedback beside the moved backup actions, not under the independent source refresh.
+  const backupStatus = document.querySelector('#backup-status');
   const refreshSharedFromButton = document.querySelector("#refresh-shared-from");
   const versionLabel = document.querySelector("#extension-version");
   const iconColorInput = document.querySelector("#icon-color");
@@ -42,7 +49,9 @@
   const favoriteStatus = document.querySelector("#favorite-color-status");
   const resetFavoriteButton = document.querySelector("#reset-favorite-color");
   let appearanceLoaded = false;
-  // Retain the custom choice while the disabled picker displays the linked icon color.
+  // Hold each simple switch's last value confirmed by storage, for restoring after a failed save.
+  const confirmedSwitchValues = new WeakMap();
+  // Keep: retain the custom choice while the disabled picker displays the linked icon color (1.18.0).
   let independentFavoriteColor = FavoriteAppearance.DEFAULT.color;
   // Keep the existing sidebar preference separate from the Designer package search.
   const searchModeSelect = document.querySelector("#search-display-mode");
@@ -71,6 +80,7 @@
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SHARED_FROM_ENABLED_KEY]: false,
       [PACKAGE_ARTIFACTS_ENABLED_KEY]: null,
+      [FITTING_DETAILS_ENABLED_KEY]: false,
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [IconAppearance.KEY]: IconAppearance.DEFAULT,
@@ -80,18 +90,19 @@
       // Display the width preference and its explanatory status.
       rememberWidthSwitch.checked = Boolean(settings[REMEMBER_WIDTH_KEY]);
       sharedVersionSwitch.checked = settings[SHARED_VERSION_ENABLED_KEY] === true;
+      fittingDetailsSwitch.checked = settings[FITTING_DETAILS_ENABLED_KEY] === true;
       // Restore opt-in without collecting anything while the popup initializes.
       sharedFromSwitch.checked = settings[SHARED_FROM_ENABLED_KEY] === true;
       sharedFromSwitch.disabled = false;
       refreshSharedFromButton.disabled = false;
       readOwnershipStatus();
 
-      // Existing users keep their previous choice once; new installs start with reference rows off.
+      // Keep: existing users keep their previous choice once; new installs start with reference rows off (1.21.5).
       if (typeof settings[PACKAGE_ARTIFACTS_ENABLED_KEY] === 'boolean') {
         packageArtifactsSwitch.checked = settings[PACKAGE_ARTIFACTS_ENABLED_KEY];
         packageArtifactsSwitch.disabled = false;
       } else {
-        // The worker owns the upgrade; wait so it cannot overwrite a newly clicked switch.
+        // Keep: the worker owns the upgrade; wait so it cannot overwrite a newly clicked switch (1.21.5).
         chrome.runtime.sendMessage({ type: 'package-artifacts-preferences' }).then((response) => {
           if (typeof response?.enabled !== 'boolean') throw new Error('Display preference unavailable.');
           packageArtifactsSwitch.checked = response.enabled;
@@ -102,6 +113,12 @@
       // Display the favorites preference, defaulting to the visible section.
       favoritesEnabledSwitch.checked =
         settings[FAVORITES_ENABLED_KEY] !== false;
+
+      // Treat the loaded values as confirmed before allowing any switch changes.
+      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch].forEach((input) => {
+        confirmedSwitchValues.set(input, input.checked);
+        input.disabled = false;
+      });
 
       // Restore both independent choices before allowing changes to be saved.
       searchModeSelect.value = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
@@ -289,30 +306,47 @@
     });
   });
 
+  // Keep: disable a switch while saving and restore its last confirmed value on failure (1.21.9).
+  function saveSwitch(input, key, label, status, onSaved) {
+    const previous = confirmedSwitchValues.get(input);
+    const value = input.checked;
+    input.disabled = true;
+    input.setAttribute('aria-busy', 'true');
+    status.textContent = '';
+    chrome.storage.local.set({ [key]: value }, () => {
+      const failed = Boolean(chrome.runtime.lastError);
+      // A failed write leaves storage unchanged, so show the last value that actually saved.
+      if (failed) input.checked = previous;
+      else confirmedSwitchValues.set(input, value);
+      input.disabled = false;
+      input.setAttribute('aria-busy', 'false');
+      if (failed) status.textContent = `Could not save ${label}. Please try again.`;
+      // Run success-only follow-up work, such as clearing saved widths, after the write lands.
+      else onSaved?.(value);
+    });
+  }
+
   // Width behavior remains separate from the new record display switch.
   rememberWidthSwitch.addEventListener("change", () => {
-    const shouldRemember = rememberWidthSwitch.checked;
-
-    chrome.storage.local.set(
-      { [REMEMBER_WIDTH_KEY]: shouldRemember },
-    );
-
-    // Remove old widths when reset-on-refresh is selected.
-    if (!shouldRemember) {
-      chrome.storage.local.remove(SAVED_WIDTHS_KEY);
-    }
+    // Remove old widths only after reset-on-refresh is actually saved.
+    saveSwitch(rememberWidthSwitch, REMEMBER_WIDTH_KEY, 'Remember Resized Width', packageArtifactsStatus, (shouldRemember) => {
+      if (!shouldRemember) chrome.storage.local.remove(SAVED_WIDTHS_KEY);
+    });
   });
 
   // Apply optional sharing checks immediately to open Designer pages.
   sharedVersionSwitch.addEventListener("change", () => {
-    chrome.storage.local.set({ [SHARED_VERSION_ENABLED_KEY]: sharedVersionSwitch.checked });
+    saveSwitch(sharedVersionSwitch, SHARED_VERSION_ENABLED_KEY, 'Shared To', sharedFromStatus);
+  });
+
+  // Apply published viewing to open Designer pages without touching other preferences.
+  fittingDetailsSwitch.addEventListener('change', () => {
+    saveSwitch(fittingDetailsSwitch, FITTING_DETAILS_ENABLED_KEY, 'View Published Fitting Details', fittingDetailsStatus);
   });
 
   // Show or hide favorite controls immediately while retaining saved packages.
   favoritesEnabledSwitch.addEventListener("change", () => {
-    chrome.storage.local.set({
-      [FAVORITES_ENABLED_KEY]: favoritesEnabledSwitch.checked,
-    });
+    saveSwitch(favoritesEnabledSwitch, FAVORITES_ENABLED_KEY, 'Pinned Packages', packageArtifactsStatus);
   });
 
   // Save sidebar changes without changing the Designer pipeline preference.
@@ -340,7 +374,7 @@
     });
   }
 
-  // Opening the confirmation must not enable collection or write any ownership data.
+  // Keep: opening the confirmation must not enable collection or write any ownership data (1.19.0).
   sharedFromSwitch.addEventListener("change", () => {
     sharedFromStatus.textContent = "";
     sharedFromConfirmation.hidden = !sharedFromSwitch.checked;
@@ -415,53 +449,32 @@
     exportSharedFromButton.disabled = true;
     // Expose the export's busy state without hiding its eventual error or setup guidance.
     exportSharedFromButton.setAttribute('aria-busy', 'true');
-    sharedFromStatus.textContent = "";
-    chrome.storage.local.get({ [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
+    backupStatus.textContent = "";
+    chrome.storage.local.get({ ...FavoritesData.defaults, [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
       try {
         // Report failed reads instead of downloading an empty or misleading file.
         if (chrome.runtime.lastError) throw new Error("Cache read failed.");
-        const cache = settings[OWNERSHIP_CACHE_KEY];
-        // Export only the documented source fields, with human-readable timestamps.
-        const environments = Object.entries(cache || {}).flatMap(([environmentId, entry]) => {
-          const checkedAt = Number(entry?.checkedAt);
-          if (typeof entry?.environment !== "string" || !Array.isArray(entry?.packages) || !Number.isFinite(checkedAt) || !Number.isFinite(new Date(checkedAt).getTime())) return [];
-          // Export only grouped names, distinguishing preserved names whose package is still unknown.
-          const packages = entry.packages.flatMap((group) => {
-            if ((group?.name !== null && typeof group?.name !== 'string') || !Array.isArray(group?.pipelines)) return [];
-            const names = group.pipelines.filter((name) => typeof name === 'string');
-            return [group.name === null
-              ? { name: 'Package Not Yet Recorded', packageNameRecorded: false, pipelines: names }
-              : { name: group.name, pipelines: names }];
-          });
-          return [{ environmentId, environment: entry.environment, lastCheckedAt: new Date(checkedAt).toISOString(),
-            packages }];
-        });
-        // Guide users to populate the cache before requesting another export.
-        if (!environments.length) {
-          sharedFromStatus.textContent = "No saved sources. Enable Shared From and visit Designer first.";
-          return;
-        }
-        const exportedAt = new Date().toISOString();
-        const snapshot = { extensionVersion: chrome.runtime.getManifest().version, exportedAt,
-          note: "Observed Designer ownership, not live sharing history. This file is a snapshot and does not update automatically.", environments };
+        // Include current tenant lists and retained old lists, even with no Shared From cache.
+        const snapshot = FavoritesData.exportData(settings, chrome.runtime.getManifest().version);
+        const exportedAt = snapshot.exportedAt;
         // Use a local JSON download without new permissions or any network upload.
         const file = new Blob([JSON.stringify(snapshot, null, 2) + "\r\n"], { type: "application/json" });
         const url = URL.createObjectURL(file);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `integration-navigator-shared-from-${exportedAt.slice(0, 10)}.json`;
+        link.download = `integration-navigator-backup-${exportedAt.slice(0, 10)}.json`;
         document.body.appendChild(link);
         try {
           // Let the browser choose the destination using normal download preferences.
           link.click();
-          sharedFromStatus.textContent = "Download requested. Exported files do not update automatically.";
+          backupStatus.textContent = "Download requested. Exported files do not update automatically.";
         } finally {
           // Remove temporary controls and release the buffer after browser hand-off.
           link.remove();
           window.setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
       } catch (_error) {
-        sharedFromStatus.textContent = "Could not export. Please try again.";
+        backupStatus.textContent = "Could not export. Please try again.";
       } finally {
         // Allow retries after an empty cache, cancelled download, or temporary failure.
         exportSharedFromButton.disabled = false;

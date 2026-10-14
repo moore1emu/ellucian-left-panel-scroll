@@ -2,6 +2,62 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.6 — 2026-10-13
+
+- Removes the blanket grey dimming while **View Published Fitting Details** is enabled, so published fitting text/code is easier to read. Native disabled action styling and all read-only protections remain.
+- Restores the original opacity and inline priority when viewing is disabled or the fitting changes, without overwriting a newer native opacity. Draft behavior, preference defaults, copying, storage, permissions, and service requests are unchanged.
+
+## 1.22.5 — 2026-10-13
+
+- Adds optional **View Published Fitting Details** under Page Behavior, off by default. In Designer, published fitting text/code can be scrolled, selected, and copied without creating a draft.
+- Replaces the blanket published-fieldset lock with individual read-only text/code and disabled action controls. Preserves dimmed styling, blocks editing shortcuts/paste/cut/drop, leaves drafts unchanged, and restores native locks when switched off or leaving the fitting.
+- Unknown/unavailable Ace editors stay locked. Only the preference is saved; no fitting content, credentials, new permissions, polling, or extra service requests are added.
+
+## 1.22.4 — 2026-10-13
+
+- Retires an assigned old favorite copy only after reading back its saved tenant list and verifying that every old package/pipeline pin is present. Active favorites, order, layout, and Shared From data are unchanged.
+- Keeps unassigned, unmatched, malformed, or unverified copies. Failed verification or cleanup leaves recovery data intact and does not hide successfully saved favorites; later visits can retry.
+- JSON backups now keep compact `assignments` markers separately, without duplicate package/pipeline data for cleaned-up lists. Older backup files remain importable, and markers continue preventing removed pins from being automatically revived.
+- Cleanup runs behind the existing serialized favorite writer, with one read-back per eligible batch and no polling or extra service requests.
+
+## 1.22.3 — 2026-10-13
+
+- Moves **Export JSON** into **Backup & Restore**, beside **Import JSON**, and makes that disclosure the last settings section.
+- Leaves **Refresh** beneath Shared From in Page Behavior. Export success/failure messages now appear with the backup controls instead of replacing refresh feedback.
+- Backup contents, tenant-scoped favorites, source-cache consent, refresh behavior, and permissions are unchanged.
+
+## 1.22.2 — 2026-10-13
+
+- Fixes favorites and opted-in Shared From collection on direct Designer loads when the page has no preloaded tenant global. Reads the existing live Designer manager, so going through Experience Home is no longer needed for that case.
+- Preserves tenant/page isolation, original favorite recovery copies, and saved pins. Uses targeted element lookups only, without full-page scanning, polling, extra service requests, or new permissions.
+- Gives both search fields unique IDs to resolve the browser's missing form-field identity warning, with no changes to search behavior or presentation.
+- Adds regression coverage for direct Designer entry/reload, live tenant switching, root replacement, retained Designer state on Packages, and automatic source caching.
+
+## 1.22.1 — 2026-10-13
+
+- Existing host-only favorites now carry over automatically to the actual loaded tenant when it is the only tenant known on that domain. Packages and Designer lists remain separate; existing tenant pins are merged, and the original copies stay preserved.
+- If multiple tenants are already known for the domain, **Backup & Restore → Use Old Favorites for This Tenant** remains the explicit choice. A tenant visited without pins is still remembered, so a later tenant never inherits the first one's old list.
+- Prepares migration before showing favorites, retries safely after failed reads/writes, and does not repeat a completed migration or revive pins removed afterward. No guessed tenant IDs, new permissions, extra service requests, or idle polling.
+- JSON backups preserve old-list assignment associations. Restoring a current tenant list does not reapply its older recovery copy, including older backups with one matching list.
+
+## 1.22.0 — 2026-10-13
+
+- Favorites are now separate by site, tenant ID, and Packages/Designer page, including multiple tenants on one vanity domain. Tenant identity comes from the already-loaded page; no extra service calls or permissions are needed.
+- Older host-only favorites are preserved. Open settings on the intended tenant/page and use **Backup & Restore → Use Old Favorites for This Tenant** once to assign that page's old list. The original copy stays available in exports.
+- **Export JSON** now backs up tenant favorites, pinned pipelines/order/layout, old unassigned lists, and saved Shared From observations, even when no sources are cached.
+- **Backup & Restore → Import JSON** previews tenant lists before applying them. Merge is the default; replacing matching lists requires confirmation. Restoring Shared From is optional, retains observation dates, requires the existing opt-in, and does not change settings or site permissions.
+- Favorites stay unavailable while tenant identity or saved data is unresolved. Delayed replies cannot load another tenant's pins; a serialized worker saves changes without overwriting other tenant lists.
+
+## 1.21.9 — 2026-10-13
+
+- Saving a favorites height or a remembered panel width now keeps the page it started on and skips the save if the stored values cannot be read, so other pages' saved heights and widths are never overwritten.
+- Settings switches for **Remember Resized Width**, **Pinned Packages**, and **Shared To** wait for saved values to load, stay disabled while saving, and return to the last saved value with a short message if saving fails. Saved widths are cleared only after reset-on-refresh is actually saved. Adds `tests/popup-switches.regression.js`, which checks that the displayed switch always matches the saved preference.
+- A failed settings read when a page first loads no longer starts from empty favorites.
+- Designer sharing lookups stop adding a new loader probe on each failed attempt, and opening a Designer pipeline no longer errors on a missing version.
+- Marks deliberate code with one-line `Keep:` comments that name the version that introduced it.
+- Code cleanup with no intended behavior change: a new `shared.js` holds the page rules and resize gesture used by both page scripts; favorites loading, package/pipeline reordering, and the sidebar and favorites resize handles each share one implementation; the page helper routes messages through one listener; and the settings markup drops unused wrappers.
+- No changes to features, saved data formats, permissions, or service requests.
+
 ## 1.21.8 — 2026-10-07
 
 - Returns **Refresh** to the action row beside **Export JSON**, keeping the shorter label. Removes the no-longer-needed inline positioning and title spacing.

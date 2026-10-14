@@ -79,7 +79,7 @@
     setBusy(true);
     status.textContent = "";
     try {
-      // Call immediately inside the click/submit gesture, before awaiting any storage reads.
+      // Keep: call immediately inside the click/submit gesture, before awaiting any storage reads (1.17.0).
       const granted = await chrome.permissions.request({ permissions: ["scripting"], origins: [CustomSites.pattern(origin)] });
       if (!granted) {
         status.textContent = "Access was not granted. No site was added.";
