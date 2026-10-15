@@ -29,11 +29,14 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
 
 (async () => {
   // A new temporary profile cannot touch the user's installed extension or saved preferences.
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'navigator-fitting-test-'));
-  const context = await chromium.launchPersistentContext(profile, { headless: true,
-    ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
-    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] });
+  const temporaryRoot = fs.realpathSync(os.tmpdir());
+  const profile = fs.mkdtempSync(path.join(temporaryRoot, 'navigator-fitting-test-'));
+  let context;
   try {
+    // Launch inside the cleanup scope so startup errors do not leak empty profiles.
+    context = await chromium.launchPersistentContext(profile, { headless: true,
+      ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
+      args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] });
     const requests = [];
     // Reject every real network request; only the synthetic page and local Ace bytes are returned.
     await context.route('**/*', route => {
@@ -164,7 +167,13 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     assert.deepEqual(errors, []);
     console.log('PASS published fitting details: undimmed read-only view, original/native opacity restoration, real Ace copy/scroll, mutation protection, native drafts, opt-out, unsupported editor, route isolation, no data writes/service calls');
   } finally {
-    // Close only the disposable context; leave recovery artifacts available for inspection.
-    await context.close();
+    // Always remove this generated profile, including on failed assertions or a close error.
+    try { await context?.close(); }
+    finally {
+      // Reject links or broader paths rather than risking a real browser profile.
+      if (path.dirname(profile) !== temporaryRoot || !path.basename(profile).startsWith('navigator-fitting-test-') ||
+        fs.existsSync(profile) && fs.lstatSync(profile).isSymbolicLink()) throw new Error('Unexpected disposable profile path.');
+      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    }
   }
 })().catch(error => { console.error(error); process.exitCode=1; });

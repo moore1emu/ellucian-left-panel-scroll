@@ -1,6 +1,6 @@
 # User Guide
 
-> Develop's 2.0.2 test candidate regroups settings and adds Pipeline Export from Integration Packages. The sections below otherwise describe existing navigation features; v1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. Signed-in export testing is still required; see [v2 Development](V2-Development.md).
+> Develop's 2.0.3 maintenance candidate retains the v2 settings and exporter work. The reported empty export preview is not yet fixed. The sections below otherwise describe existing navigation features; v1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
 
 ## Pipeline Export — v2 Test Candidate
 

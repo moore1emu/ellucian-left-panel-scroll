@@ -36,11 +36,14 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
   </script>`;
 
 (async () => {
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'integration-navigator-tenant-'));
-  const context = await chromium.launchPersistentContext(profile, { headless: true,
-    ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
-    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] });
+  const temporaryRoot = fs.realpathSync(os.tmpdir());
+  const profile = fs.mkdtempSync(path.join(temporaryRoot, 'integration-navigator-tenant-'));
+  let context;
   try {
+    // Scope cleanup around startup as well as all test assertions.
+    context = await chromium.launchPersistentContext(profile, { headless: true,
+      ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
+      args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] });
     // Reject any attempt to contact real services: every response comes from this local fixture.
     const requests = [];
     await context.route('**/*', (request) => {
@@ -234,7 +237,12 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
       assert.fail(`Missing ${tenantId}/${pageName} pin: ${JSON.stringify(await read())}`);
     }
   } finally {
-    // Close only this generated profile; never reload or alter the user's installed extension.
-    await context.close();
+    // Close only this generated browser and remove its data without touching installed profiles.
+    try { await context?.close(); }
+    finally {
+      if (path.dirname(profile) !== temporaryRoot || !path.basename(profile).startsWith('integration-navigator-tenant-') ||
+        fs.existsSync(profile) && fs.lstatSync(profile).isSymbolicLink()) throw new Error('Unexpected disposable profile path.');
+      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    }
   }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

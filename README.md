@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.0.2):** this branch is not the store release. Export latest published Pipeline/API/Sub-Pipeline JSON from Integration Packages into package folders and a ZIP. Default eligibility uses Shared From's saved Designer names; a separately confirmed temporary advanced mode is available. Synthetic checks pass; signed-in download testing is still required. See [v2 Development](docs/V2-Development.md). Main remains on 1.22.6.
+> **v2 test candidate (2.0.3):** this branch is not the store release. Pipeline Export is under development; the reported empty preview remains unresolved. This revision cleans up disposable test profiles and output, without changing extension behavior. See [v2 Development](docs/V2-Development.md). Main remains on 1.22.6.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -77,6 +77,7 @@ node tests/tenant-favorites.cjs
 node tests/tenant-context.cjs
 node tests/tenant-favorites-browser.cjs
 node tests/published-fitting-details.cjs
+node tests/browser-profile-cleanup.cjs
 node tests/update-summary.cjs
 node tests/pipeline-export-core.cjs
 node tests/pipeline-export-session.cjs
@@ -88,3 +89,7 @@ node tests/v2-popup.cjs
 ```
 
 Check changed JavaScript with `node --check <filename>.js`. No build step is required to load the extension unpacked; exclude test tools and dependencies from release ZIPs.
+
+Persistent browser fixtures use a unique system-temp profile and remove it after success or failure; exhausted cleanup retries fail the test. A forcibly terminated process cannot run its finally block. Never use your normal browser profile for these checks. Browser tests can select an installed channel with `INTEGRATION_NAVIGATOR_BROWSER` (for example, `msedge`).
+
+Screenshots are opt-in: use `INTEGRATION_NAVIGATOR_ARTIFACT_DIR` for the tenant browser fixture, `INTEGRATION_NAVIGATOR_SCREENSHOTS` for v2 preview/popup checks, or `INTEGRATION_NAVIGATOR_PREVIEW` for popup-switch checks. Explicitly requested screenshots are retained for review; ordinary runs do not generate them.

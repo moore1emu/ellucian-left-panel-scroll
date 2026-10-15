@@ -1,6 +1,8 @@
 # v2 Development
 
-This is the **2.0.2 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+This is the **2.0.3 maintenance candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+
+The reported empty Packages export preview remains unresolved. A disposable-browser probe confirmed a mismatch between the sender fields expected by the content receiver and those supplied by extension-tab messaging. This cleanup revision does not change that boundary or implement a relay. Exporter repair and settings regrouping remain separate work awaiting agreement; successful synthetic exporter tests do not prove the signed-in launch works.
 
 ## Implemented
 

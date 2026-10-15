@@ -2,6 +2,14 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.0.3 — 2026-10-15 — Test Workspace Cleanup
+
+- Browser fixtures now create persistent profiles in the system temporary folder and remove their own profiles in finally blocks, including failed launches/assertions/browser shutdowns. Cleanup validates the owned temp path, retries transient Windows file locks, and reports removal failures instead of silently leaving test data behind.
+- Covers tenant-favorites-browser.cjs, published-fitting-details.cjs, and local designer-ownership-worker-browser.cjs, package-capture-worker-browser.cjs, and probe-message-sender.cjs. Adds browser-profile-cleanup.cjs for launch/assertion/close/removal failure regressions. The local source-worker fixture uses the supported synthetic Designer route; assertions remain unchanged.
+- Local cache-appearance.cjs, package-artifacts.cjs, page-behavior.cjs, pipeline-column.cjs, search-sharing-browser.cjs, shared-from.cjs, sharing-controls.cjs, and ui-consistency.cjs save screenshots only to an explicitly configured artifact directory. Local Playwright paths are configurable. Release staging also uses owned system-temp storage with finally cleanup.
+- Removes verified inactive disposable profiles and one synthetic export ZIP; retains historical screenshots and release/review recovery snapshots. Five real-browser profile fixtures and 20 failure scenarios passed. Seven older local UI fixtures still fail against v2; no full legacy-suite pass is claimed.
+- Extension behavior, favorites, source data, permissions, and settings layout are unchanged. The reported empty exporter preview remains unresolved; this maintenance candidate does not fix it. Main/store remain unchanged.
+
 ## 2.0.2 — 2026-10-14 — Packages Export Test Candidate
 
 - Both default and temporary advanced exports now start from Integration Packages. Default eligibility requires Shared From consent and exact Designer-recorded package/pipeline names; Shift+D reveals a separately confirmed, unsaved override of that filter only.
