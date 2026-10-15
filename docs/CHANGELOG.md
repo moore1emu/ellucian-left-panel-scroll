@@ -2,6 +2,20 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.8 — 2026-10-15
+
+- Fixes View Published Fitting Details when the published pipeline already has a draft. The page's alternate published-state label is now recognized; the existing version remained locked in this case.
+- Keeps the opt-in requirement, normal-contrast viewing, scrolling, selection/copy, read-only text/code, disabled actions, original lock restoration, and fail-closed handling of unknown states/editors. Draft pipelines remain unaffected.
+- Retains the 1.22.7 Packages favorites fix. No new permissions, stored data, service calls, or v2 features are added.
+- Adds real-Ace synthetic regressions for existing-draft published versions on direct entry/reload, actual copy/scroll, mutation blocking, action locks, opt-out, and unknown-state rejection.
+
+## 1.22.7 — 2026-10-15
+
+- Fixes missing favorite icons and Pinned Packages when Integration Packages exposes the current tenant through its existing menu/session context instead of component state. Designer keeps its existing identity lookup.
+- Preserves saved favorite records, tenant/page isolation, settings, and recovery rules. No reset, migration, new permissions, polling, authentication calls, or additional service requests are introduced.
+- Adds regressions for context-only Packages identity, tenant switches, missing/stale identity, direct reload, and retained Designer roots. Browser fixtures use disposable system-temp profiles and clean up after failures.
+- This is a v1-only hotfix; v2 exporter and settings work is not included. Signed-in confirmation remains the owner's next step.
+
 ## 1.22.6 — 2026-10-13
 
 - Removes the blanket grey dimming while **View Published Fitting Details** is enabled, so published fitting text/code is easier to read. Native disabled action styling and all read-only protections remain.

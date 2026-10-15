@@ -14,6 +14,8 @@ The package sidebar scrolls independently, keeping its heading visible. Drag its
 
 Use a package's star to pin it. In Integration Packages, you can also pin published pipelines beneath their package. Designer does not offer pipeline stars because its sidebar only lists packages.
 
+Version 1.22.7 also recognizes Packages tenants supplied through the page's live session context. If favorites were hidden on that page, reload the extension and refresh Packages; do not reset or re-create your pins first.
+
 - Select a favorite package to open it, or a favorite pipeline to open that pipeline's page.
 - Use the arrow to expand or collapse a favorite's pipelines without opening the package.
 - Drag handles to reorder packages or pipelines within their package.
@@ -54,7 +56,7 @@ The section groups width memory, pinned favorites, and **Show APIs & Sub-Pipelin
 
 Enable **Page Behavior → View Published Fitting Details** to scroll, select, and copy text/code in a published fitting without creating a draft. It is off by default and independent of sharing settings. Code/text remains read-only; checkboxes, dropdowns, reset buttons, and other fitting actions remain disabled. Blanket grey dimming is removed while viewing is enabled; disabled actions still look inactive. Draft editing is unchanged. Switching off or leaving the published fitting restores native UI locks and appearance.
 
-Normal selection and Ctrl+A/Ctrl+C work in supported Ace editors. Editing shortcuts, typing, paste, cut, and drop are blocked. If the existing editor cannot be safely identified, it stays locked; refresh the page and retry, or report the issue without confidential source code. The feature saves only its preference, not fitting contents, and adds no service requests.
+Normal selection and Ctrl+A/Ctrl+C work in supported Ace editors, including a published version that already has a draft. Create Draft and Publish keep their native availability; this viewing option does not create or change drafts. Editing shortcuts, typing, paste, cut, and drop are blocked. If the existing editor or published state cannot be safely identified, it stays locked; refresh the page and retry, or report the issue without confidential source code. The feature saves only its preference, not fitting contents, and adds no service requests.
 
 ### Shared To — Designer
 

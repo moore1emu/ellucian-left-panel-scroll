@@ -23,8 +23,8 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     const row=document.createElement('li');row.dataset.level='1';row.dataset.nodeid=tenant;
     row.setAttribute('package-element','');row.innerHTML='<div class="MuiTreeItem-content"><span class="MuiTreeItem-label">'+tenant+' Package</span></div>';
     row.__reactProps$fixture={'package-element':{name:tenant+' Package',pipelines:[{name:tenant+' Pipeline',version:'1.0.0'}]}};
-    // Designer's real tenant owner is outside sidebar ancestry; Packages still exposes its row state.
-    row.__reactFiber$fixture=page==='designer'?{}:{stateNode:{state:{currentTenant:tenant}}};list.appendChild(row);
+    // Packages can expose only menu/session context; identity must never invoke authentication.
+    row.__reactFiber$fixture=page==='designer'?{}:{stateNode:{state:{menu:[]},context:{tenantId:tenant,getJwt:()=>{throw Error('Identity must not invoke a session callback');}}}};list.appendChild(row);
     // Retain a stale Designer root on Packages to verify route-specific lookup, not just priority.
     const owner={stateNode:{state:{currentTenant:page==='designer'?tenant:'stale-designer-root'}}};
     let manager=owner;for(let depth=0;depth<4;depth++) manager={return:manager};
@@ -36,11 +36,14 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
   </script>`;
 
 (async () => {
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'integration-navigator-tenant-'));
-  const context = await chromium.launchPersistentContext(profile, { headless: true,
-    ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
-    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] });
+  const temporaryRoot = fs.realpathSync(os.tmpdir());
+  const profile = fs.mkdtempSync(path.join(temporaryRoot, 'integration-navigator-tenant-'));
+  let context;
   try {
+    // Scope cleanup around startup as well as all assertions.
+    context = await chromium.launchPersistentContext(profile, { headless: true,
+      ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
+      args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] });
     // Reject any attempt to contact real services: every response comes from this local fixture.
     const requests = [];
     await context.route('**/*', (request) => {
@@ -68,6 +71,11 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await page.locator('.ellucian-favorite-select').filter({ hasText: 'test-a Package' }).waitFor();
     const read = () => worker.evaluate(() => chrome.storage.local.get('favoritePackagesByTenant'));
     await assertPin('test-a', 'packages');
+    // Direct Packages reload must preserve and display the saved pins without visiting Home.
+    const beforePackagesReload = await read();
+    await page.reload();
+    await page.locator('.ellucian-favorite-select').filter({ hasText: 'test-a Package' }).waitFor();
+    assert.deepEqual(await read(), beforePackagesReload, 'Packages reload preserves tenant lists exactly');
     // Switching tenants with an unchanged vanity-style URL must separate the list and ignore bootstrap identity.
     await page.evaluate(() => switchTenant('test-b'));
     await pin().waitFor();
@@ -219,7 +227,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     const count = await page.evaluate(() => __messages.length);
     await page.waitForTimeout(1200);
     assert.equal(await page.evaluate(() => __messages.length), count, 'No idle polling');
-    assert.equal(requests.filter((url) => url.startsWith('https:')).length, 3, 'Only the three explicit fixture navigations make requests');
+    assert.equal(requests.filter((url) => url.startsWith('https:')).length, 4, 'Only explicit fixture navigations and the Packages reload make requests');
     assert.deepEqual(errors, []);
     console.log('PASS: last-section backup actions, independent export/refresh feedback and retry, real popup export/import/refresh, direct Designer reload/cache, tenant recovery/isolation, and zero idle polling/service lookups.');
 
@@ -233,7 +241,12 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
       assert.fail(`Missing ${tenantId}/${pageName} pin: ${JSON.stringify(await read())}`);
     }
   } finally {
-    // Close only this generated profile; never reload or alter the user's installed extension.
-    await context.close();
+    // Close only this generated browser and remove its data, including after startup failure.
+    try { await context?.close(); }
+    finally {
+      if (path.dirname(profile) !== temporaryRoot || !path.basename(profile).startsWith('integration-navigator-tenant-') ||
+        fs.existsSync(profile) && fs.lstatSync(profile).isSymbolicLink()) throw new Error('Unexpected disposable profile path.');
+      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    }
   }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

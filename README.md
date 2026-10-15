@@ -4,6 +4,8 @@ For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for deliv
 
 Make Ellucian Integration Packages and Integration Designer easier to navigate in Chrome and Microsoft Edge.
 
+Version **1.22.8** fixes read-only published-fitting viewing when a draft already exists, and retains the Packages favorites fix. Saved pins and the existing v1 interface are preserved; see the [changelog](docs/CHANGELOG.md).
+
 ## What It Does
 
 - Scroll and resize the package sidebar independently of the main page.
@@ -75,6 +77,7 @@ node tests/tenant-favorites.cjs
 node tests/tenant-context.cjs
 node tests/tenant-favorites-browser.cjs
 node tests/published-fitting-details.cjs
+node tests/browser-profile-cleanup.cjs
 ```
 
 Check changed JavaScript with `node --check <filename>.js`. No build step is required to load the extension unpacked; exclude test tools and dependencies from release ZIPs.
