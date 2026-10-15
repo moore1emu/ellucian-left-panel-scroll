@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.0.2 — 2026-10-14 — Packages Export Test Candidate
+
+- Both default and temporary advanced exports now start from Integration Packages. Default eligibility requires Shared From consent and exact Designer-recorded package/pipeline names; Shift+D reveals a separately confirmed, unsaved override of that filter only.
+- Preview reads latest package metadata, including APIs/Sub-Pipelines omitted from native runnable lists. Select all eligible packages or one package, then explicitly retrieve latest published JSON and save a package-folder ZIP. No background source downloads or changes to favorites, cache format, permissions, or published artifacts.
+- Native requests share a six-job budget with sharing lookups. Timeout/cancellation retains occupied capacity until the native calls settle. Context, entry, identity, and version guards stop failures without a partial ZIP; Sub-Pipelines without a verifiable exact version fail safely. JSON may be reformatted, and downloaded source can contain confidential embedded values.
+- Synthetic native flow tests cover 120 eligible packages plus an excluded supplier package, all artifact types, opaque authentication configuration, exact filtering, override, tenant switches, version failures, and stalled capacity. Browser checks cover explicit ZIP assembly, selection, pagination, cancellation/late replies, opt-out, both themes, and existing settings/favorites. Signed-in download testing is pending. Main and store remain unchanged; this is a manual-test candidate, not an approved release.
+
 ## 2.0.1 — 2026-10-14 — Dedicated Export Preview
 
 - Adds a separate extension export tab, explicitly opened from settings, with Designer metadata preview, counts, Show More, working indicator, Cancel, and Refresh Preview. Preview uses the full loaded manager model rather than search/visible-row caps and does not request source JSON.

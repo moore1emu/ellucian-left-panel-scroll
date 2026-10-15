@@ -11,15 +11,16 @@
       <header><img src="icons/icon48.png" width="40" height="40" alt="" /><div><h1>Pipeline Export</h1><p>Integration Navigator</p></div></header>
       <section aria-labelledby="preview-heading">
         <h2 id="preview-heading">Export Preview</h2>
-        <p>Latest published versions from your original Designer tab. Default eligibility uses saved Designer sources.</p>
+        <p>Latest published versions from Integration Packages. Default eligibility uses saved Designer sources.</p>
         <p id="export-mode"></p>
         <p id="export-status" role="status" aria-live="polite">Preparing preview…</p>
         <progress id="export-progress" hidden aria-label="Export progress"></progress>
         <p id="export-counts"></p>
+        <label for="export-package">Package <select id="export-package" disabled><option value="">All Eligible Packages</option></select></label>
         <div id="preview-table" hidden><table><thead><tr><th>Package</th><th>Pipeline Name</th><th>Type</th><th>Version</th></tr></thead><tbody id="export-rows"></tbody></table></div>
         <button id="show-more" type="button" hidden>Show More</button>
         <div class="actions"><button id="refresh-preview" type="button">Refresh Preview</button><button id="download-zip" type="button" disabled>Download ZIP</button><button id="cancel-export" type="button">Cancel</button><a id="save-zip" hidden>Save ZIP</a></div>
-        <p class="notice">Development preview: authenticated downloads are not enabled in 2.0.1. No pipeline contents are requested.</p>
+        <p class="notice">Test build: exported JSON may contain confidential values from your pipeline code. Keep downloaded files private.</p>
         <p>Opening this tab does not refresh Shared From, change favorites, or grant site access. Closing it discards temporary export state.</p>
       </section>
     </main>

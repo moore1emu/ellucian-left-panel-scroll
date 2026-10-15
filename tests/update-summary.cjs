@@ -32,6 +32,12 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "1.22.6" }, storage, "2.0.0");
   assert.equal(writes.length, 1);
   assert.equal(summary.notesFor(saved, "2.0.0").length, 0);
+  // The tested candidate has its own accurate notes without disturbing a dismissed older release.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.0.1" }, storage, "2.0.2");
+  assert.equal(summary.notesFor(saved, "2.0.2").length, 3);
+  assert.match(summary.notesFor(saved, "2.0.2")[0], /Integration Packages/);
+  assert.equal(saved.sharedFromEnabled, true);
+  assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");
 }
 run().catch((error) => { console.error(error); process.exitCode = 1; });

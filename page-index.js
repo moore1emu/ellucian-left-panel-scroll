@@ -129,6 +129,12 @@
   const sharingCancelledError = new Error('Sharing checks were disabled.');
   // Keep: timed-out native calls hold their slot in the six-request budget until they settle (1.20.9).
   const activeSharingJobs = new Set();
+  // Export and sharing jobs share the same page-wide service budget, including stalled calls.
+  const activeExportJobs = new Set();
+  const exportQueue = [];
+  const exportSessions = new Map();
+  let packagesWebpackRequire = null;
+  let packagesProbeTarget = null;
   const sharingServiceRequests = new Map();
   const sharingTimeoutError = Object.assign(new Error('Sharing service timed out.'), { code: 'request-timeout' });
   const sharingBlockedError = Object.assign(new Error('Earlier sharing calls are still running.'), { code: 'requests-stalled' });
@@ -262,14 +268,16 @@
     // Keep: disabling rejects waiting work without interrupting already-started requests (1.20.2).
     if (!sharingEnabled) {
       rejectWaitingSharingRequests(sharingCancelledError);
+      drainExportJobs();
       return;
     }
     // Six genuinely stalled calls cannot make progress; explain this instead of waiting forever.
-    if (activeSharingJobs.size === SHARING_REQUEST_LIMIT && [...activeSharingJobs].every((request) => request.timedOut)) {
+    if (activeSharingJobs.size + activeExportJobs.size === SHARING_REQUEST_LIMIT && [...activeSharingJobs, ...activeExportJobs].every((request) => request.timedOut)) {
       rejectWaitingSharingRequests(sharingBlockedError);
+      drainExportJobs();
       return;
     }
-    while (activeSharingJobs.size < SHARING_REQUEST_LIMIT && sharingRequestQueue.length) {
+    while (activeSharingJobs.size + activeExportJobs.size < SHARING_REQUEST_LIMIT && sharingRequestQueue.length) {
       const request = sharingRequestQueue.shift();
       activeSharingJobs.add(request);
       // Recheck opt-in before calling the service, even if it changed this turn.
@@ -288,8 +296,146 @@
         activeSharingJobs.delete(request);
         if (sharingServiceRequests.get(request.key) === request.promise) sharingServiceRequests.delete(request.key);
         drainSharingRequests();
+        drainExportJobs();
       });
     }
+    drainExportJobs();
+  }
+
+  // Find only the actual Packages owner and its existing session callback, not a token value.
+  function getExportManager() {
+    if (!isPackagesPage()) return null;
+    const row = document.querySelector('li[data-level="1"]');
+    const key = row && Object.keys(row).find((name) => name.startsWith('__reactFiber$'));
+    let fiber = key ? row[key] : null;
+    for (let depth = 0; fiber && depth < 60; depth += 1, fiber = fiber.return) {
+      const owner = fiber.stateNode;
+      if (Array.isArray(owner?.state?.menu) && typeof owner.context?.getJwt === 'function' && typeof owner.context.tenantId === 'string') return owner;
+    }
+    return null;
+  }
+
+  // Load the verified Packages reader module once per native runtime, using the established probe pattern.
+  function getExportServer() {
+    const chunks = window.webpackChunkexperience_exchange_extension;
+    if (!Array.isArray(chunks)) return null;
+    if (!packagesWebpackRequire && packagesProbeTarget !== chunks) {
+      packagesProbeTarget = chunks;
+      chunks.push([[`navigator-export-${Date.now()}`], {}, (runtime) => { packagesWebpackRequire = runtime; }]);
+    }
+    try { return packagesWebpackRequire?.('./src/server/ServerHelper.js'); } catch { return null; }
+  }
+
+  // Never reuse an old document, manager, tenant, or callback after Experience navigation.
+  function checkExportSession(session) {
+    const owner = getExportManager();
+    if (!session || session.cancelled || session.expires < Date.now() || !owner || owner !== session.owner ||
+      owner.context.tenantId !== session.tenantId || owner.context.getJwt !== session.getJwt || window.location.href !== session.url) throw PipelineExportNative.fail('context-changed');
+  }
+
+  // Free native capacity only on real settlement; timeout/cancel never pretends to abort the service.
+  function drainExportJobs() {
+    const all = [...activeSharingJobs, ...activeExportJobs];
+    if (all.length === SHARING_REQUEST_LIMIT && all.every((job) => job.timedOut)) {
+      exportQueue.splice(0).forEach((job) => job.reject(PipelineExportNative.fail('requests-stalled')));
+      return;
+    }
+    while (activeSharingJobs.size + activeExportJobs.size < SHARING_REQUEST_LIMIT && exportQueue.length) {
+      const job = exportQueue.shift();
+      try { checkExportSession(job.session); } catch (error) { job.reject(error); continue; }
+      activeExportJobs.add(job);
+      job.timer = window.setTimeout(() => {
+        job.timedOut = true;
+        job.session.cancelled = true;
+        job.reject(PipelineExportNative.fail('request-timeout'));
+        drainExportJobs();
+      }, SHARING_REQUEST_TIMEOUT);
+      Promise.resolve().then(() => { checkExportSession(job.session); return job.run(); }).then(job.resolve, job.reject).finally(() => {
+        window.clearTimeout(job.timer);
+        activeExportJobs.delete(job);
+        drainSharingRequests();
+      });
+    }
+  }
+
+  // Queue a fixed native read, not a URL/header chosen by a page or extension message.
+  function scheduleExportJob(session, run) {
+    return new Promise((resolve, reject) => { exportQueue.push({ session, run, resolve, reject, timedOut: false }); drainExportJobs(); });
+  }
+
+  // Cancel queued work promptly while already-running native calls continue occupying their slots.
+  function closeExportSession(id) {
+    const session = exportSessions.get(id);
+    if (session) session.cancelled = true;
+    exportSessions.delete(id);
+    for (let index = exportQueue.length - 1; index >= 0; index -= 1) {
+      if (exportQueue[index].session === session) exportQueue.splice(index, 1)[0].reject(PipelineExportNative.fail('cancelled'));
+    }
+  }
+
+  // Prepare fresh latest package metadata after an explicit preview request; no pipeline code is requested.
+  async function prepareExportSession(message) {
+    const owner = getExportManager();
+    if (!owner) throw PipelineExportNative.fail('open-packages');
+    for (const [id, session] of exportSessions) if (session.expires < Date.now()) closeExportSession(id);
+    if (exportSessions.size >= 20) throw PipelineExportNative.fail('too-many-previews');
+    const session = { owner, tenantId: owner.context.tenantId, getJwt: owner.context.getJwt, url: window.location.href,
+      cancelled: false, expires: Date.now() + 1800000, packages: new Map() };
+    const id = normalizeText(message.sessionId);
+    if (!id || exportSessions.has(id)) throw PipelineExportNative.fail('invalid-session');
+    exportSessions.set(id, session);
+    try {
+      session.adapter = PipelineExportNative.create(getExportServer(), session.getJwt, session.tenantId, (run) => scheduleExportJob(session, run));
+      const refs = await session.adapter.list();
+      checkExportSession(session);
+      const known = message.overrideConfirmed === true ? null : new Set(Array.isArray(message.packageNames) ? message.packageNames : []);
+      // Match package filenames to names in the already-loaded native menu before fetching default metadata.
+      const names = new Map(session.owner.state.menu.map((item) => item?.['package-element']).filter(Boolean).map((item) => [item.nameAndExtension, item.name]));
+      // An outdated native menu cannot safely authorize newly listed packages by filename alone.
+      if (known && refs.some((ref) => !names.has(ref.filename))) throw PipelineExportNative.fail('metadata-changed');
+      const eligible = known ? refs.filter((ref) => known.has(names.get(ref.filename))) : refs;
+      let next = 0;
+      const results = new Array(eligible.length);
+      const worker = async () => {
+        while (next < eligible.length) {
+          checkExportSession(session);
+          const index = next++;
+          const data = await session.adapter.package(eligible[index]);
+          checkExportSession(session);
+          if (known && !known.has(data.name)) throw PipelineExportNative.fail('metadata-changed');
+          session.packages.set(data.name, data);
+          results[index] = { name: data.name, version: data.version, pipelines: data.pipelines };
+        }
+      };
+      const outcomes = await Promise.allSettled(Array.from({ length: Math.min(6, eligible.length) }, worker));
+      const failed = outcomes.find((item) => item.status === 'rejected');
+      if (failed) throw failed.reason;
+      checkExportSession(session);
+      return { context: { url: session.url, tenantId: session.tenantId, documentKey: exportDocumentKey, sessionId: id }, packages: results };
+    } catch (error) { closeExportSession(id); throw error; }
+  }
+
+  // Correlate every reply; only fixed failure codes cross the page boundary, never native exceptions.
+  async function handleExportOperation(message) {
+    const response = { source: MESSAGE_SOURCE, type: 'pipeline-export-operation-response', requestId: normalizeText(message.requestId) };
+    try {
+      if (message.operation === 'prepare') Object.assign(response, await prepareExportSession(message), { ok: true });
+      else {
+        const session = exportSessions.get(message.context?.sessionId);
+        checkExportSession(session);
+        if (message.context.documentKey !== exportDocumentKey || message.context.tenantId !== session.tenantId || message.context.url !== session.url) throw PipelineExportNative.fail('context-changed');
+        if (message.operation === 'read') {
+          const entry = message.entry;
+          const pkg = session.packages.get(entry?.packageName);
+          // Entries must be real published members of the exact package snapshot, not arbitrary artifact names.
+          if (!pkg?.pipelines.some((item) => item.name === entry.name && item.type === entry.type && item.version.replace(/^v/u, '') === entry.version?.replace(/^v/u, ''))) throw PipelineExportNative.fail('entry-unavailable');
+          response.data = await session.adapter.read(entry, pkg.ref);
+          checkExportSession(session);
+        }
+        response.ok = true;
+      }
+    } catch (error) { delete response.data; response.ok = false; response.reason = error?.exportCode || 'source-unavailable'; }
+    window.postMessage(response, window.location.origin);
   }
 
   // Queue only new service calls; callers continue to reuse their cached promises.
@@ -557,36 +703,6 @@
     const pipelineCount = packages.reduce((count, entry) => count + entry.pipelines.length, 0);
     if (!ownershipEnabled || !environment || packages.length > 10000 || pipelineCount > 10000 || !isDesignerPage()) return;
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-response", requestId, tenantId, environment, packages }, window.location.origin);
-  }
-
-  // Project export metadata only after an explicit request from the dedicated workflow.
-  function handleExportContext(message) {
-    if (!isDesignerPage()) return;
-    const root = document.querySelector('#pipelineManager-main-customBlock');
-    const fiberKey = root && Object.keys(root).find((key) => key.startsWith('__reactFiber$'));
-    let fiber = fiberKey ? root[fiberKey] : null;
-    for (let depth = 0; fiber && depth < 60; depth += 1, fiber = fiber.return) {
-      const state = fiber.stateNode?.state;
-      // Read the manager's complete model, not visible rows or search-result pages.
-      if (!Array.isArray(state?.packageList) || typeof state.currentTenant !== 'string' || !state.currentTenant.trim()) continue;
-      const packages = [];
-      let count = 0;
-      if (state.packageList.length > 10000) return;
-      for (const item of state.packageList) {
-        // Draft-only packages have no stable published package version and cannot enter the preview.
-        if (!/^v?\d+\.\d+\.\d+$/u.test(item?.version || '') || !Array.isArray(item.pipelines)) continue;
-        count += item.pipelines.length;
-        if (count > 100000) return;
-        packages.push({ name: normalizeText(item.name), version: normalizeText(item.version),
-          pipelines: item.pipelines.filter((entry) => /^v?\d+\.\d+\.\d+$/u.test(entry?.version || '')).map((entry) => ({
-            name: normalizeText(entry.name), version: normalizeText(entry.version), type: normalizeText(entry.type) || 'pipeline',
-          })) });
-      }
-      // No code, draft contents, bearer tokens, or full component state leave the page helper.
-      window.postMessage({ source: MESSAGE_SOURCE, type: 'pipeline-export-context-response', requestId: normalizeText(message.requestId),
-        tenantId: normalizeText(state.currentTenant), pageUrl: window.location.href, documentKey: exportDocumentKey, packages }, window.location.origin);
-      return;
-    }
   }
 
   // Find the live Designer manager through the package row's React ancestry.
@@ -874,7 +990,8 @@
 
   // Route each message type to one handler; unknown types are ignored.
   const messageHandlers = {
-    'pipeline-export-context-request': handleExportContext,
+    'pipeline-export-operation': handleExportOperation,
+    'pipeline-export-close': (message) => closeExportSession(message.sessionId),
     // Verify tenant metadata without rebuilding the package index or making a service request.
     'favorite-context-request': (message) => window.postMessage({ source: MESSAGE_SOURCE, type: 'favorite-context-response',
       requestId: normalizeText(message.requestId), tenantId: getCurrentTenantId(), pageUrl: window.location.href }, window.location.origin),

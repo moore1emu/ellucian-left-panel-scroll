@@ -7,7 +7,7 @@
   const override = document.querySelector('#export-all-accessible');
   const status = document.querySelector('#pipeline-export-status');
   button.disabled = false;
-  status.textContent = 'Preview only. ZIP downloads pending.';
+  status.textContent = 'Export from Integration Packages.';
 
   // Reveal advanced export controls only while settings has focus and nobody is typing.
   document.addEventListener('keydown', (event) => {

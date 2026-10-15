@@ -10,9 +10,9 @@ const root = path.resolve(__dirname, "..");
 // Keep every fixture preference in memory, including version markers and failed dismissals.
 function installStub() {
   // Preserve the synthetic store across reloads, mirroring extension-local persistence.
-  const saved = JSON.parse(localStorage.getItem("syntheticPreferences") || "null") || { packageArtifactsEnabled: false, pendingUpdateSummary: { version: "2.0.1" }, favorites: { keep: true } };
+  const saved = JSON.parse(localStorage.getItem("syntheticPreferences") || "null") || { packageArtifactsEnabled: false, pendingUpdateSummary: { version: "2.0.2" }, favorites: { keep: true } };
   window.__messages = [];
-  const runtime = { lastError: undefined, getManifest: () => ({ version: "2.0.1", content_scripts: [{ matches: [] }] }), sendMessage: async (message) => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
+  const runtime = { lastError: undefined, getManifest: () => ({ version: "2.0.2", content_scripts: [{ matches: [] }] }), sendMessage: async (message) => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
   window.chrome = {
     runtime,
     storage: { local: {

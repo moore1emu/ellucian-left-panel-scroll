@@ -116,7 +116,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await popup.locator('#assign-favorites').click();
     await popup.waitForFunction(() => document.querySelector('#backup-status').textContent.includes('assigned'));
     // Keep portable backup actions together in the final section, with source Refresh unmoved.
-    assert.deepEqual(await popup.locator('main > details > summary').allTextContents(), ['Page Behavior', 'Icon & Favorites', 'Custom Sites', 'Backup & Restore']);
+    assert.deepEqual(await popup.locator('main > details > summary').allTextContents(), ['Navigation', 'Integration Packages', 'Integration Designer', 'Icon & Favorites', 'Custom Sites', 'Export & Backup']);
     assert.equal(await popup.locator('.backup-card #export-shared-from').count(), 1);
     assert.equal(await popup.locator('.backup-card #import-favorites').count(), 1);
     assert.equal(await popup.locator('.page-behavior-card #export-shared-from').count(), 0);
@@ -165,6 +165,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
       chrome.tabs.sendMessage = (...args) => args[1]?.type === 'designer-ownership-refresh' ? window.fixtureRefreshSources() : send(...args);
     });
     // Accept consent through the synthetic settings UI so its switch and status reflect the saved choice.
+    await popup.locator('details > summary').filter({ hasText: /^Integration Packages$/ }).click();
     await popup.locator('label[for="shared-from-enabled"]').click();
     await popup.locator('#confirm-shared-from').click();
     await popup.waitForFunction(() => !document.querySelector('#refresh-shared-from').disabled);

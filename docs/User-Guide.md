@@ -1,6 +1,21 @@
 # User Guide
 
-> This guide describes the released v1 features. Develop's 2.0.1 checkpoint regroups these controls and adds a separate metadata-only Designer export-preview tab; see [v2 Development](V2-Development.md). ZIP downloads remain disabled. It is not a store-ready release.
+> Develop's 2.0.2 test candidate regroups settings and adds Pipeline Export from Integration Packages. The sections below otherwise describe existing navigation features; v1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. Signed-in export testing is still required; see [v2 Development](V2-Development.md).
+
+## Pipeline Export — v2 Test Candidate
+
+1. Enable Shared From and visit Designer in each source environment to record package/pipeline names.
+2. Open Integration Packages, then select **Export & Backup → Preview Pipeline Export** in settings.
+3. Review the latest published records. Choose **All Eligible Packages** or one package for a smaller export.
+4. Select **Download ZIP**, wait for collection to finish, then select **Save ZIP**.
+
+Both export modes start from Integration Packages; Designer only populates source observations. Default eligibility uses exact saved package/pipeline names, not search matching or a live ownership check. Preview requests latest package metadata but no pipeline code. Source reads begin only when you select Download ZIP. Each package gets a folder containing its newest published Pipeline, API, and Sub-Pipeline JSON files. JSON content is preserved but formatting may differ from the service response.
+
+For temporary advanced mode, press **Shift+D** while settings is open and you are not typing. Reveal alone does not enable it: confirm the separate **Include All Accessible Content** warning, then launch export. This bypasses only the saved-source filter, not Ellucian permissions. It is never saved and resets when settings closes or export is cancelled. It can include vendor-provided content; use it only when authorized to download that content.
+
+Keep the original Packages tab open and on the same tenant until collection finishes. Cancel, navigation, removed eligibility, lost access, timeouts, or mismatched source/version data stop the job without a partial ZIP. Reopen or refresh preview to retry. Sub-Pipeline routes return a major version; if the response cannot verify its exact version, this candidate refuses the export rather than mislabeling it. This needs a real-session test. Limits are 10,000 files and 64 MB of source JSON, with six native requests at a time.
+
+Downloaded code may contain confidential values embedded in your pipelines. Keep files private and review them before sharing. Export does not modify pipelines, favorites, Shared From data, site access, or JSON backup contents.
 
 [Back to the README](../README.md) · [Troubleshooting](Troubleshooting.md)
 

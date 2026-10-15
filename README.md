@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 development checkpoint (2.0.1):** this branch is not the store release. Settings regrouping, update summaries, and a separate Designer export-preview tab are implemented. Authenticated ZIP downloads remain disabled while their adapters are completed. See [v2 Development](docs/V2-Development.md). Main and the existing release ZIP remain on 1.22.6.
+> **v2 test candidate (2.0.2):** this branch is not the store release. Export latest published Pipeline/API/Sub-Pipeline JSON from Integration Packages into package folders and a ZIP. Default eligibility uses Shared From's saved Designer names; a separately confirmed temporary advanced mode is available. Synthetic checks pass; signed-in download testing is still required. See [v2 Development](docs/V2-Development.md). Main remains on 1.22.6.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -82,6 +82,7 @@ node tests/pipeline-export-core.cjs
 node tests/pipeline-export-session.cjs
 node tests/pipeline-export-worker.cjs
 node tests/pipeline-export-context.cjs
+node tests/pipeline-export-native-flow.cjs
 node tests/pipeline-export-preview.cjs
 node tests/v2-popup.cjs
 ```

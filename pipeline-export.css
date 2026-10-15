@@ -11,7 +11,7 @@ table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14p
 th, td { padding: 11px; border-bottom: 1px solid light-dark(#e3e6ec, #444a55); white-space: nowrap; }
 th { position: sticky; top: 0; background: light-dark(#fff, #24282f); }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-button, #save-zip { padding: 9px 14px; border: 1px solid light-dark(#b9c0cc, #747d8d); border-radius: 7px; background: light-dark(#f6f7fa, #303640); color: inherit; font: inherit; cursor: pointer; text-decoration: none; }
+button, select, #save-zip { padding: 9px 14px; border: 1px solid light-dark(#b9c0cc, #747d8d); border-radius: 7px; background: light-dark(#f6f7fa, #303640); color: inherit; font: inherit; cursor: pointer; text-decoration: none; }
 button:disabled { opacity: .5; cursor: default; } progress { width: 100%; } .notice { color: light-dark(#75500c, #efc478); }
 /* Preserve semantic hidden state even on styled links and flexible action groups. */
 [hidden] { display: none !important; }

@@ -5,8 +5,13 @@
   const PENDING_KEY = "pendingUpdateSummary";
   const SEEN_KEY = "seenUpdateSummaryVersion";
 
-  // Describe only completed behavior; the first v2 checkpoint is not a finished exporter.
+  // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.0.2": Object.freeze([
+      "Export latest published pipelines, APIs, and Sub-Pipelines from Integration Packages.",
+      "Preview all eligible packages or select one, then download a package-folder ZIP.",
+      "Default exports use Shared From sources; settings and JSON backups remain separate.",
+    ]),
     "2.0.1": Object.freeze([
       "Pipeline export previews now open in a separate tab.",
       "Previews use saved Designer sources and include records beyond search display limits.",

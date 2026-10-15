@@ -167,5 +167,5 @@
   }
 
   // Keep pure planning and archive assembly separate from session access and user confirmation.
-  globalThis.PipelineExportCore = Object.freeze({ buildPlan, compareVersions, folderName, filePath, crc32, makeZip, MAX_BYTES });
+  globalThis.PipelineExportCore = Object.freeze({ buildPlan, sourceNames, compareVersions, folderName, filePath, crc32, makeZip, MAX_BYTES });
 })();
