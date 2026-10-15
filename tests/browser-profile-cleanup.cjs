@@ -9,7 +9,7 @@ const vm = require('node:vm');
 const { createRequire } = require('node:module');
 const temporaryRoot = fs.realpathSync(os.tmpdir());
 const files = process.argv.length > 2 ? process.argv.slice(2).map((file) => path.resolve(file)) :
-  ['published-fitting-details.cjs', 'tenant-favorites-browser.cjs'].map((file) => path.join(__dirname, file));
+  ['published-fitting-details.cjs', 'tenant-favorites-browser.cjs', 'pipeline-export-browser.cjs'].map((file) => path.join(__dirname, file));
 
 async function check(file, scenario) {
   // Inspect authored tests only, never environment files or browser storage contents.

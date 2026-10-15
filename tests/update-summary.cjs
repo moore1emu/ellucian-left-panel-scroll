@@ -36,6 +36,9 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.0.1" }, storage, "2.0.2");
   assert.equal(summary.notesFor(saved, "2.0.2").length, 3);
   assert.match(summary.notesFor(saved, "2.0.2")[0], /Integration Packages/);
+  // The messaging repair gets its own next-opening notes without changing the existing version gates.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.0.3" }, storage, "2.0.4");
+  assert.match(summary.notesFor(saved, "2.0.4")[0], /message routing/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

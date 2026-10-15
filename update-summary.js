@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.0.4": Object.freeze([
+      "Fixes the empty Pipeline Export preview caused by Chrome's message routing.",
+      "Preview and Download ZIP stay bound to the original Packages document.",
+      "Designer-recorded filtering and temporary advanced confirmation are unchanged.",
+    ]),
     "2.0.2": Object.freeze([
       "Export latest published pipelines, APIs, and Sub-Pipelines from Integration Packages.",
       "Preview all eligible packages or select one, then download a package-folder ZIP.",

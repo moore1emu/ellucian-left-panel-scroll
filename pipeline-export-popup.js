@@ -33,7 +33,7 @@
       override.checked = false;
     } catch {
       // Do not print service errors, URLs, names, or credentials into diagnostic logs.
-      status.textContent = 'Could not open export preview. Reopen settings to retry.';
+      status.textContent = 'Could not open export preview. Refresh Integration Packages, then reopen settings.';
     } finally {
       button.disabled = false;
     }

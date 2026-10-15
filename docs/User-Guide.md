@@ -1,6 +1,6 @@
 # User Guide
 
-> Develop's 2.0.3 maintenance candidate retains the v2 settings and exporter work. The reported empty export preview is not yet fixed. The sections below otherwise describe existing navigation features; v1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
+> Develop's 2.0.4 test candidate fixes export preview messaging. Reload the same unpacked extension folder, refresh Integration Packages, and reopen export from settings; an old export tab cannot carry its authorization into the new version. Signed-in download testing remains required. The sections below otherwise describe existing navigation features; v1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
 
 ## Pipeline Export — v2 Test Candidate
 

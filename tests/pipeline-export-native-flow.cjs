@@ -51,12 +51,13 @@ function fixture() {
   const document = { querySelector: (selector) => selector === 'li[data-level="1"]' ? row : null };
   const main = vm.createContext({ window, document, crypto: { randomUUID }, TextEncoder, Blob });
   for (const file of ['pipeline-export-native.js', 'page-index.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), main);
-  const chrome = { runtime: { id: 'synthetic', getURL: () => 'chrome-extension://synthetic/pipeline-export.html', onMessage: { addListener: (callback) => { runtimeListener = callback; } } },
+  const chrome = { runtime: { id: 'synthetic', getURL: (file) => 'chrome-extension://synthetic/' + file, onMessage: { addListener: (callback) => { runtimeListener = callback; } } },
     storage: { local: { get: async (defaults) => { stats.storageReads++; return { ...defaults, ...saved }; } }, onChanged: { addListener: (callback) => { storageListener = callback; } } } };
   const isolated = vm.createContext({ window, chrome, crypto: { randomUUID }, TextEncoder, Uint8Array, Uint32Array, DataView, Blob });
   for (const file of ['pipeline-export-core.js', 'pipeline-export-session.js', 'pipeline-export-bridge.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), isolated);
-  const sender = { id: 'synthetic', url: 'chrome-extension://synthetic/pipeline-export.html#ticket', tab: { id: 8 } };
-  const call = (message, overrideSender = sender) => new Promise((resolve) => { const wait = runtimeListener(message, overrideSender, resolve); if (wait !== true && !message.type.endsWith('cancel')) resolve(undefined); });
+  // Model the worker relay, not the fabricated direct sender.tab that hid the browser contract bug.
+  const sender = { id: 'synthetic', url: 'chrome-extension://synthetic/background.js' };
+  const call = (message, overrideSender = sender) => new Promise((resolve) => { const wait = runtimeListener({ ...message, clientId: 'client', sourceUrl: window.location.href }, overrideSender, resolve); if (wait !== true && !message.type.endsWith('cancel')) resolve(undefined); });
   return { call, isolated, flags, holds, stats, window, timers, saved, owner, storageListener };
 }
 

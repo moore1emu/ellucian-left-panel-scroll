@@ -88,9 +88,10 @@
       if (current !== generation) return;
       const options = { sharedFromEnabled: saved.sharedFromEnabled === true, overrideConfirmed: launch.overrideConfirmed };
       PipelineExportCore.buildPlan([], saved.designerOwnershipCache, options);
-      const result = await chrome.tabs.sendMessage(launch.sourceTabId, { type: 'pipeline-export-preview', overrideConfirmed: launch.overrideConfirmed }, { frameId: 0 });
+      // The worker derives the original source and consent from this created document's claimed grant.
+      const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'preview' });
       if (current !== generation) return;
-      if (!result?.ok) throw new Error(result?.reason === 'open-packages' ? 'Open Integration Packages, then reopen export from settings.' : result?.reason === 'requests-stalled' ? 'Earlier service requests are still running. Wait, then refresh preview.' : 'Package metadata is unavailable. Refresh the original page and retry.');
+      if (!result?.ok) throw new Error(result?.reason === 'preview-expired' ? 'Preview expired. Reopen export from settings.' : result?.reason === 'context-changed' ? 'Source page changed. Reopen export from settings.' : result?.reason === 'open-packages' ? 'Open Integration Packages, then reopen export from settings.' : result?.reason === 'requests-stalled' ? 'Earlier service requests are still running. Wait, then refresh preview.' : 'Package metadata is unavailable. Refresh the original page, then reopen export from settings.');
       // Default exact-name eligibility is computed in the extension, not in untrusted page code.
       plan = { ...result.plan, context: result.context };
       for (const name of new Set(plan.entries.map((entry) => entry.packageName))) packageSelect.append(new Option(name, name));
@@ -103,7 +104,7 @@
     } catch (error) {
       if (current === generation) {
         // Display only our fixed validation messages, never arbitrary native service exceptions.
-        const safe = new Set(['Preview expired. Reopen export from settings.', 'Open Integration Packages, then reopen export from settings.', 'Earlier service requests are still running. Wait, then refresh preview.', 'Package metadata is unavailable. Refresh the original page and retry.', 'Enable Shared From first.', 'Visit Designer in each source environment first.', 'Incomplete package metadata.', 'Unsupported published version.', 'Too many export files.']);
+        const safe = new Set(['Preview expired. Reopen export from settings.', 'Source page changed. Reopen export from settings.', 'Open Integration Packages, then reopen export from settings.', 'Earlier service requests are still running. Wait, then refresh preview.', 'Package metadata is unavailable. Refresh the original page, then reopen export from settings.', 'Enable Shared From first.', 'Visit Designer in each source environment first.', 'Incomplete package metadata.', 'Unsupported published version.', 'Too many export files.']);
         status.textContent = safe.has(error.message) ? error.message : 'Could not prepare preview. Refresh the original Packages page and retry.';
         discard();
       }
@@ -125,14 +126,14 @@
     progress.max = snapshot.entries.length;
     progress.value = 0;
     const verify = async () => {
-      const result = await chrome.tabs.sendMessage(launch.sourceTabId, { type: 'pipeline-export-verify', context: snapshot.context });
+      const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'verify', context: snapshot.context });
       if (!result?.ok) throw Object.assign(new Error('Export context changed.'), { reason: result?.reason });
     };
     try {
       const zip = await PipelineExportSession.collect(snapshot.entries, {
         signal: controller.signal, verify,
         read: async (entry) => {
-          const result = await chrome.tabs.sendMessage(launch.sourceTabId, { type: 'pipeline-export-read', context: snapshot.context, entry });
+          const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'read', context: snapshot.context, entry });
           if (!result?.ok) throw Object.assign(new Error('Published JSON unavailable.'), { reason: result?.reason });
           return result.data;
         },
@@ -147,12 +148,14 @@
     } catch (error) {
       if (current === generation) {
         discard();
-        const reasons = { 'version-unverified': 'The service did not provide a verifiable Sub-Pipeline version.', 'version-mismatch': 'A published version changed.', 'source-unavailable': 'Published JSON was unavailable or access was denied.', 'requests-stalled': 'Earlier service requests are still running.', 'request-timeout': 'The service timed out.', 'context-changed': 'The source page, tenant, or consent changed.' };
-        status.textContent = `${reasons[error.reason] || 'Export stopped.'} No partial ZIP was created. Refresh preview to retry.`;
+        const reasons = { 'version-unverified': 'The service did not provide a verifiable Sub-Pipeline version.', 'version-mismatch': 'A published version changed.', 'source-unavailable': 'Published JSON was unavailable or access was denied.', 'requests-stalled': 'Earlier service requests are still running.', 'request-timeout': 'The service timed out.', 'context-changed': 'The source page, tenant, or consent changed.', 'preview-expired': 'The export session expired.' };
+        // A replaced document or restarted worker requires a new launch, not a retry against the old grant.
+        const retry = ['context-changed', 'preview-expired'].includes(error.reason) ? 'Reopen export from settings.' : 'Refresh preview to retry.';
+        status.textContent = `${reasons[error.reason] || 'Export stopped.'} No partial ZIP was created. ${retry}`;
       }
     } finally {
       controller = null;
-      chrome.tabs.sendMessage(launch.sourceTabId, { type: 'pipeline-export-cancel' }).catch(() => {});
+      chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'cancel' }).catch(() => {});
       // After cancelled in-flight work settles, Retry becomes available without restoring stale output.
       refresh.disabled = false;
       if (current === generation) { refresh.disabled = false; progress.hidden = true; }
@@ -163,7 +166,7 @@
   cancel.addEventListener('click', () => {
     generation += 1;
     controller?.abort();
-    if (launch) chrome.tabs.sendMessage(launch.sourceTabId, { type: 'pipeline-export-cancel' }).catch(() => {});
+    if (launch) chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'cancel', revokeOverride: true }).catch(() => {});
     if (launch) launch.overrideConfirmed = false;
     discard();
     progress.hidden = true;
@@ -180,6 +183,6 @@
     // Removed eligibility revokes even a completed local Save ZIP link; timestamp-only refreshes do not.
     if (changes.sharedFromEnabled?.newValue === false || known && plan?.entries.some((entry) => !known.get(entry.packageName)?.has(entry.name))) cancel.click();
   });
-  window.addEventListener('pagehide', () => { controller?.abort(); if (launch) chrome.tabs.sendMessage(launch.sourceTabId, { type: 'pipeline-export-cancel' }).catch(() => {}); discard(); launch = null; });
+  window.addEventListener('pagehide', () => { controller?.abort(); if (launch) chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'cancel', release: true }).catch(() => {}); discard(); launch = null; });
   preview();
 })();

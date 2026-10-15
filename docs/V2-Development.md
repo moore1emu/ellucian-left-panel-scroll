@@ -1,8 +1,8 @@
 # v2 Development
 
-This is the **2.0.3 maintenance candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+This is the **2.0.4 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
 
-The reported empty Packages export preview remains unresolved. A disposable-browser probe confirmed a mismatch between the sender fields expected by the content receiver and those supplied by extension-tab messaging. This cleanup revision does not change that boundary or implement a relay. Exporter repair and settings regrouping remain separate work awaiting agreement; successful synthetic exporter tests do not prove the signed-in launch works.
+The reported empty Packages preview was traced to Chrome omitting tab/document sender fields on direct extension-tab-to-content messages. The worker now binds the original source document before opening export and authenticates the one-use claim to the created export document. Only preview, verify, read, and cancel operations are relayed to that original top-level source document. The isolated receiver rejects the old direct route; caller fields cannot replace the source target, client identity, or advanced consent. Reload/close/restart fails safely rather than retargeting a new document. Native tenant/manager checks, consent, exact eligibility, request limits, and explicit downloads remain unchanged. Installed-extension synthetic end-to-end checks now pass; signed-in testing remains required. Settings regrouping remains on hold for discussion.
 
 ## Implemented
 

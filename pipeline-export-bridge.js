@@ -47,7 +47,7 @@
     return new Promise((resolve) => {
       const timer = window.setTimeout(() => {
         pending.delete(requestId);
-        close(session.tabId);
+        close(session.clientId);
         resolve({ ok: false, reason: 'request-timeout' });
       }, operation === 'prepare' ? 180000 : 60000);
       pending.set(requestId, { sessionId: session.id, operation, url: window.location.href, timer, resolve });
@@ -56,35 +56,48 @@
   }
 
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
-    if (!message?.type?.startsWith('pipeline-export-') || !chrome.runtime?.id || sender.id !== chrome.runtime.id ||
-      sender.url?.split('#')[0] !== chrome.runtime.getURL('pipeline-export.html') || !Number.isInteger(sender.tab?.id)) return;
-    const tabId = sender.tab.id;
-    if (message.type === 'pipeline-export-cancel') { close(tabId); reply(respond, { ok: true }); return; }
+    // Only the worker may relay; reject the old direct extension-tab route instead of dropping identity checks.
+    if (!chrome.runtime?.id || sender.id !== chrome.runtime.id || sender.tab || sender.url && sender.url !== chrome.runtime.getURL('background.js')) return;
+    if (message?.type === 'pipeline-export-bind' && typeof message.bindingId === 'string' && message.bindingId.length <= 100) {
+      // Return through runtime messaging so Chrome supplies this source document's real tab/document identity.
+      chrome.runtime.sendMessage({ type: 'pipeline-export-bind-source', bindingId: message.bindingId, url: window.location.href })
+        .then((result) => reply(respond, { ok: result?.ok === true })).catch(() => reply(respond, { ok: false }));
+      return true;
+    }
+    if (!['pipeline-export-preview', 'pipeline-export-read', 'pipeline-export-verify', 'pipeline-export-cancel'].includes(message?.type) ||
+      typeof message.clientId !== 'string' || !message.clientId || message.clientId.length > 100) return;
+    const clientId = message.clientId;
+    if (message.type === 'pipeline-export-cancel') { close(clientId); reply(respond, { ok: true }); return; }
     (async () => {
+      // The worker targets the original browser document; also reject same-document route changes before any reads.
+      if (message.sourceUrl !== window.location.href) return { ok: false, reason: 'context-changed' };
       if (message.type === 'pipeline-export-preview') {
-        close(tabId);
+        close(clientId);
         if (window.location.protocol !== 'https:' || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) return { ok: false, reason: 'open-packages' };
+        // Register before awaiting storage so immediate cancellation cannot restart metadata work afterward.
+        const session = { id: crypto.randomUUID(), clientId, override: message.overrideConfirmed === true, entries: new Map(), context: null };
+        sessions.set(clientId, session);
         // Read source metadata once per preview; later consent/cache changes invalidate affected sessions.
         const saved = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
+        if (sessions.get(clientId) !== session) return { ok: false, reason: 'cancelled' };
         const options = { sharedFromEnabled: saved.sharedFromEnabled === true, overrideConfirmed: message.overrideConfirmed === true };
         PipelineExportCore.buildPlan([], saved.designerOwnershipCache, options);
-        const session = { id: crypto.randomUUID(), tabId, override: options.overrideConfirmed, entries: new Map(), context: null };
-        sessions.set(tabId, session);
         const result = await request(session, 'prepare', { overrideConfirmed: session.override,
           packageNames: [...PipelineExportCore.sourceNames(saved.designerOwnershipCache).keys()] });
-        if (!result?.ok || sessions.get(tabId) !== session || !result.context || result.context.url !== window.location.href) {
-          close(tabId);
+        if (!result?.ok || sessions.get(clientId) !== session || !result.context || result.context.url !== window.location.href) {
+          // An old response must not cancel a newer preview owned by the same export client.
+          if (sessions.get(clientId) === session) close(clientId);
           return { ok: false, reason: result?.reason || 'context-changed' };
         }
         // Exact cache filtering stays isolated from untrusted page code and smart-search normalization.
         const current = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
-        if (sessions.get(tabId) !== session) return { ok: false, reason: 'cancelled' };
+        if (sessions.get(clientId) !== session) return { ok: false, reason: 'cancelled' };
         const plan = PipelineExportCore.buildPlan(result.packages, current.designerOwnershipCache, { ...options, sharedFromEnabled: current.sharedFromEnabled === true });
         session.context = result.context;
         session.entries = new Map(plan.entries.map((entry) => [key(entry), entry]));
         return { ok: true, context: result.context, plan };
       }
-      const session = sessions.get(tabId);
+      const session = sessions.get(clientId);
       if (!session || !same(session.context, message.context) || session.context.url !== window.location.href) return { ok: false, reason: 'context-changed' };
       if (message.type === 'pipeline-export-read') {
         const entry = session.entries.get(key(message.entry));
@@ -93,7 +106,7 @@
       }
       if (message.type === 'pipeline-export-verify') return request(session, 'verify');
       return { ok: false, reason: 'unsupported-operation' };
-    })().then((result) => reply(respond, result)).catch(() => { close(tabId); reply(respond, { ok: false, reason: 'setup-required' }); });
+    })().then((result) => reply(respond, result)).catch(() => { close(clientId); reply(respond, { ok: false, reason: 'setup-required' }); });
     return true;
   });
 

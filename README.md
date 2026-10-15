@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.0.3):** this branch is not the store release. Pipeline Export is under development; the reported empty preview remains unresolved. This revision cleans up disposable test profiles and output, without changing extension behavior. See [v2 Development](docs/V2-Development.md). Main remains on 1.22.6.
+> **v2 test candidate (2.0.4):** this branch is not the store release. Fixes the empty export preview by routing through the background worker with original-document authorization. Installed-extension synthetic preview/ZIP checks pass; signed-in export testing is still required. See [v2 Development](docs/V2-Development.md). Main remains on 1.22.6.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -82,6 +82,7 @@ node tests/update-summary.cjs
 node tests/pipeline-export-core.cjs
 node tests/pipeline-export-session.cjs
 node tests/pipeline-export-worker.cjs
+node tests/pipeline-export-browser.cjs
 node tests/pipeline-export-context.cjs
 node tests/pipeline-export-native-flow.cjs
 node tests/pipeline-export-preview.cjs

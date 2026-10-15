@@ -16,16 +16,22 @@ function stub() {
   window.__delay = false;
   window.__release = null;
   window.chrome = {
-    runtime: { sendMessage: async () => ({ ok: true, sourceTabId: 7, overrideConfirmed: false }) },
+    runtime: { sendMessage: async (request) => {
+      if (request.type === 'pipeline-export-claim') return { ok: true, overrideConfirmed: false };
+      if (request.type !== 'pipeline-export-relay') throw new Error('Unexpected runtime message');
+      // UI fixtures use fixed runtime operations; direct source-tab messaging must never return.
+      return window.__relay({ ...request, type: `pipeline-export-${request.operation}` });
+    } },
     storage: { local: { get: async () => saved }, onChanged: { addListener: (listener) => { window.__storageChange = listener; } } },
-    tabs: { sendMessage: async (id, message) => {
-      window.__requests.push({ id, type: message.type });
+    tabs: { sendMessage: () => { throw new Error('Direct source messaging is forbidden'); } },
+  };
+  window.__relay = async (message) => {
+      window.__requests.push({ type: message.type });
       if (window.__delay && message.type === 'pipeline-export-preview') await new Promise((resolve) => { window.__release = resolve; });
       if (message.type === 'pipeline-export-read') return { ok: true, data: { name: message.entry.name, version: '1.0.0', fittings: [] } };
       if (message.type !== 'pipeline-export-preview') return { ok: true };
       return { ok: true, context: { url: 'https://packages.test/data-connect/home', tenantId: 'synthetic', documentKey: 'document', sessionId: 'session' },
         plan: { entries: pipelines.map((item, index) => ({ ...item, packageName: index >= 110 ? 'Small Package' : 'Demo Package' })), skipped: 1 } };
-    } },
   };
 }
 

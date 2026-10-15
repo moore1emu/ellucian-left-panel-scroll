@@ -2,6 +2,14 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.0.4 — 2026-10-15 — Exporter Message Routing
+
+- Fixes the empty Packages export preview caused by requiring sender.tab on a message route where Chrome omits it. The background worker now authenticates the launched export document and relays only preview, verify, read, and cancel to the original top-level Packages document.
+- A nonce-bound source handshake captures browser-provided tab/document identity before opening export. One-use launch claims bind the created export document; caller-supplied targets, client IDs, and override flags cannot replace the worker's recorded values. The isolated receiver rejects the old direct route. Reloaded/replayed/closed/restarted contexts fail safely without retargeting a replacement document.
+- Cancellation revokes late responses and explicitly cancelled advanced consent. Registering pending previews before storage reads prevents immediate cancellation from starting metadata work afterward; an old response cannot cancel a newer preview.
+- Adds an installed-extension disposable-browser regression covering Experience-to-Packages SPA entry, actual settings/worker/isolated/MAIN messaging, metadata-only default preview, latest Integration/API/Sub-Pipeline ZIPs, supplier exclusion, advanced confirmation/revocation, ticket replay, and source reload. Worker/boundary/native/UI tests use realistic sender envelopes and test rejected routing fields; cleanup checks include the new profile.
+- No new permissions, credential reads, favorite/source-cache changes, settings regrouping, or changes to native readers/six-request limits. The next-opening update summary describes this fix. Signed-in institution export testing is still required; main/store remain unchanged.
+
 ## 2.0.3 — 2026-10-15 — Test Workspace Cleanup
 
 - Browser fixtures now create persistent profiles in the system temporary folder and remove their own profiles in finally blocks, including failed launches/assertions/browser shutdowns. Cleanup validates the owned temp path, retries transient Windows file locks, and reports removal failures instead of silently leaving test data behind.
