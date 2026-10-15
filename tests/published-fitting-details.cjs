@@ -29,11 +29,14 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
 
 (async () => {
   // A new temporary profile cannot touch the user's installed extension or saved preferences.
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'navigator-fitting-test-'));
-  const context = await chromium.launchPersistentContext(profile, { headless: true,
-    ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
-    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] });
+  const temporaryRoot = fs.realpathSync(os.tmpdir());
+  const profile = fs.mkdtempSync(path.join(temporaryRoot, 'navigator-fitting-test-'));
+  let context;
   try {
+    // Include launch failures in the owned-profile cleanup boundary.
+    context = await chromium.launchPersistentContext(profile, { headless: true,
+      ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
+      args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] });
     const requests = [];
     // Reject every real network request; only the synthetic page and local Ace bytes are returned.
     await context.route('**/*', route => {
@@ -165,6 +168,12 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     console.log('PASS published fitting details: undimmed read-only view, original/native opacity restoration, real Ace copy/scroll, mutation protection, native drafts, opt-out, unsupported editor, route isolation, no data writes/service calls');
   } finally {
     // Close only the disposable context; leave recovery artifacts available for inspection.
-    await context.close();
+    try { await context?.close(); }
+    finally {
+      // Refuse a broader path or link before removing this test's temporary profile.
+      if (path.dirname(profile) !== temporaryRoot || !path.basename(profile).startsWith('navigator-fitting-test-') ||
+        fs.existsSync(profile) && fs.lstatSync(profile).isSymbolicLink()) throw new Error('Unexpected disposable profile path.');
+      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    }
   }
 })().catch(error => { console.error(error); process.exitCode=1; });

@@ -23,12 +23,16 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next version after 1.22.6 is 1.22.7. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v1 version after 1.22.7 is 1.22.8. Do not rename historical releases.
+- This v1 hotfix branches from main independently of v2 development. Bring the narrow Packages identity fix into develop too, without replacing v2 files or merging unfinished v2 work into main.
+- Packages identity may come from context.tenantId on the existing menu/session owner. Keep that fallback Packages-only, inspect only callback presence (never invoke it for identity), and preserve Designer's live manager lookup and tenant isolation. Missing identity must not reset saved pins or reuse a stale tenant.
 - Preserve the root-level extension layout and the existing release filename `ellucian-left-panel-scroll.zip`. Keep only the latest ZIP/unpacked release in the configured outputs folder; retain any needed prior build in a separate recovery folder.
 - Put manifest.json at the ZIP root, with runtime assets and icons beside it. Include README.md, CHANGELOG.md, and PRIVACY.md inside the ZIP and identical copies beside it. Do not package tests, agent instructions, development dependencies, scratch files, or personal workflow notes.
 - GitHub keeps a concise root README, detailed guides/screenshots and changelog under docs/, and the full root PRIVACY.md at its existing store-linked URL. Do not replace that policy with a pointer or overwrite the short repository README with the longer packaged guide.
 
 ## Verification and Completion
+
+- Browser fixtures must create unique system-temp profiles, include launch in try/finally, validate the exact owned path, and remove it with bounded lock retries even when startup/assertions/shutdown fail. Never use installed personal profiles.
 
 - Check syntax for changed JavaScript and run the applicable maintained synthetic regressions. The repository includes the popup switch-save regression; additional local regressions may be supplied by the owner. Put installation/run commands in README, and clearly report any unavailable tests rather than treating syntax alone as sufficient.
 - For shared-helper/message changes, verify script order, direct/SPA entry, sharing opt-out/timeouts, and favorites/resize behavior. For storage changes, test failed reads/writes, pending-save interactions, navigation, and extension-context invalidation. Use no live institution services in automated fixtures.

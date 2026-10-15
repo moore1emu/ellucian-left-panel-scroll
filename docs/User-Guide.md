@@ -14,6 +14,8 @@ The package sidebar scrolls independently, keeping its heading visible. Drag its
 
 Use a package's star to pin it. In Integration Packages, you can also pin published pipelines beneath their package. Designer does not offer pipeline stars because its sidebar only lists packages.
 
+Version 1.22.7 also recognizes Packages tenants supplied through the page's live session context. If favorites were hidden on that page, reload the extension and refresh Packages; do not reset or re-create your pins first.
+
 - Select a favorite package to open it, or a favorite pipeline to open that pipeline's page.
 - Use the arrow to expand or collapse a favorite's pipelines without opening the package.
 - Drag handles to reorder packages or pipelines within their package.

@@ -183,7 +183,13 @@
       const fiberKey = Object.keys(row).find((key) => key.startsWith('__reactFiber$'));
       let fiber = fiberKey ? row[fiberKey] : null;
       for (let depth = 0; fiber && depth < 60; depth += 1, fiber = fiber.return) {
-        const tenantId = normalizeText(fiber.stateNode?.state?.currentTenant).trim();
+        const owner = fiber.stateNode;
+        let tenantId = normalizeText(owner?.state?.currentTenant).trim();
+        // Keep: Packages may expose tenantId only on its live menu/session owner, not state.currentTenant (1.22.7).
+        // Do not read token values or reuse retained Packages context on Designer routes.
+        if (!tenantId && isPackagesPage() && Array.isArray(owner?.state?.menu) && typeof owner.context?.getJwt === 'function') {
+          tenantId = normalizeText(owner.context.tenantId).trim();
+        }
         if (tenantId) { liveTenantObserved = true; return tenantId; }
       }
     }
