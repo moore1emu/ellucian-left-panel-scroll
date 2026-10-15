@@ -10,7 +10,7 @@ const popup = { id: 'synthetic-extension', url: base + 'popup.html' };
 const source = { id: popup.id, url: 'https://synthetic.test/experience', tab: { id: 7 }, frameId: 0, documentId: 'source-document' };
 const sourceUrl = 'https://synthetic.test/fixture/data-connect/home';
 
-function fixture() {
+function fixture(sessionState = {}, faults = {}) {
   let listener;
   let removed;
   let counter = 0;
@@ -25,7 +25,13 @@ function fixture() {
     if (waiting !== true) resolve(undefined);
   });
   const context = vm.createContext({ URL, Date: { now: () => now }, crypto: { randomUUID: () => `ticket-${++counter}` }, chrome: {
-    runtime: { id: popup.id, getURL: (file) => base + file, onMessage: { addListener: (callback) => { listener = callback; } } },
+    runtime: { id: popup.id, getManifest: () => ({ version: '2.0.5' }), getURL: (file) => base + file, onMessage: { addListener: (callback) => { listener = callback; } } },
+    // Only browser-memory grant metadata is shared across simulated worker restarts.
+    storage: { session: faults.absent ? undefined : {
+      get: async () => { if (faults.holdRead) await faults.holdRead; if (faults.read) throw new Error('Synthetic read failure'); return structuredClone(sessionState); },
+      set: async (value) => { if (faults.write) throw new Error('Synthetic write failure'); Object.assign(sessionState, structuredClone(value)); },
+      remove: async (key) => { delete sessionState[key]; },
+    } },
     tabs: {
       query: async () => [{ id: 7 }],
       create: async (details) => { const tab = { ...details, id: nextTab++ }; created.push(tab); return tab; },
@@ -53,7 +59,7 @@ function fixture() {
   };
   const claim = (sender) => call({ type: 'pipeline-export-claim', ticket: sender.url.split('#')[1] }, sender);
   const relay = (sender, operation, details = {}) => call({ type: 'pipeline-export-relay', operation, ...details }, sender);
-  return { call, open, claim, relay, calls, removed: (id) => removed(id), expire: () => { now = 300002; },
+  return { call, open, claim, relay, calls, sessionState, removed: (id) => removed(id), expire: () => { now = 300002; },
     replaceSource: () => { sourceDocument = 'replacement-document'; }, defer: (promise) => { hold = promise; } };
 }
 
@@ -75,7 +81,7 @@ async function run() {
   assert.equal((await f.relay(page, 'arbitrary-native-call')).reason, 'unsupported-operation');
   assert.equal(f.calls.length, 0);
   // Spoofed source/consent/client fields cannot replace the worker's recorded routing decisions.
-  assert.equal((await f.relay(page, 'preview', { sourceTabId: 99, clientId: 'fake', overrideConfirmed: false })).ok, true);
+  assert.equal((await f.relay(page, 'preview', { sourceTabId: 99, clientId: 'fake', overrideConfirmed: true })).ok, true);
   const forwarded = f.calls.at(-1);
   assert.equal(forwarded.id, 7);
   assert.equal(forwarded.options.frameId, 0);
@@ -87,23 +93,45 @@ async function run() {
   await f.relay(page, 'cancel', { revokeOverride: true });
   await f.relay(page, 'preview', { overrideConfirmed: true });
   assert.equal(f.calls.at(-1).message.overrideConfirmed, false);
+  // Rehydration waits for storage and retains both document binding and revoked advanced consent.
+  let resumeStorage;
+  const resumed = fixture(f.sessionState, { holdRead: new Promise((resolve) => { resumeStorage = resolve; }) });
+  const waking = resumed.relay(page, 'preview', { overrideConfirmed: true, sourceTabId: 999 });
+  resumeStorage();
+  assert.equal((await waking).ok, true);
+  assert.equal(resumed.calls.at(-1).options.documentId, source.documentId);
+  assert.equal(resumed.calls.at(-1).message.overrideConfirmed, false);
+  assert.equal(resumed.calls.at(-1).id, 7);
+  assert.equal(Object.values(f.sessionState)[0].records.some((record) => 'data' in record || 'entries' in record || 'creation' in record), false);
   let release;
   f.defer(new Promise((resolve) => { release = resolve; }));
   const pending = f.relay(page, 'preview');
   await f.relay(page, 'cancel');
   release();
   assert.equal((await pending).reason, 'cancelled');
-  // Source reload, export close, expiry, and worker restart all fail closed.
+  // Source reload, export close, unclaimed expiry, and extension/browser reset still fail closed.
   f.replaceSource();
   assert.equal((await f.relay(page, 'read')).reason, 'context-changed');
   const previous = f.calls.length;
-  f.removed(page.tab.id);
+  await f.removed(page.tab.id);
   assert.equal((await f.relay(page, 'verify')).reason, 'preview-expired');
   assert.equal(f.calls.length, previous);
   const expired = await f.open();
   f.expire();
   assert.equal((await f.claim(expired)).ok, false);
   assert.equal((await fixture().relay(page, 'preview', { overrideConfirmed: true })).reason, 'preview-expired');
-  console.log('PASS export worker relay: source/document binding, one-use launch, sender/frame/replay guards, fixed operations, override revocation, cancel/reload/close/restart isolation, no storage writes');
+  // Storage failures cannot fall back to guessed targets or authorize a source request.
+  const faults = {};
+  const broken = fixture({}, faults);
+  const brokenPage = await broken.open(true);
+  faults.write = true;
+  assert.equal((await broken.claim(brokenPage)).ok, false);
+  assert.equal((await broken.relay(brokenPage, 'preview')).reason, 'session-unavailable');
+  assert.equal(broken.calls.length, 0);
+  assert.equal(Object.keys(broken.sessionState).length, 0);
+  const unreadable = fixture({}, { read: true });
+  assert.equal((await unreadable.relay(page, 'read')).reason, 'session-unavailable');
+  assert.equal((await fixture({}, { absent: true }).relay(page, 'read')).reason, 'session-unavailable');
+  console.log('PASS export worker relay: memory-only restart recovery, source/document binding, sender/replay guards, narrowed/revoked consent, cancel/reload/close isolation, and failed storage');
 }
 run().catch((error) => { console.error(error); process.exitCode = 1; });

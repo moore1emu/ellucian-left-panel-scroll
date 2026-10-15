@@ -31,7 +31,7 @@ function stub() {
       if (message.type === 'pipeline-export-read') return { ok: true, data: { name: message.entry.name, version: '1.0.0', fittings: [] } };
       if (message.type !== 'pipeline-export-preview') return { ok: true };
       return { ok: true, context: { url: 'https://packages.test/data-connect/home', tenantId: 'synthetic', documentKey: 'document', sessionId: 'session' },
-        plan: { entries: pipelines.map((item, index) => ({ ...item, packageName: index >= 110 ? 'Small Package' : 'Demo Package' })), skipped: 1 } };
+        plan: { entries: pipelines.map((item, index) => ({ ...item, packageName: window.__manyPackages ? `Package ${index}` : index >= 110 ? 'Small Package' : 'Demo Package' })), skipped: 1 } };
   };
 }
 
@@ -50,21 +50,35 @@ async function run() {
       await page.addInitScript(stub);
       await page.goto('https://export.test/pipeline-export.html#synthetic-ticket');
       await page.waitForFunction(() => document.querySelector('#export-status').textContent.startsWith('Preview ready'));
-      assert.match(await page.locator('#export-counts').textContent(), /120 files.*1 unrecorded/);
-      assert.equal(await page.locator('#export-rows tr').count(), 100);
-      await page.locator('#show-more').click();
-      assert.equal(await page.locator('#export-rows tr').count(), 120);
-      // Package selection narrows the full plan without changing its source authorization.
-      await page.locator('#export-package').selectOption('Small Package');
-      assert.equal(await page.locator('#export-rows tr').count(), 10);
-      assert.match(await page.locator('#export-counts').textContent(), /1 package.*10 files/);
-      await page.locator('#export-package').selectOption('');
-      assert.equal(await page.locator('#export-rows tr').count(), 100);
-      await page.locator('#show-more').click();
+      assert.match(await page.locator('#export-counts').textContent(), /120 of 120 files.*1 unrecorded/);
+      assert.equal(await page.locator('.export-package').count(), 2);
+      assert.equal(await page.locator('.pipeline-checkbox').count(), 0, 'Collapsed packages avoid eager row creation');
+      assert.equal(await page.locator('#show-more').count(), 0);
+      const demo = page.locator('.export-package').filter({ hasText: 'Demo Package' });
+      // Package checkboxes select without expanding; individual exclusions set the mixed state.
+      await page.getByRole('checkbox', { name: 'Select Package: Demo Package', exact: true }).uncheck();
+      assert.equal(await demo.evaluate((node) => node.open), false);
+      await demo.locator('.package-name').click();
+      await demo.locator('.pipeline-checkbox').first().waitFor();
+      assert.equal(await demo.locator('.pipeline-checkbox').count(), 110, 'Expanded groups have no hidden result cap');
+      await demo.locator('.pipeline-checkbox').first().check();
+      assert.equal(await demo.locator('.package-checkbox').evaluate((node) => node.indeterminate), true);
+      assert.match(await page.locator('#export-counts').textContent(), /11 of 120 files/);
+      await page.locator('#select-all').check();
+      await page.locator('#select-all').uncheck();
+      assert.equal(await page.locator('#download-zip').isDisabled(), true);
+      await page.getByRole('checkbox', { name: 'Select Package: Small Package', exact: true }).check();
+      assert.match(await page.locator('#export-counts').textContent(), /1 of 2 packages.*10 of 120 files/);
       assert.equal(await page.locator('#download-zip').isDisabled(), false);
       assert.deepEqual(await page.evaluate(() => [...new Set(window.__requests.map((request) => request.type))]), ['pipeline-export-preview']);
       // Optional local screenshots document actual synthetic UI, not a real account or source export.
-      if (process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS) await page.screenshot({ fullPage: true, path: path.join(process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS, `v2-export-preview-${colorScheme}.png`) });
+      if (process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS) {
+        // Show a compact collapsed/expanded example without changing the tested checkbox selection.
+        await demo.locator('.package-name').click();
+        await page.locator('.export-package').filter({ hasText: 'Small Package' }).locator('.package-name').click();
+        await page.locator('.export-package').filter({ hasText: 'Small Package' }).locator('.pipeline-checkbox').first().waitFor();
+        await page.screenshot({ fullPage: true, path: path.join(process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS, `v2-export-preview-${colorScheme}.png`) });
+      }
 
       // Source retrieval requires the explicit action, then produces a valid local ZIP download.
       await page.locator('#download-zip').click();
@@ -72,7 +86,14 @@ async function run() {
       const payload = await page.evaluate(async () => Array.from(new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())));
       assert.equal(Buffer.from(payload).readUInt32LE(0), 0x04034b50);
       assert.match(Buffer.from(payload).toString('utf8'), /Small Package\/Pipeline 119.json/);
-      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 120);
+      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 10);
+      assert.equal(Buffer.from(payload).includes(Buffer.from('Demo Package/')), false);
+      // A new selection invalidates its old ZIP, then reuses the still-valid preview for another download.
+      await page.locator('#select-all').check();
+      assert.equal(await page.locator('#save-zip').isHidden(), true);
+      await page.locator('#download-zip').click();
+      await page.locator('#save-zip').waitFor();
+      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 130);
       // Removing saved ownership revokes the completed link as well as any in-flight default job.
       await page.evaluate(() => window.__storageChange({ designerOwnershipCache: { newValue: {} } }, 'local'));
       assert.equal(await page.locator('#save-zip').isHidden(), true);
@@ -83,19 +104,26 @@ async function run() {
       await page.waitForFunction(() => typeof window.__release === 'function');
       await page.locator('#cancel-export').click();
       await page.evaluate(() => { window.__delay = false; window.__release(); });
-      assert.equal(await page.locator('#export-rows tr').count(), 0);
+      assert.equal(await page.locator('.export-package').count(), 0);
       assert.match(await page.locator('#export-status').textContent(), /Cancelled/);
       await page.locator('#refresh-preview').click();
       await page.waitForFunction(() => document.querySelector('#export-status').textContent.startsWith('Preview ready'));
+      // More than 100 package names remain discoverable immediately, with no Show More action.
+      await page.evaluate(() => { window.__manyPackages = true; });
+      await page.locator('#refresh-preview').click();
+      await page.waitForFunction(() => document.querySelectorAll('.export-package').length === 120);
+      await page.locator('.export-package').last().locator('.package-name').click();
+      await page.locator('.export-package').last().locator('.pipeline-checkbox').waitFor();
+      assert.equal(await page.locator('.export-package').last().locator('.pipeline-checkbox').count(), 1);
       await page.evaluate(() => { window.__saved.sharedFromEnabled = false; window.__storageChange({ sharedFromEnabled: { newValue: false } }, 'local'); });
-      assert.equal(await page.locator('#export-rows tr').count(), 0);
+      assert.equal(await page.locator('.export-package').count(), 0);
       await page.locator('#refresh-preview').click();
       await page.waitForFunction(() => document.querySelector('#export-status').textContent === 'Enable Shared From first.');
       assert.deepEqual(await page.evaluate(() => [...new Set(window.__requests.map((request) => request.type))]), ['pipeline-export-preview', 'pipeline-export-verify', 'pipeline-export-read', 'pipeline-export-cancel']);
       assert.deepEqual(errors, []);
       await page.close();
     }
-    console.log('PASS dedicated export tab: 120 records, explicit source download/ZIP, pagination, cancel/late replies, opt-out, and both themes');
+    console.log('PASS export selection: all 120 package headings, uncapped lazy pipeline groups, independent/mixed/select-all checkboxes, selected-only/repeated ZIPs, cancellation, opt-out, and both themes');
   } finally {
     await browser.close();
   }

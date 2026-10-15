@@ -2,6 +2,14 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.0.5 — 2026-10-15 — Export Selection and Session Recovery
+
+- Replaces the export preview's flat Show More list and single-package selector with collapsible packages and package/pipeline checkboxes. All package headings are listed immediately; expanding a package reveals every eligible pipeline. Select All, partial-selection indicators, and live counts make the selection explicit.
+- Only checked records are downloaded. Keeps a successful preview for another selection/download and discards the old Save ZIP link when selection changes. Preview remains metadata-only.
+- Preserves claimed export document grants in memory-only storage.session through ordinary background-worker sleep. Stores only bounded routing/document identifiers, source URL, client/generation identifiers, extension version, and temporary advanced consent—not pipeline contents, credentials, favorites, or a permanent override. Tab close removes its record; extension reload/update/disable and browser restart clear session storage. Original-document, consent, exact-version, and six-request guards remain; unavailable storage fails safely without native work or permanent-storage fallback.
+- Carries the v1.22.7 Packages tenant-context favorites fix and v1.22.8 published-fitting existing-draft fix into v2 with direct-reload, isolation, real-Ace copying, and edit-protection regressions. No favorite reset/migration or new permission is introduced.
+- Adds synthetic checkbox/ZIP selection and cold-worker rehydration/fault checks. Settings regrouping and the optional compatibility warning remain deferred. Signed-in export validation is still required; automated tests use no institution data.
+
 ## 2.0.4 — 2026-10-15 — Exporter Message Routing
 
 - Fixes the empty Packages export preview caused by requiring sender.tab on a message route where Chrome omits it. The background worker now authenticates the launched export document and relays only preview, verify, read, and cancel to the original top-level Packages document.

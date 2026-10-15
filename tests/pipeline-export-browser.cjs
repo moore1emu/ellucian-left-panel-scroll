@@ -46,7 +46,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
       network.push(route.request().url());
       return route.fulfill({ contentType: 'text/html', body: html });
     });
-    const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
+    let worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     await worker.evaluate(() => pendingOwnershipUpdate);
     await worker.evaluate(() => chrome.storage.local.set({ sharedFromEnabled: true, designerOwnershipCache: {
       synthetic: { packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'] }] },
@@ -72,12 +72,19 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
 
     // SPA entry has a stale original MessageSender URL; live route binding still identifies Packages safely.
     const exported = await openExport();
-    assert.equal(await exported.locator('#export-rows tr').count(), 3);
+    assert.equal(await exported.locator('.export-package').count(), 1);
+    await exported.locator('.package-name').click();
+    await exported.locator('.pipeline-checkbox').first().waitFor();
+    assert.equal(await exported.locator('.pipeline-checkbox').count(), 3);
     assert.equal(await source.evaluate(() => stats.sources), 0, 'Preview must not retrieve code');
     assert.equal(await source.evaluate(() => stats.packages), 1, 'Default preview inspects only recorded packages');
+    // Exercise a human-length pause before download; the separate worker regression forces cold rehydration.
+    // Browser automation can keep debug-attached workers alive, so this delay alone is not a restart proof.
+    await new Promise((resolve) => setTimeout(resolve, 35000));
     // Only explicit download traverses worker -> isolated bridge -> native reader and returns source JSON.
     await exported.locator('#download-zip').click();
     await exported.locator('#save-zip').waitFor();
+    worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     const bytes = Buffer.from(await exported.evaluate(async () => [...new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())]));
     assert.equal(bytes.readUInt32LE(0), 0x04034b50);
     for (const name of ['API', 'Integration', 'Sub']) assert.ok(bytes.includes(Buffer.from(`Owned Package/${name}.json`)));
@@ -87,7 +94,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     const replay = await context.newPage();
     await replay.goto(exported.url());
     await replay.locator('#export-status').filter({ hasText: 'Preview expired' }).waitFor();
-    assert.equal(await replay.locator('#export-rows tr').count(), 0);
+    assert.equal(await replay.locator('.export-package').count(), 0);
     await replay.close();
 
     // Refresh and Cancel keep metadata-only preview distinct from source retrieval.
@@ -104,7 +111,10 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     popup.once('dialog', (dialog) => dialog.accept());
     await popup.locator('#export-all-accessible').check();
     const advanced = await openExport();
-    assert.equal(await advanced.locator('#export-rows tr').count(), 4);
+    assert.equal(await advanced.locator('.export-package').count(), 2);
+    for (const group of await advanced.locator('.package-name').all()) await group.click();
+    await advanced.waitForFunction(() => document.querySelectorAll('.pipeline-checkbox').length === 4);
+    assert.equal(await advanced.locator('.pipeline-checkbox').count(), 4);
     await advanced.locator('#cancel-export').click();
     await advanced.locator('#refresh-preview').click();
     await advanced.locator('#export-status').filter({ hasText: 'Enable Shared From first.' }).waitFor();

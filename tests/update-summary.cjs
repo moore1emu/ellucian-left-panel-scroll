@@ -39,6 +39,11 @@ async function run() {
   // The messaging repair gets its own next-opening notes without changing the existing version gates.
   await summary.recordUpdate({ reason: "update", previousVersion: "2.0.3" }, storage, "2.0.4");
   assert.match(summary.notesFor(saved, "2.0.4")[0], /message routing/);
+  // Give the new selection/session behavior and both v1 fixes their own version-gated notes.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.0.4" }, storage, "2.0.5");
+  assert.equal(summary.notesFor(saved, "2.0.5").length, 3);
+  assert.match(summary.notesFor(saved, "2.0.5")[0], /checkbox/);
+  assert.match(summary.notesFor(saved, "2.0.5")[2], /v1.22.8/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

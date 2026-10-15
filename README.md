@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.0.4):** this branch is not the store release. Fixes the empty export preview by routing through the background worker with original-document authorization. Installed-extension synthetic preview/ZIP checks pass; signed-in export testing is still required. See [v2 Development](docs/V2-Development.md). Main remains on 1.22.6.
+> **v2 test candidate (2.0.5):** choose packages or individual pipelines with collapsible checkboxes. Temporary document grants survive normal worker sleep using browser-memory session storage. Includes both v1.22.8 hotfixes; no exporter source code or credentials are saved to extension storage. Signed-in export testing is still required. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 

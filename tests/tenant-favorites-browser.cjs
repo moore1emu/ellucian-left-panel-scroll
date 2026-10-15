@@ -24,7 +24,8 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     row.setAttribute('package-element','');row.innerHTML='<div class="MuiTreeItem-content"><span class="MuiTreeItem-label">'+tenant+' Package</span></div>';
     row.__reactProps$fixture={'package-element':{name:tenant+' Package',pipelines:[{name:tenant+' Pipeline',version:'1.0.0'}]}};
     // Designer's real tenant owner is outside sidebar ancestry; Packages still exposes its row state.
-    row.__reactFiber$fixture=page==='designer'?{}:{stateNode:{state:{currentTenant:tenant}}};list.appendChild(row);
+    // Real Packages can expose identity only through its menu/session context; Designer uses its separate manager.
+    row.__reactFiber$fixture=page==='designer'?{}:{stateNode:{state:{menu:[]},context:{tenantId:tenant,getJwt:()=>{throw Error('Identity must not invoke a session callback');}}}};list.appendChild(row);
     // Retain a stale Designer root on Packages to verify route-specific lookup, not just priority.
     const owner={stateNode:{state:{currentTenant:page==='designer'?tenant:'stale-designer-root'}}};
     let manager=owner;for(let depth=0;depth<4;depth++) manager={return:manager};
@@ -71,6 +72,11 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await page.locator('.ellucian-favorite-select').filter({ hasText: 'test-a Package' }).waitFor();
     const read = () => worker.evaluate(() => chrome.storage.local.get('favoritePackagesByTenant'));
     await assertPin('test-a', 'packages');
+    // Direct Packages reload must preserve context-scoped pins without visiting Home.
+    const beforePackagesReload = await read();
+    await page.reload();
+    await page.locator('.ellucian-favorite-select').filter({ hasText: 'test-a Package' }).waitFor();
+    assert.deepEqual(await read(), beforePackagesReload, 'Packages reload preserves tenant lists exactly');
     // Switching tenants with an unchanged vanity-style URL must separate the list and ignore bootstrap identity.
     await page.evaluate(() => switchTenant('test-b'));
     await pin().waitFor();
@@ -223,7 +229,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     const count = await page.evaluate(() => __messages.length);
     await page.waitForTimeout(1200);
     assert.equal(await page.evaluate(() => __messages.length), count, 'No idle polling');
-    assert.equal(requests.filter((url) => url.startsWith('https:')).length, 3, 'Only the three explicit fixture navigations make requests');
+    assert.equal(requests.filter((url) => url.startsWith('https:')).length, 4, 'Only explicit fixture navigations and the Packages reload make requests');
     assert.deepEqual(errors, []);
     console.log('PASS: last-section backup actions, independent export/refresh feedback and retry, real popup export/import/refresh, direct Designer reload/cache, tenant recovery/isolation, and zero idle polling/service lookups.');
 

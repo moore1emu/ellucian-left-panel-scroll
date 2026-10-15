@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.0.5": Object.freeze([
+      "Choose whole packages or individual pipelines with collapsible checkbox lists.",
+      "Temporary export sessions survive normal background-worker sleep.",
+      "Includes Packages favorites and published fitting viewing fixes from v1.22.8.",
+    ]),
     "2.0.4": Object.freeze([
       "Fixes the empty Pipeline Export preview caused by Chrome's message routing.",
       "Preview and Download ZIP stay bound to the original Packages document.",

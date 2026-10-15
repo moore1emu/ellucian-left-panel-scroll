@@ -1,17 +1,19 @@
 # User Guide
 
-> Develop's 2.0.4 test candidate fixes export preview messaging. Reload the same unpacked extension folder, refresh Integration Packages, and reopen export from settings; an old export tab cannot carry its authorization into the new version. Signed-in download testing remains required. The sections below otherwise describe existing navigation features; v1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
+> Develop's 2.0.5 test candidate adds package/pipeline checkboxes and keeps temporary export authorization through normal worker sleep. Reload the same unpacked folder, refresh Integration Packages, and reopen export from settings after an extension update. Signed-in download testing remains required. V1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
 
 ## Pipeline Export — v2 Test Candidate
 
 1. Enable Shared From and visit Designer in each source environment to record package/pipeline names.
 2. Open Integration Packages, then select **Export & Backup → Preview Pipeline Export** in settings.
-3. Review the latest published records. Choose **All Eligible Packages** or one package for a smaller export.
+3. Review the package list. Everything starts checked; use **Select All**, a package checkbox, or expand a package to select individual pipelines. A partial package selection shows a mixed checkbox and its selected count. Every package heading is listed immediately; there is no Show More limit in the exporter.
 4. Select **Download ZIP**, wait for collection to finish, then select **Save ZIP**.
 
 Both export modes start from Integration Packages; Designer only populates source observations. Default eligibility uses exact saved package/pipeline names, not search matching or a live ownership check. Preview requests latest package metadata but no pipeline code. Source reads begin only when you select Download ZIP. Each package gets a folder containing its newest published Pipeline, API, and Sub-Pipeline JSON files. JSON content is preserved but formatting may differ from the service response.
 
-For temporary advanced mode, press **Shift+D** while settings is open and you are not typing. Reveal alone does not enable it: confirm the separate **Include All Accessible Content** warning, then launch export. This bypasses only the saved-source filter, not Ellucian permissions. It is never saved and resets when settings closes or export is cancelled. It can include vendor-provided content; use it only when authorized to download that content.
+Only checked records are downloaded. Changing the selection removes a previous Save ZIP link so it cannot save the wrong selection; select Download ZIP again to build the new archive. Normal background-worker sleep does not expire an open preview. Temporary document grants use browser-memory session storage, without source code or credentials. Closing the export tab removes its grant; reloading/updating/disabling the extension or restarting the browser clears that storage. Refreshing/replacing the source Packages document still requires reopening export; it never silently switches to a new document or tenant.
+
+For temporary advanced mode, press **Shift+D** while settings is open and you are not typing. Reveal alone does not enable it: confirm the separate **Include All Accessible Content** warning, then launch export. This bypasses only the saved-source filter, not Ellucian permissions. It is not saved as a preference. Settings resets the choice on close; the launched workflow retains only a temporary memory-session grant until cancelled or closed. It can include vendor-provided content; use it only when authorized to download that content.
 
 Keep the original Packages tab open and on the same tenant until collection finishes. Cancel, navigation, removed eligibility, lost access, timeouts, or mismatched source/version data stop the job without a partial ZIP. Reopen or refresh preview to retry. Sub-Pipeline routes return a major version; if the response cannot verify its exact version, this candidate refuses the export rather than mislabeling it. This needs a real-session test. Limits are 10,000 files and 64 MB of source JSON, with six native requests at a time.
 
@@ -71,7 +73,7 @@ The section groups width memory, pinned favorites, and **Show APIs & Sub-Pipelin
 
 Enable **Page Behavior → View Published Fitting Details** to scroll, select, and copy text/code in a published fitting without creating a draft. It is off by default and independent of sharing settings. Code/text remains read-only; checkboxes, dropdowns, reset buttons, and other fitting actions remain disabled. Blanket grey dimming is removed while viewing is enabled; disabled actions still look inactive. Draft editing is unchanged. Switching off or leaving the published fitting restores native UI locks and appearance.
 
-Normal selection and Ctrl+A/Ctrl+C work in supported Ace editors. Editing shortcuts, typing, paste, cut, and drop are blocked. If the existing editor cannot be safely identified, it stays locked; refresh the page and retry, or report the issue without confidential source code. The feature saves only its preference, not fitting contents, and adds no service requests.
+Normal selection and Ctrl+A/Ctrl+C work in supported Ace editors, including a published version that already has a draft. Viewing does not create or change drafts. Editing shortcuts, typing, paste, cut, and drop are blocked. If the existing editor cannot be safely identified, it stays locked; refresh the page and retry, or report the issue without confidential source code. The feature saves only its preference, not fitting contents, and adds no service requests.
 
 ### Shared To — Designer
 
