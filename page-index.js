@@ -670,8 +670,10 @@
 
   // Require the observed published marker rather than guessing from disabled controls alone.
   function isPublishedFitting() {
+    // Keep: an existing draft changes the native published label but must not prevent read-only viewing (1.22.8).
+    const publishedLabel = document.getElementById('action_save')?.getAttribute('aria-label');
     return /\/data-connect-designer\/pipelineDesigner\/?$/iu.test(window.location.pathname) &&
-      document.getElementById('action_save')?.getAttribute('aria-label') === 'Create draft from published pipeline.' &&
+      ['Create draft from published pipeline.', 'Create draft not allowed since draft already exists for this published pipeline.'].includes(publishedLabel) &&
       document.getElementById('action_publish')?.disabled === true;
   }
 

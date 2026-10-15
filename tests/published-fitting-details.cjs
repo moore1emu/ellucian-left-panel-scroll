@@ -25,6 +25,10 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     window.actions=0;document.querySelectorAll('#reset,#custom,#check,#choice,#action-link').forEach(n=>n.addEventListener('click',()=>actions++));
     window.nativeDraft=()=>{document.getElementById('action_save').setAttribute('aria-label','Save pipeline.');document.getElementById('action_publish').disabled=false;document.querySelector('fieldset').disabled=false;document.querySelector('#flowItem_contentEdit').classList.add('draft');};
     window.nativePublished=()=>{document.getElementById('action_save').setAttribute('aria-label','Create draft from published pipeline.');document.getElementById('action_publish').disabled=true;document.querySelector('fieldset').disabled=true;document.querySelector('#flowItem_contentEdit').classList.remove('draft');};
+    // Reproduce the observed published state whose existing draft disables Create Draft.
+    if(new URL(location.href).searchParams.has('existingDraft')){const save=document.getElementById('action_save');save.disabled=true;save.setAttribute('aria-label','Create draft not allowed since draft already exists for this published pipeline.');}
+    // An unknown state must stay locked even when Publish is disabled.
+    if(new URL(location.href).searchParams.has('unknownState'))document.getElementById('action_save').setAttribute('aria-label','Unknown pipeline state.');
   </script>`;
 
 (async () => {
@@ -149,6 +153,35 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:true}));
     await page.reload();
     await page.waitForFunction(() => window.editor?.getReadOnly() && !document.querySelector('fieldset').disabled);
+    // A published version with an existing draft must work on direct entry and reload too.
+    await page.goto(site + designer + '?existingDraft=1');
+    await page.waitForFunction(() => window.editor?.getReadOnly() && !document.querySelector('fieldset').disabled && getComputedStyle(document.querySelector('#flowItem_contentEdit')).opacity === '1', null, {timeout:2500});
+    assert.deepEqual(await page.evaluate(() => ({save:document.querySelector('#action_save').disabled,publish:document.querySelector('#action_publish').disabled,reset:document.querySelector('#reset').disabled,custom:document.querySelector('#custom').inert})), {save:true,publish:true,reset:true,custom:true});
+    // Test real keyboard selection/copy without permitting editor mutations in this alternate state.
+    await page.locator('#code').click({position:{x:110,y:20}});
+    await page.keyboard.press('Control+a');
+    await page.keyboard.press('Control+c');
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await page.evaluate(() => codeValue));
+    await page.keyboard.type('MUST STAY READ ONLY');
+    await page.keyboard.press('Delete');
+    assert.equal(await page.evaluate(() => editor.getValue()), await page.evaluate(() => codeValue));
+    await page.locator('#code').hover();
+    await page.mouse.wheel(0,700);
+    await page.waitForFunction(() => editor.session.getScrollTop() > 0);
+    await page.reload();
+    await page.waitForFunction(() => window.editor?.getReadOnly() && !document.querySelector('fieldset').disabled);
+    // Opt-out restores the alternate published panel's original locks and gray styling.
+    await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:false}));
+    await page.waitForFunction(() => document.querySelector('fieldset').disabled && !editor.getReadOnly());
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#flowItem_contentEdit')).opacity), '0.4');
+    assert.equal(await page.evaluate(() => document.querySelector('#action_save').disabled), true);
+    await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:true}));
+    await page.goto(site + designer + '?unknownState=1');
+    await page.waitForFunction(() => window.editor && window.__settings.length);
+    assert.equal(await page.evaluate(() => document.querySelector('fieldset').disabled), true, 'Unknown native states must not be unlocked');
+    // Return to the original supported state before checking unsupported editor bindings.
+    await page.goto(site + designer);
+    await page.waitForFunction(() => window.editor?.getReadOnly() && !document.querySelector('fieldset').disabled);
     // Missing/unsupported Ace bindings fail closed instead of unlocking unknown editors.
     await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:false}));
     await page.waitForFunction(() => document.querySelector('fieldset').disabled);
@@ -163,7 +196,7 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     const finalStore = await worker.evaluate(() => chrome.storage.local.get(null));
     const strip = data => { const copy={...data};delete copy.fittingDetailsEnabled;return copy; };
     assert.deepEqual(strip(finalStore), strip(initialStore), 'Only the new preference may be written');
-    assert.ok(requests.every(url => url === site + '/fixture-ace.js' || url === site + designer || url.endsWith('/data-connect/home')), 'No service requests');
+    assert.ok(requests.every(url => [site + '/fixture-ace.js',site + designer,site + designer + '?existingDraft=1',site + designer + '?unknownState=1',site + '/fixture/app/all-accounts/Ellucian/data-connect/home'].includes(url)), 'No service requests');
     assert.deepEqual(errors, []);
     console.log('PASS published fitting details: undimmed read-only view, original/native opacity restoration, real Ace copy/scroll, mutation protection, native drafts, opt-out, unsupported editor, route isolation, no data writes/service calls');
   } finally {

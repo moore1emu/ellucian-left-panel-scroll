@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.8 — 2026-10-15
+
+- Fixes View Published Fitting Details when the published pipeline already has a draft. The page's alternate published-state label is now recognized; the existing version remained locked in this case.
+- Keeps the opt-in requirement, normal-contrast viewing, scrolling, selection/copy, read-only text/code, disabled actions, original lock restoration, and fail-closed handling of unknown states/editors. Draft pipelines remain unaffected.
+- Retains the 1.22.7 Packages favorites fix. No new permissions, stored data, service calls, or v2 features are added.
+- Adds real-Ace synthetic regressions for existing-draft published versions on direct entry/reload, actual copy/scroll, mutation blocking, action locks, opt-out, and unknown-state rejection.
+
 ## 1.22.7 — 2026-10-15
 
 - Fixes missing favorite icons and Pinned Packages when Integration Packages exposes the current tenant through its existing menu/session context instead of component state. Designer keeps its existing identity lookup.

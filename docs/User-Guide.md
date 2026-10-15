@@ -56,7 +56,7 @@ The section groups width memory, pinned favorites, and **Show APIs & Sub-Pipelin
 
 Enable **Page Behavior → View Published Fitting Details** to scroll, select, and copy text/code in a published fitting without creating a draft. It is off by default and independent of sharing settings. Code/text remains read-only; checkboxes, dropdowns, reset buttons, and other fitting actions remain disabled. Blanket grey dimming is removed while viewing is enabled; disabled actions still look inactive. Draft editing is unchanged. Switching off or leaving the published fitting restores native UI locks and appearance.
 
-Normal selection and Ctrl+A/Ctrl+C work in supported Ace editors. Editing shortcuts, typing, paste, cut, and drop are blocked. If the existing editor cannot be safely identified, it stays locked; refresh the page and retry, or report the issue without confidential source code. The feature saves only its preference, not fitting contents, and adds no service requests.
+Normal selection and Ctrl+A/Ctrl+C work in supported Ace editors, including a published version that already has a draft. Create Draft and Publish keep their native availability; this viewing option does not create or change drafts. Editing shortcuts, typing, paste, cut, and drop are blocked. If the existing editor or published state cannot be safely identified, it stays locked; refresh the page and retry, or report the issue without confidential source code. The feature saves only its preference, not fitting contents, and adds no service requests.
 
 ### Shared To — Designer
 

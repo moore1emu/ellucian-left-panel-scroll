@@ -4,7 +4,7 @@ For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for deliv
 
 Make Ellucian Integration Packages and Integration Designer easier to navigate in Chrome and Microsoft Edge.
 
-Version **1.22.7** fixes missing Packages favorites when the page supplies its tenant through session context. Saved pins and the existing v1 interface are preserved; see the [changelog](docs/CHANGELOG.md).
+Version **1.22.8** fixes read-only published-fitting viewing when a draft already exists, and retains the Packages favorites fix. Saved pins and the existing v1 interface are preserved; see the [changelog](docs/CHANGELOG.md).
 
 ## What It Does
 
