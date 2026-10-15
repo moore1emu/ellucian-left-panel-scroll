@@ -238,13 +238,17 @@
       <!-- Keep: group export/import in the last settings section, with Refresh left under Shared From (1.22.3). -->
       <details class="settings-card backup-card">
         <summary>Export &amp; Backup</summary>
-        <!-- Keep this unfinished download action visibly disabled in the first development checkpoint. -->
+        <!-- Open only a metadata preview; source downloads remain disabled until their adapter is verified. -->
         <div class="pipeline-export-section">
           <h2>Pipeline Export</h2>
           <p class="card-description">Download your latest published pipelines.</p>
           <p class="export-setup-notice">Shared From setup is required.</p>
-          <button id="export-pipelines" type="button" disabled aria-describedby="pipeline-export-status">Export Pipelines ZIP</button>
-          <p id="pipeline-export-status" class="icon-status">Exporter in development.</p>
+          <button id="export-pipelines" type="button" disabled aria-describedby="pipeline-export-status">Preview Pipeline Export</button>
+          <p id="pipeline-export-status" class="icon-status">Loading export preview…</p>
+          <div id="export-advanced" hidden>
+            <label><input id="export-all-accessible" type="checkbox" /> Include All Accessible Content</label>
+            <p class="icon-status">Temporary preview override. Not saved.</p>
+          </div>
         </div>
         <!-- JSON backups remain independent of ZIP pipeline downloads. -->
         <h2>Backup &amp; Restore</h2>
@@ -299,5 +303,6 @@
     <!-- Dismissal saves only a version marker, never settings, favorites, or source data. -->
     <script src="update-summary.js"></script>
     <script src="update-summary-popup.js"></script>
+    <script src="pipeline-export-popup.js"></script>
   </body>
 </html>

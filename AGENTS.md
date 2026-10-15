@@ -25,7 +25,8 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 checkpoint after 2.0.0 is 2.0.1, while v1 maintenance can use 1.22.7. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 checkpoint after 2.0.1 is 2.0.2, while v1 maintenance can use 1.22.7. Do not rename historical releases.
+- The 2.0.1 dedicated export tab is metadata-only. Its authenticated download action stays disabled until native readers, response identity/version checks, context/consent isolation, and genuinely bounded native request accounting are completed. Temporary override consent is kept only in memory and bound to its launch; preview never reads source payloads or credentials. Preserve independent favorites, source-cache, and backup behavior.
 - Source-only v2 checkpoints must identify unfinished features in README/docs/V2-Development.md and keep incomplete download actions disabled. Do not overwrite the existing release artifacts or claim a store-ready ZIP until a complete candidate is tested and packaged.
 - Preserve the root-level extension layout and the existing release filename `ellucian-left-panel-scroll.zip`. Keep only the latest ZIP/unpacked release in the configured outputs folder; retain any needed prior build in a separate recovery folder.
 - Put manifest.json at the ZIP root, with runtime assets and icons beside it. Include README.md, CHANGELOG.md, and PRIVACY.md inside the ZIP and identical copies beside it. Do not package tests, agent instructions, development dependencies, scratch files, or personal workflow notes.

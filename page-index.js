@@ -137,6 +137,8 @@
   let designerProbeTarget = null;
   let sharingEnabled = false;
   let ownershipEnabled = false;
+  // Identify this page document without persisting a session or exposing credentials.
+  const exportDocumentKey = window.crypto?.randomUUID?.() || `document-${Date.now()}-${Math.random()}`;
 
   // Read the React properties attached to one rendered package row.
   function getReactProperties(packageRow) {
@@ -557,6 +559,36 @@
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-response", requestId, tenantId, environment, packages }, window.location.origin);
   }
 
+  // Project export metadata only after an explicit request from the dedicated workflow.
+  function handleExportContext(message) {
+    if (!isDesignerPage()) return;
+    const root = document.querySelector('#pipelineManager-main-customBlock');
+    const fiberKey = root && Object.keys(root).find((key) => key.startsWith('__reactFiber$'));
+    let fiber = fiberKey ? root[fiberKey] : null;
+    for (let depth = 0; fiber && depth < 60; depth += 1, fiber = fiber.return) {
+      const state = fiber.stateNode?.state;
+      // Read the manager's complete model, not visible rows or search-result pages.
+      if (!Array.isArray(state?.packageList) || typeof state.currentTenant !== 'string' || !state.currentTenant.trim()) continue;
+      const packages = [];
+      let count = 0;
+      if (state.packageList.length > 10000) return;
+      for (const item of state.packageList) {
+        // Draft-only packages have no stable published package version and cannot enter the preview.
+        if (!/^v?\d+\.\d+\.\d+$/u.test(item?.version || '') || !Array.isArray(item.pipelines)) continue;
+        count += item.pipelines.length;
+        if (count > 100000) return;
+        packages.push({ name: normalizeText(item.name), version: normalizeText(item.version),
+          pipelines: item.pipelines.filter((entry) => /^v?\d+\.\d+\.\d+$/u.test(entry?.version || '')).map((entry) => ({
+            name: normalizeText(entry.name), version: normalizeText(entry.version), type: normalizeText(entry.type) || 'pipeline',
+          })) });
+      }
+      // No code, draft contents, bearer tokens, or full component state leave the page helper.
+      window.postMessage({ source: MESSAGE_SOURCE, type: 'pipeline-export-context-response', requestId: normalizeText(message.requestId),
+        tenantId: normalizeText(state.currentTenant), pageUrl: window.location.href, documentKey: exportDocumentKey, packages }, window.location.origin);
+      return;
+    }
+  }
+
   // Find the live Designer manager through the package row's React ancestry.
   function getDesignerManager() {
     const row = document.querySelector('li[data-level="1"]');
@@ -842,6 +874,7 @@
 
   // Route each message type to one handler; unknown types are ignored.
   const messageHandlers = {
+    'pipeline-export-context-request': handleExportContext,
     // Verify tenant metadata without rebuilding the package index or making a service request.
     'favorite-context-request': (message) => window.postMessage({ source: MESSAGE_SOURCE, type: 'favorite-context-response',
       requestId: normalizeText(message.requestId), tenantId: getCurrentTenantId(), pageUrl: window.location.href }, window.location.origin),

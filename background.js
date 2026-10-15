@@ -1,7 +1,7 @@
 "use strict";
 
 // Load the same validation and drawing rules used by the settings preview.
-importScripts("icon-appearance.js", "custom-sites.js", "favorites-data.js", "favorites-worker.js", "update-summary.js");
+importScripts("icon-appearance.js", "custom-sites.js", "favorites-data.js", "favorites-worker.js", "update-summary.js", "pipeline-export-worker.js");
 let pendingIconUpdate = Promise.resolve();
 
 // Serialize site changes so a removal cannot race an earlier registration request.

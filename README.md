@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 development checkpoint (2.0.0):** this branch is not the store release. Settings regrouping and update summaries are implemented; the pipeline exporter has tested filtering/ZIP groundwork but is not connected to Ellucian downloads yet. See [v2 Development](docs/V2-Development.md). Main and the existing release ZIP remain on 1.22.6.
+> **v2 development checkpoint (2.0.1):** this branch is not the store release. Settings regrouping, update summaries, and a separate Designer export-preview tab are implemented. Authenticated ZIP downloads remain disabled while their adapters are completed. See [v2 Development](docs/V2-Development.md). Main and the existing release ZIP remain on 1.22.6.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -79,6 +79,10 @@ node tests/tenant-favorites-browser.cjs
 node tests/published-fitting-details.cjs
 node tests/update-summary.cjs
 node tests/pipeline-export-core.cjs
+node tests/pipeline-export-session.cjs
+node tests/pipeline-export-worker.cjs
+node tests/pipeline-export-context.cjs
+node tests/pipeline-export-preview.cjs
 node tests/v2-popup.cjs
 ```
 

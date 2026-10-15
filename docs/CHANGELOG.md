@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.0.1 — 2026-10-14 — Dedicated Export Preview
+
+- Adds a separate extension export tab, explicitly opened from settings, with Designer metadata preview, counts, Show More, working indicator, Cancel, and Refresh Preview. Preview uses the full loaded manager model rather than search/visible-row caps and does not request source JSON.
+- Requires Shared From consent and recorded exact package/pipeline relationships by default. Adds a separately confirmed, temporary Shift+D advanced preview override and one-use, in-memory launch tickets bound to the original source tab and created extension tab. No saved override or new permissions.
+- Adds a tested, offline six-reader collection runner with before/after context checks, cancellation, formatted JSON, size limits, and all-or-nothing failure handling. Authenticated adapters are unfinished: Download ZIP stays disabled and Integration Packages export is not connected yet.
+- Tests cover 120×120 package/pipeline metadata projection, 120-record collection, bounded requests, sender/route checks, expired/replayed launch tickets, preview pagination, cancellation/late replies, opt-out, both themes, advanced consent, and preference preservation. No live downloads or signed-in account tests claimed. Main, outputs, and store remain unchanged.
+
 ## 2.0.0 — 2026-10-14 — Development Checkpoint
 
 - Starts v2 on develop; main and the packaged 1.22.6 release remain unchanged. This is source-only development, not a store-ready release.

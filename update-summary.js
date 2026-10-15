@@ -7,6 +7,11 @@
 
   // Describe only completed behavior; the first v2 checkpoint is not a finished exporter.
   const NOTES = Object.freeze({
+    "2.0.1": Object.freeze([
+      "Pipeline export previews now open in a separate tab.",
+      "Previews use saved Designer sources and include records beyond search display limits.",
+      "Authenticated ZIP downloads remain disabled while their adapter is completed.",
+    ]),
     "2.0.0": Object.freeze([
       "Settings are grouped by navigation, Packages, and Designer.",
       "ZIP pipeline export is in development; downloads are not enabled yet.",

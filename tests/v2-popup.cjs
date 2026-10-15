@@ -10,8 +10,9 @@ const root = path.resolve(__dirname, "..");
 // Keep every fixture preference in memory, including version markers and failed dismissals.
 function installStub() {
   // Preserve the synthetic store across reloads, mirroring extension-local persistence.
-  const saved = JSON.parse(localStorage.getItem("syntheticPreferences") || "null") || { packageArtifactsEnabled: false, pendingUpdateSummary: { version: "2.0.0" }, favorites: { keep: true } };
-  const runtime = { lastError: undefined, getManifest: () => ({ version: "2.0.0", content_scripts: [{ matches: [] }] }), sendMessage: async () => ({ ok: true }), onMessage: { addListener() {} } };
+  const saved = JSON.parse(localStorage.getItem("syntheticPreferences") || "null") || { packageArtifactsEnabled: false, pendingUpdateSummary: { version: "2.0.1" }, favorites: { keep: true } };
+  window.__messages = [];
+  const runtime = { lastError: undefined, getManifest: () => ({ version: "2.0.1", content_scripts: [{ matches: [] }] }), sendMessage: async (message) => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
   window.chrome = {
     runtime,
     storage: { local: {
@@ -50,7 +51,21 @@ async function run() {
       assert.equal(await page.locator(".designer-card #shared-version-enabled").count(), 1);
       assert.equal(await page.locator(".designer-card #fitting-details-enabled").count(), 1);
       assert.equal(await page.locator(".backup-card #export-shared-from").count(), 1);
-      assert.equal(await page.locator("#export-pipelines").isDisabled(), true);
+      assert.equal(await page.locator("#export-pipelines").isDisabled(), false);
+      // Shift+D is ignored while typing, and a revealed override still needs separate confirmation.
+      await page.locator('#icon-letters').evaluate((node) => node.dispatchEvent(new KeyboardEvent('keydown', { key: 'D', shiftKey: true, bubbles: true })));
+      assert.equal(await page.locator('#export-advanced').isVisible(), false);
+      await page.locator('body').press('Shift+D');
+      assert.equal(await page.locator('#export-advanced').isVisible(), true);
+      page.once('dialog', (dialog) => dialog.dismiss());
+      await page.locator('#export-all-accessible').click();
+      assert.equal(await page.locator('#export-all-accessible').isChecked(), false);
+      page.once('dialog', (dialog) => dialog.accept());
+      await page.locator('#export-all-accessible').click();
+      await page.locator('#export-pipelines').click();
+      assert.equal(await page.locator('#export-all-accessible').isChecked(), false);
+      assert.equal(await page.evaluate(() => window.__messages.find((message) => message.type === 'pipeline-export-open').overrideConfirmed), true);
+      assert.equal(await page.evaluate(() => Object.hasOwn(window.__saved, 'overrideConfirmed')), false);
 
       // Failed dismissal leaves notes visible and retries cannot change any favorite data.
       await page.evaluate(() => { window.__failDismiss = true; });

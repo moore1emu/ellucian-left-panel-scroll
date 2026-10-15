@@ -1,0 +1,17 @@
+:root { color-scheme: light dark; font-family: system-ui, sans-serif; background: light-dark(#f3f4f6, #17191d); color: light-dark(#20242b, #eceef4); }
+/* Keep a readable workspace without forcing the narrow settings popup's dimensions. */
+main { max-width: 1050px; margin: 40px auto; padding: 0 24px; }
+header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+h1 { margin: 0; font-size: 25px; } header p { margin: 3px 0 0; opacity: .7; }
+section { padding: 24px; border: 1px solid light-dark(#d7dbe3, #444a55); border-radius: 14px; background: light-dark(#fff, #24282f); }
+h2 { margin-top: 0; font-size: 18px; } p { line-height: 1.5; }
+/* Long institution-specific names scroll within the preview instead of widening the whole page. */
+#preview-table { max-height: 55vh; overflow: auto; margin: 20px 0; }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+th, td { padding: 11px; border-bottom: 1px solid light-dark(#e3e6ec, #444a55); white-space: nowrap; }
+th { position: sticky; top: 0; background: light-dark(#fff, #24282f); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+button, #save-zip { padding: 9px 14px; border: 1px solid light-dark(#b9c0cc, #747d8d); border-radius: 7px; background: light-dark(#f6f7fa, #303640); color: inherit; font: inherit; cursor: pointer; text-decoration: none; }
+button:disabled { opacity: .5; cursor: default; } progress { width: 100%; } .notice { color: light-dark(#75500c, #efc478); }
+/* Preserve semantic hidden state even on styled links and flexible action groups. */
+[hidden] { display: none !important; }
