@@ -25,7 +25,9 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.1.7 is 2.1.8, while the next v1 maintenance revision after 1.22.8 is 1.22.9. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.1.8 is 2.1.9, while the next v1 maintenance revision after 1.22.8 is 1.22.9. Do not rename historical releases.
+
+- Keep the unpublished v2 What's New message focused on the major changes since v1: redesigned task-tab settings and published artifact ZIP export. Preserve version/dismissal guards; document individual candidate tweaks in the changelog instead. Do not advertise unrestricted exports or hidden override behavior in this overview.
 
 - Preserve the targeted 2.1.6 guards: pending same-page pin snapshots cannot overwrite newer edits; successful reconciliation reads only the package list without locking controls, and stale visits/read-backs are ignored. Do not merge deleted pins back in. Failed settings reads keep preference controls disabled; search saves roll back independently. Replaced/cancelled backup reads remain invalid. Normal Pipeline/API source versions must be present and exact; preserve the separate Sub-Pipeline major/null exception. Download Again verifies the original context before handing off its private blob, without new source reads or an exposed bypass link. Same-scope multi-tab whole-list merging remains outside this repair.
 

@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.1.7):** Fixes settings tab hover overlap without changing text size, popup dimensions, or saved behavior. Includes the 2.1.6 reliability repairs. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.1.8):** What's New now highlights redesigned settings and published artifact ZIP export since v1, rather than individual test-build tweaks. Existing functionality and safeguards are unchanged. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 

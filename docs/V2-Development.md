@@ -1,6 +1,8 @@
 # v2 Development
 
-This is the **2.1.7 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+This is the **2.1.8 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+
+The current What's New overview covers the big-ticket v2 changes since v1: redesigned task-tab settings and published Pipeline/Sub-Pipeline/API/Transformer ZIP export with optional readable formatting. Keep that baseline through unpublished candidates; put minor tweaks in the changelog. Existing version/dismissal guards and export eligibility are unchanged.
 
 Settings tab widths now accommodate their full labels, including bold selected text, so neighboring hover backgrounds cannot cover them. Font size, popup width/height, task layout, and saved behavior are unchanged.
 

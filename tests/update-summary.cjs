@@ -93,6 +93,22 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.1.6" }, storage, "2.1.7");
   assert.equal(summary.notesFor(saved, "2.1.7").length, 3);
   assert.match(summary.notesFor(saved, "2.1.7")[0], /labels/);
+  // The unpublished v2 release highlights its major features for v1 users and candidate testers alike.
+  for (const previousVersion of ["1.22.8", "2.1.7"]) {
+    await summary.recordUpdate({ reason: "update", previousVersion }, storage, "2.1.8");
+    const notes = summary.notesFor(saved, "2.1.8");
+    assert.equal(notes.length, 2);
+    assert.match(notes[0], /Redesigned settings.*tabs/);
+    assert.match(notes[1], /Export published Pipelines, Sub-Pipelines, APIs, and Transformers/);
+    assert.match(notes[1], /ZIP.*optional readable formatting/);
+    assert.equal(summary.notesFor(saved, "2.1.7").length, 0);
+  }
+  // Dismissal and repeat-reload guards still apply to the broader release overview.
+  saved[summary.SEEN_KEY] = "2.1.8";
+  const beforeDismissedReload = writes.length;
+  await summary.recordUpdate({ reason: "update", previousVersion: "1.22.8" }, storage, "2.1.8");
+  assert.equal(writes.length, beforeDismissedReload);
+  assert.equal(summary.notesFor(saved, "2.1.8").length, 0);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

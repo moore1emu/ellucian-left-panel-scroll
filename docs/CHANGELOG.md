@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.1.8 — 2026-10-16 — v2 Release Overview
+
+- Changes the current What's New message to the big-ticket improvements since v1: redesigned task-tab settings and published Pipeline/Sub-Pipeline/API/Transformer ZIP export with optional readable formatting. Unpublished candidate tweaks stay in this changelog rather than replacing the release overview.
+- Keeps version gating, dismissal/reload behavior, favorites, settings, consent, export eligibility, and actual download behavior unchanged. Tests cover upgrades from v1 and the prior v2 candidate, the real popup's two-item overview, and dismissal preservation. Main/store unchanged.
+
 ## 2.1.7 — 2026-10-16 — Settings Tab Hover Spacing
 
 - Gives each settings tab enough width for its full label rather than forcing equal widths. Appearance/Sites hover backgrounds no longer crowd neighboring text, including bold selected labels. Font size, popup width, task layout, and saved behavior are unchanged.

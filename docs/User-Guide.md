@@ -1,6 +1,6 @@
 # User Guide
 
-> Develop's 2.1.7 test candidate fixes settings tab hover overlap while retaining text size, popup dimensions, and the approved task layout. Includes the 2.1.6 reliability repairs. Reload the same unpacked folder, refresh your Integration page, and reopen settings to test. Refresh Sources is Designer-only; Pipeline Export is Packages-only. See [v2 Development](V2-Development.md).
+> Develop's 2.1.8 test candidate shows a concise What's New overview since v1: redesigned settings and published artifact ZIP export with optional readable formatting. Minor candidate tweaks remain in the changelog. Existing functionality is unchanged. Reload the same unpacked folder and reopen settings to view the overview. Refresh Sources is Designer-only; Pipeline Export is Packages-only. See [v2 Development](V2-Development.md).
 
 If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
 
