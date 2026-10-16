@@ -10,11 +10,11 @@ const root = path.resolve(__dirname, '..');
 function installStub() {
   // Retain unrelated settings across reloads to catch accidental resets.
   const saved = JSON.parse(localStorage.getItem('syntheticPreferences') || 'null') || {
-    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '2.1.6' }, favorites: { keep: true }, sharedFromEnabled: true,
+    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '2.1.7' }, favorites: { keep: true }, sharedFromEnabled: true,
   };
   window.__messages = [];
   window.__page = 'packages';
-  const runtime = { lastError: undefined, getManifest: () => ({ version: '2.1.6', content_scripts: [{ matches: [] }] }),
+  const runtime = { lastError: undefined, getManifest: () => ({ version: '2.1.7', content_scripts: [{ matches: [] }] }),
     sendMessage: async message => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
   window.chrome = { runtime, storage: { local: {
     get(defaults, callback) { const result = { ...defaults }; for (const key of Object.keys(result)) if (Object.hasOwn(saved, key)) result[key] = saved[key]; if (callback) setTimeout(() => callback(result), 0); return Promise.resolve(result); },
@@ -73,6 +73,27 @@ function installStub() {
       await page.evaluate(() => { window.__failWrite = false; });
       await page.locator('#dismiss-update-summary').click();
       assert.equal(await page.locator('#update-summary').isVisible(), false);
+
+      // Hover backgrounds must not cover neighboring labels, including the wider bold selected tab.
+      for (const active of ['Navigation', 'Appearance', 'Sites']) {
+        await task(active);
+        for (const hovered of ['Navigation', 'Sharing', 'Appearance', 'Sites', 'Export']) {
+          await page.getByRole('tab', { name: hovered, exact: true }).hover();
+          const bounds = await page.locator('[role="tab"]').evaluateAll(nodes => nodes.map(node => {
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            const text = range.getBoundingClientRect();
+            const box = node.getBoundingClientRect();
+            return { name: node.textContent, left: box.left, right: box.right, textLeft: text.left, textRight: text.right, height: text.height };
+          }));
+          for (const tab of bounds) {
+            assert.ok(tab.textLeft >= tab.left + 3 && tab.textRight <= tab.right - 3, `${active}/${hovered}: ${tab.name} needs its own label space`);
+            assert.ok(tab.height < 20, 'Tab labels stay on one line');
+          }
+          assert.ok(bounds[0].left >= 0 && bounds.at(-1).right <= 360, 'All tabs stay inside the popup');
+        }
+      }
+      await task('Navigation');
 
       // The ordinary Navigation panel must fit without hiding the final search control or shrinking text.
       const navigation = await page.evaluate(() => {

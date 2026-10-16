@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.1.7": Object.freeze([
+      "Settings tabs reserve enough space for their full labels on hover.",
+      "Appearance and Sites no longer crowd neighboring tab text.",
+      "Text size, page behavior, and saved settings are unchanged.",
+    ]),
     "2.1.6": Object.freeze([
       "Protects rapid favorite edits and cancelled backup previews from stale responses.",
       "Settings read/save failures now keep confirmed values and explain how to retry.",

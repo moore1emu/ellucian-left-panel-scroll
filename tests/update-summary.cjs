@@ -89,6 +89,10 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.1.5" }, storage, "2.1.6");
   assert.equal(summary.notesFor(saved, "2.1.6").length, 3);
   assert.match(summary.notesFor(saved, "2.1.6")[0], /favorite/);
+  // Tab-spacing notes are scoped to this presentation-only patch.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.1.6" }, storage, "2.1.7");
+  assert.equal(summary.notesFor(saved, "2.1.7").length, 3);
+  assert.match(summary.notesFor(saved, "2.1.7")[0], /labels/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

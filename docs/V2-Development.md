@@ -1,8 +1,10 @@
 # v2 Development
 
-This is the **2.1.6 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+This is the **2.1.7 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
 
-The targeted review fixes guard rapid same-page favorite saves and stale visits/read-backs, failed opening settings reads, independent search-save rollback, and replaced/cancelled backup file reads. Successful favorite reconciliation reads only the package list without disabling controls; it does not merge deleted pins back in. Same-list simultaneous multi-tab whole-list conflicts remain outside this change. Missing normal Pipeline/API source versions now fail closed; Sub-Pipelines retain their documented major/null exception. Download Again verifies the original document/tenant/consent before handing off the same private ZIP without source rereads. Obsolete popup disclosure styles were removed and markup indentation normalized; layout, storage schemas, permissions, and request limits remain unchanged.
+Settings tab widths now accommodate their full labels, including bold selected text, so neighboring hover backgrounds cannot cover them. Font size, popup width/height, task layout, and saved behavior are unchanged.
+
+The 2.1.6 targeted review fixes guard rapid same-page favorite saves and stale visits/read-backs, failed opening settings reads, independent search-save rollback, and replaced/cancelled backup file reads. Successful favorite reconciliation reads only the package list without disabling controls; it does not merge deleted pins back in. Same-list simultaneous multi-tab whole-list conflicts remain outside this change. Missing normal Pipeline/API source versions now fail closed; Sub-Pipelines retain their documented major/null exception. Download Again verifies the original document/tenant/consent before handing off the same private ZIP without source rereads. Obsolete popup disclosure styles were removed and markup indentation normalized; layout, storage schemas, permissions, and request limits remain unchanged.
 
 Controls now sit eight pixels inside their named subgroup headings, with headings retaining their alignment. Sharing/Sites remain unindented. This adds no vertical spacing or new behavior.
 

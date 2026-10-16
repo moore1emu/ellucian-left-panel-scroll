@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.1.6):** Adds targeted reliability fixes for rapid favorite edits, failed settings reads/search saves, cancelled backup-file reads, exact normal Pipeline/API source versions, and Download Again context checks. The approved settings layout, data formats, permissions, and Sub-Pipeline version exception remain unchanged. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.1.7):** Fixes settings tab hover overlap without changing text size, popup dimensions, or saved behavior. Includes the 2.1.6 reliability repairs. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
