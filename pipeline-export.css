@@ -15,7 +15,8 @@ legend { padding: 0 7px; font-weight: 600; }
 .export-package { border-top: 1px solid light-dark(#e3e6ec, #444a55); }
 .export-package summary { cursor: pointer; padding: 12px 5px; }
 .package-name { margin-left: 8px; font-weight: 600; overflow-wrap: anywhere; }
-.package-count { margin-left: 12px; font-size: 13px; opacity: .8; white-space: nowrap; }
+/* Allow the added type totals to wrap beside long package names on smaller screens. */
+.package-count { margin-left: 12px; font-size: 13px; opacity: .8; white-space: normal; }
 input[type="checkbox"] { width: 17px; height: 17px; vertical-align: middle; accent-color: #7652bd; }
 .pipeline-list { max-height: 38vh; overflow: auto; margin: 0 5px 12px; }
 table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }

@@ -25,7 +25,9 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.0.8 is 2.0.9, while the next v1 maintenance revision after 1.22.8 is 1.22.9. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.0.9 is 2.1.0, while the next v1 maintenance revision after 1.22.8 is 1.22.9. Do not rename historical releases.
+
+- Package headings show checked type counts beside selected/total counts, omit zero-selected types, and leave expanded lists unchanged. Download ZIP automatically requests the browser download only after complete successful assembly and final context checks. Keep Download Again as a retry of that same local ZIP without more source reads; revoke its URL on selection/context/consent changes. Never initiate partial/cancelled downloads or imply already completed browser downloads can be removed. No downloads permission is needed for the existing local anchor handoff.
 
 - Keep the latest published Pipeline/Sub-Pipeline within every available major, not only the latest overall. Major rows are independently selectable and save with stable _v<major>.json suffixes even when only one major exists; never rewrite JSON versions. APIs and transformers deliberately retain latest-overall selection. Count each checked major separately in the local preview's selected type totals. Preserve exact typed name eligibility, selected version/native routes, collision checks, and existing limits/guards.
 

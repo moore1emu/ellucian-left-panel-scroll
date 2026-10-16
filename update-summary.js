@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.0.9": Object.freeze([
+      "Package headings show selected counts by type without changing their expanded lists.",
+      "Download ZIP now builds the complete archive and starts its download in one click.",
+      "Download Again retries the same prepared ZIP without fetching source files again.",
+    ]),
     "2.0.8": Object.freeze([
       "Export the latest published Pipeline and Sub-Pipeline within every major version.",
       "Preview selected Pipeline, Sub-Pipeline, API, and Transformer counts.",

@@ -56,6 +56,10 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.0.7" }, storage, "2.0.8");
   assert.equal(summary.notesFor(saved, "2.0.8").length, 3);
   assert.match(summary.notesFor(saved, "2.0.8")[0], /every major version/);
+  // Package summaries and one-click download notes belong only to their delivered revision.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.0.8" }, storage, "2.0.9");
+  assert.equal(summary.notesFor(saved, "2.0.9").length, 3);
+  assert.match(summary.notesFor(saved, "2.0.9")[1], /one click/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

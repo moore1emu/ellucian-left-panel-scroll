@@ -52,11 +52,20 @@
     if (changed) discardZip();
     let selectedPackages = 0;
     for (const group of groups.values()) {
-      const count = group.items.reduce((total, item) => total + Number(selected.has(item.index)), 0);
+      // Summarize checked types beside this package without regrouping or rebuilding its full list.
+      const types = new Map();
+      const count = group.items.reduce((total, item) => {
+        if (!selected.has(item.index)) return total;
+        types.set(item.entry.type, (types.get(item.entry.type) || 0) + 1);
+        return total + 1;
+      }, 0);
       if (count) selectedPackages += 1;
       group.checkbox.checked = count === group.items.length;
       group.checkbox.indeterminate = count > 0 && count < group.items.length;
-      group.count.textContent = `${count} of ${group.items.length} selected`;
+      // Omit zero-selected types and keep the same type order as the top summary.
+      const details = [['pipeline', 'Pipelines'], ['sub-pipeline', 'Sub-Pipelines'], ['api', 'APIs'], ['transformer', 'Transformers']]
+        .filter(([type]) => types.has(type)).map(([type, label]) => `${label}: ${types.get(type)}`).join(', ');
+      group.count.textContent = `${count} of ${group.items.length} selected${details ? ` (${details})` : ''}`;
       for (const item of group.items) if (item.checkbox) item.checkbox.checked = selected.has(item.index);
     }
     selectAll.checked = selected.size === plan.entries.length;
@@ -198,7 +207,9 @@
       save.href = objectUrl;
       save.download = 'integration-navigator-pipelines.zip';
       save.hidden = false;
-      status.textContent = 'Export ready. Select Save ZIP to download it.';
+      // Keep: one explicit Download ZIP action builds the complete archive and requests its browser download (2.0.9).
+      status.textContent = 'ZIP prepared. Download requested; use Download Again if needed.';
+      save.click();
     } catch (error) {
       if (current === generation) {
         discard();
@@ -228,7 +239,7 @@
     discard();
     progress.hidden = true;
     refresh.disabled = Boolean(controller);
-    status.textContent = 'Cancelled. No ZIP was downloaded.';
+    status.textContent = 'Cancelled. Existing browser downloads are unchanged.';
   });
   selectAll.addEventListener('change', () => {
     plan.entries.forEach((entry, index) => { if (selectAll.checked) selected.add(index); else selected.delete(index); });

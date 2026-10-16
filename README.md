@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.0.8):** exports the latest published Pipeline/Sub-Pipeline within each major, with independent checkboxes and `_v1.json`/`_v2.json` files. The preview shows selected counts for Pipelines, Sub-Pipelines, APIs, and Transformers. Published transformer `.js` export remains included; refresh Shared From in each source Designer to record transformer names. Signed-in ZIP confirmation is still required. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.0.9):** package headings show selected type counts without changing the expanded lists. Download ZIP now builds and starts the download in one click, with Download Again available afterward. Every published Pipeline/Sub-Pipeline major and transformer `.js` exports remain included. Signed-in confirmation is still required. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 

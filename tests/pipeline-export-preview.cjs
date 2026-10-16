@@ -28,7 +28,8 @@ function stub() {
   window.__relay = async (message) => {
       window.__requests.push({ type: message.type });
       if (window.__delay && message.type === 'pipeline-export-preview') await new Promise((resolve) => { window.__release = resolve; });
-      if (message.type === 'pipeline-export-read') return { ok: true, data: { name: message.entry.name, version: '1.0.0', fittings: [] } };
+      if (message.type === 'pipeline-export-read') return window.__failSource ? { ok: false, reason: 'source-unavailable' }
+        : { ok: true, data: { name: message.entry.name, version: '1.0.0', fittings: [] } };
       if (message.type !== 'pipeline-export-preview') return { ok: true };
       return { ok: true, context: { url: 'https://packages.test/data-connect/home', tenantId: 'synthetic', documentKey: 'document', sessionId: 'session' },
         plan: { entries: pipelines.map((item, index) => ({ ...item, packageName: window.__manyPackages ? `Package ${index}` : index >= 110 ? 'Small Package' : 'Demo Package' })), skipped: 1 } };
@@ -41,7 +42,9 @@ async function run() {
     for (const colorScheme of ['light', 'dark']) {
       const page = await browser.newPage({ colorScheme, viewport: { width: 1100, height: 800 } });
       const errors = [];
+      const downloads = [];
       page.on('pageerror', (error) => errors.push(error.message));
+      page.on('download', (file) => downloads.push(file));
       await page.route('https://export.test/**', (route) => {
         const file = path.join(root, new URL(route.request().url()).pathname);
         if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) return route.fulfill({ status: 404 });
@@ -55,13 +58,16 @@ async function run() {
       assert.equal(await page.locator('.pipeline-checkbox').count(), 0, 'Collapsed packages avoid eager row creation');
       assert.equal(await page.locator('#show-more').count(), 0);
       const demo = page.locator('.export-package').filter({ hasText: 'Demo Package' });
+      assert.equal(await demo.locator('.package-count').innerText(), '110 of 110 selected (Pipelines: 55, APIs: 55)');
       // Package checkboxes select without expanding; individual exclusions set the mixed state.
       await page.getByRole('checkbox', { name: 'Select Package: Demo Package', exact: true }).uncheck();
+      assert.equal(await demo.locator('.package-count').innerText(), '0 of 110 selected');
       assert.equal(await demo.evaluate((node) => node.open), false);
       await demo.locator('.package-name').click();
       await demo.locator('.pipeline-checkbox').first().waitFor();
       assert.equal(await demo.locator('.pipeline-checkbox').count(), 110, 'Expanded groups have no hidden result cap');
       await demo.locator('.pipeline-checkbox').first().check();
+      assert.equal(await demo.locator('.package-count').innerText(), '1 of 110 selected (Pipelines: 1)');
       assert.equal(await demo.locator('.package-checkbox').evaluate((node) => node.indeterminate), true);
       assert.match(await page.locator('#export-counts').textContent(), /11 of 120 files/);
       await page.locator('#select-all').check();
@@ -81,19 +87,34 @@ async function run() {
       }
 
       // Source retrieval requires the explicit action, then produces a valid local ZIP download.
+      const firstDownload = page.waitForEvent('download');
       await page.locator('#download-zip').click();
+      const firstFile = await firstDownload;
+      assert.equal(firstFile.suggestedFilename(), 'integration-navigator-pipelines.zip');
       await page.waitForFunction(() => !document.querySelector('#save-zip').hidden);
       const payload = await page.evaluate(async () => Array.from(new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())));
+      // Verify the browser really received this complete ZIP, not only that a local link appeared.
+      const chunks = [];
+      for await (const chunk of await firstFile.createReadStream()) chunks.push(chunk);
+      assert.deepEqual(Buffer.concat(chunks), Buffer.from(payload));
+      assert.equal(await page.locator('#save-zip').innerText(), 'Download Again');
       assert.equal(Buffer.from(payload).readUInt32LE(0), 0x04034b50);
       // Even-numbered fixture rows are Pipelines; odd-numbered APIs keep their original filenames.
       assert.match(Buffer.from(payload).toString('utf8'), /Small Package\/Pipeline 118_v1.json/);
       assert.match(Buffer.from(payload).toString('utf8'), /Small Package\/Pipeline 119.json/);
       assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 10);
       assert.equal(Buffer.from(payload).includes(Buffer.from('Demo Package/')), false);
+      // Retrying the already prepared archive requires no additional source lookups.
+      const repeatedDownload = page.waitForEvent('download');
+      await page.locator('#save-zip').click();
+      await repeatedDownload;
+      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 10);
       // A new selection invalidates its old ZIP, then reuses the still-valid preview for another download.
       await page.locator('#select-all').check();
       assert.equal(await page.locator('#save-zip').isHidden(), true);
+      const allDownload = page.waitForEvent('download');
       await page.locator('#download-zip').click();
+      await allDownload;
       await page.locator('#save-zip').waitFor();
       assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 130);
       // Removing saved ownership revokes the completed link as well as any in-flight default job.
@@ -117,6 +138,14 @@ async function run() {
       await page.locator('.export-package').last().locator('.package-name').click();
       await page.locator('.export-package').last().locator('.pipeline-checkbox').waitFor();
       assert.equal(await page.locator('.export-package').last().locator('.pipeline-checkbox').count(), 1);
+      // A failed collection must not invoke the automatic download or expose a stale retry link.
+      const completedDownloads = downloads.length;
+      await page.evaluate(() => { window.__failSource = true; });
+      await page.locator('#download-zip').click();
+      await page.locator('#export-status').filter({ hasText: 'No partial ZIP was created' }).waitFor();
+      assert.equal(downloads.length, completedDownloads);
+      assert.equal(await page.locator('#save-zip').isHidden(), true);
+      await page.evaluate(() => { window.__failSource = false; });
       await page.evaluate(() => { window.__saved.sharedFromEnabled = false; window.__storageChange({ sharedFromEnabled: { newValue: false } }, 'local'); });
       assert.equal(await page.locator('.export-package').count(), 0);
       await page.locator('#refresh-preview').click();

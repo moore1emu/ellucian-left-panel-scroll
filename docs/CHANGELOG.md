@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.0.9 — 2026-10-16 — Package Counts and One-Click ZIP
+
+- Package headings now show selected counts by type beside their existing selected/total count, for example 2 of 2 selected (Pipelines: 1, APIs: 1). Counts update with individual, package, and Select All choices; zero-selected types are omitted. The expanded list stays unchanged, and long summaries can wrap rather than overflow.
+- Download ZIP now builds the complete archive and automatically requests its browser download with one click. Download Again is available afterward for the same prepared ZIP without more source requests; changing selection, refreshing, cancelling, or losing eligibility invalidates that retry link. Browser download preferences and any save prompt still apply.
+- Failed/cancelled/context-invalid exports never start a partial download. Cancellation feedback does not claim that previously completed browser downloads were removed. No new permissions, storage, service endpoints, authentication changes, Git push integration, or favorite/cache migrations.
+- Tests cover package-level counts for every type, omitted zero types, live selection updates, actual browser download events and byte-identical ZIP streams, repeated downloads without source reads, and no download after source failure. Existing major-version selection, six-request limits, consent/context guards, and all-or-nothing assembly remain unchanged. Signed-in confirmation remains required; main/store unchanged.
+
 ## 2.0.8 — 2026-10-16 — Export Each Published Major
 
 - Pipeline and Sub-Pipeline export selection now retains the latest published minor/patch within every available major, rather than dropping older majors. Each major has its own checkbox and version row; for example, 1.0.4 and 2.0.5 can both be selected. APIs and transformers retain latest-overall selection.

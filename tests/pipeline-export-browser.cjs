@@ -80,11 +80,13 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     await exported.locator('.package-name').click();
     await exported.locator('.pipeline-checkbox').first().waitFor();
     assert.equal(await exported.locator('.pipeline-checkbox').count(), 6);
+    assert.equal(await exported.locator('.package-count').innerText(), '6 of 6 selected (Pipelines: 2, Sub-Pipelines: 2, APIs: 1, Transformers: 1)');
     assert.match(await exported.locator('#export-counts').innerText(), /6 of 6 files selected \(Pipelines: 2, Sub-Pipelines: 2, APIs: 1, Transformers: 1\)/);
     // Same-named major rows are independent checkboxes, not one shared selection key.
     const firstMajor = exported.getByRole('checkbox', { name: 'Select Pipeline: Sub (sub-pipeline, v1.0.5)', exact: true });
     const secondMajor = exported.getByRole('checkbox', { name: 'Select Pipeline: Sub (sub-pipeline, v2.0.5)', exact: true });
     await firstMajor.uncheck();
+    assert.equal(await exported.locator('.package-count').innerText(), '5 of 6 selected (Pipelines: 2, Sub-Pipelines: 1, APIs: 1, Transformers: 1)');
     assert.equal(await secondMajor.isChecked(), true);
     assert.match(await exported.locator('#export-counts').innerText(), /5 of 6 files selected \(Pipelines: 2, Sub-Pipelines: 1, APIs: 1, Transformers: 1\)/);
     await firstMajor.check();
@@ -94,10 +96,16 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     // Browser automation can keep debug-attached workers alive, so this delay alone is not a restart proof.
     await new Promise((resolve) => setTimeout(resolve, 35000));
     // Only explicit download traverses worker -> isolated bridge -> native reader and returns source JSON.
+    const downloadEvent = exported.waitForEvent('download');
     await exported.locator('#download-zip').click();
+    const downloaded = await downloadEvent;
+    assert.equal(downloaded.suggestedFilename(), 'integration-navigator-pipelines.zip');
     await exported.locator('#save-zip').waitFor();
     worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     const bytes = Buffer.from(await exported.evaluate(async () => [...new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())]));
+    const chunks = [];
+    for await (const chunk of await downloaded.createReadStream()) chunks.push(chunk);
+    assert.deepEqual(Buffer.concat(chunks), bytes);
     assert.equal(bytes.readUInt32LE(0), 0x04034b50);
     for (const name of ['API', 'Integration_v0', 'Integration_v1', 'Sub_v1', 'Sub_v2']) assert.ok(bytes.includes(Buffer.from(`Owned Package/${name}.json`)));
     assert.ok(bytes.includes(Buffer.from('Owned Package/Function.js')));
