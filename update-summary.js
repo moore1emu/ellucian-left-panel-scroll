@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.1.3": Object.freeze([
+      "Settings use Navigation, Sharing, Appearance, Sites, and Export tabs.",
+      "Navigation groups General, Integration Packages, and Integration Designer controls.",
+      "Page-specific export/refresh actions explain when unavailable; saved settings are unchanged.",
+    ]),
     "2.1.2": Object.freeze([
       "Integration Packages shows the newest Sub-Pipeline release within every published major.",
       "APIs remain latest-overall; native Integration rows and the sidebar stay unchanged.",

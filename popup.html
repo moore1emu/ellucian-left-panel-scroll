@@ -27,10 +27,21 @@
         <p id="update-summary-status" class="icon-status" role="status" aria-live="polite"></p>
       </section>
 
-      <!-- Keep global navigation choices together without changing their saved keys. -->
-      <details class="settings-card behavior-card navigation-card" open>
-        <summary>Navigation</summary>
-        <label class="setting-row" for="remember-width">
+      <!-- Keep task tabs visible while only their active content scrolls. -->
+      <p id="settings-context" class="settings-context" role="status">Checking Current Page…</p>
+      <nav class="settings-tabs" role="tablist" aria-label="Settings Tasks">
+        <button id="tab-navigation" type="button" role="tab" aria-controls="panel-navigation" aria-selected="true">Navigation</button>
+        <button id="tab-sharing" type="button" role="tab" aria-controls="panel-sharing" aria-selected="false" tabindex="-1">Sharing</button>
+        <button id="tab-appearance" type="button" role="tab" aria-controls="panel-appearance" aria-selected="false" tabindex="-1">Appearance</button>
+        <button id="tab-sites" type="button" role="tab" aria-controls="panel-sites" aria-selected="false" tabindex="-1">Sites</button>
+        <button id="tab-export" type="button" role="tab" aria-controls="panel-export" aria-selected="false" tabindex="-1">Export</button>
+      </nav>
+      <div class="settings-panels">
+        <section id="panel-navigation" class="settings-card settings-panel navigation-card" role="tabpanel" aria-labelledby="tab-navigation">
+          <!-- Group shared controls once, rather than repeating their page scope on every row. -->
+          <section class="behavior-card navigation-group" aria-labelledby="general-title">
+            <h2 id="general-title" title="Applies to Integration Packages and Integration Designer.">General</h2>
+<label class="setting-row" for="remember-width">
           <span class="setting-copy">
             <span class="setting-title" id="width-setting-title">
               Remember Resized Width
@@ -75,12 +86,10 @@
           </select>
         </label>
         <p id="navigation-status" class="icon-status" role="status" aria-live="polite"></p>
-      </details>
-
-      <!-- Describe Packages-only displays where users expect to find them. -->
-      <details class="settings-card behavior-card packages-card">
-        <summary>Integration Packages</summary>
-        <!-- Keep reference display independent of Designer-source consent. -->
+          </section>
+          <section class="behavior-card navigation-group packages-card" aria-labelledby="packages-title">
+            <h2 id="packages-title">Integration Packages</h2>
+<!-- Keep reference display independent of Designer-source consent. -->
         <label class="setting-row" for="package-artifacts-enabled" title="Integration Packages only; Designer is unchanged. Refresh Integration Packages after enabling.">
           <span class="setting-copy">
             <span class="setting-title">Show APIs &amp; Sub-Pipelines</span>
@@ -92,13 +101,51 @@
           </span>
         </label>
         <p id="package-artifacts-status" class="icon-status" role="status" aria-live="polite"></p>
+          </section>
+          <section class="behavior-card navigation-group designer-card" aria-labelledby="designer-title">
+            <h2 id="designer-title">Integration Designer</h2>
+        <!-- Keep published fitting viewing optional and separate from sharing consent. -->
+        <label class="setting-row" for="fitting-details-enabled" title="Designer published fittings only. Scroll, select, and copy; editing and fitting actions remain locked.">
+          <span class="setting-copy">
+            <span class="setting-title">View Published Fitting Details</span>
+            <span class="setting-description">Read and copy published text/code.</span>
+          </span>
+          <span class="switch">
+            <input id="fitting-details-enabled" type="checkbox" disabled />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="fitting-details-status" class="icon-status" role="status" aria-live="polite"></p>
+        <!-- Retain the independent selected-package search preference. -->
+        <label class="search-display-control" for="designer-search-display-mode">
+          <span class="setting-title">Pipeline Search</span>
+          <select id="designer-search-display-mode" disabled>
+            <option value="box">Search Box</option>
+            <option value="icon">Icon</option>
+            <option value="hidden">Hidden</option>
+          </select>
+        </label>
+          </section>
+        </section>
+        <section id="panel-sharing" class="settings-card settings-panel behavior-card sharing-card" role="tabpanel" aria-labelledby="tab-sharing" hidden>
+          <h2>Sharing &amp; Sources</h2>
+<!-- Destination checks retain their existing independent opt-in and storage key. -->
+        <label class="setting-row" for="shared-version-enabled">
+          <span class="setting-copy">
+            <span class="setting-title">Shared To</span>
+            <span class="setting-description">Destinations in Integration Designer.</span>
+          </span>
+          <span class="switch">
+            <input id="shared-version-enabled" type="checkbox" disabled />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="shared-to-status" class="icon-status" role="status" aria-live="polite"></p>
         <!-- Ownership collection stays off until the user accepts its local-data notice. -->
-        <label class="setting-row" for="shared-from-enabled" title="Visit Designer in each source environment first. Refresh updates only the currently open Designer environment.">
+        <label class="setting-row" for="shared-from-enabled" title="Visit Integration Designer in each source environment first. Refresh updates only the current Integration Designer environment.">
           <span class="setting-copy">
             <span class="setting-title">Shared From</span>
-            <span class="setting-description">Remember Designer sources.</span>
-            <!-- Display only the currently open Designer environment's cache status. -->
-            <span id="shared-from-cache-status" class="setting-description" role="status" aria-live="polite" hidden></span>
+            <span class="setting-description">Show sources in Integration Packages.</span>
           </span>
           <span class="switch">
             <input id="shared-from-enabled" type="checkbox" disabled aria-describedby="shared-from-help" />
@@ -114,56 +161,21 @@
           <button id="cancel-shared-from" type="button">Cancel</button>
         </div>
         <!-- Retain setup guidance for assistive technology without a permanent extra text line. -->
-        <span id="shared-from-help" hidden>Visit Designer in each source environment first. Refresh updates only the current Designer environment.</span>
+        <span id="shared-from-help" hidden>Visit Integration Designer in each source environment first. Refresh updates only the current Integration Designer environment.</span>
+        <!-- Keep source collection adjacent to its display setting, with readable page-specific availability. -->
+        <div id="source-refresh-block" class="source-refresh-block">
+          <div class="source-cache-heading"><strong>Source Cache</strong><span id="shared-from-cache-status" class="setting-description" role="status" aria-live="polite" hidden></span></div>
         <!-- Keep Refresh beneath Shared From, outside its checkbox label so it cannot change consent. -->
         <div class="shared-from-actions">
-          <button id="refresh-shared-from" type="button" disabled aria-label="Refresh Shared From Data" title="Visit Designer in each source environment first. Refresh sources from the current Designer environment.">Refresh</button>
+          <button id="refresh-shared-from" type="button" disabled aria-label="Refresh Shared From Data" aria-describedby="source-refresh-availability" title="Visit Integration Designer in each source environment first. Refresh sources from the current Integration Designer environment.">Refresh Sources</button>
         </div>
+        </div>
+        <p id="source-refresh-availability" class="card-description">Open Integration Designer to refresh sources.</p>
         <p id="shared-from-status" class="icon-status" role="status" aria-live="polite"></p>
-      </details>
-
-      <!-- Keep Designer-only viewing, destination sharing, and pipeline search together. -->
-      <details class="settings-card behavior-card designer-card">
-        <summary>Integration Designer</summary>
-        <!-- Destination checks retain their existing independent opt-in and storage key. -->
-        <label class="setting-row" for="shared-version-enabled">
-          <span class="setting-copy">
-            <span class="setting-title">Shared To</span>
-            <span class="setting-description">Show sharing destinations.</span>
-          </span>
-          <span class="switch">
-            <input id="shared-version-enabled" type="checkbox" disabled />
-            <span class="switch-track" aria-hidden="true"></span>
-          </span>
-        </label>
-        <p id="shared-to-status" class="icon-status" role="status" aria-live="polite"></p>
-        <!-- Keep published fitting viewing optional and separate from sharing consent. -->
-        <label class="setting-row" for="fitting-details-enabled" title="Designer published fittings only. Scroll, select, and copy; editing and fitting actions remain locked.">
-          <span class="setting-copy">
-            <span class="setting-title">View Published Fitting Details</span>
-            <span class="setting-description">Read and copy published text/code.</span>
-          </span>
-          <span class="switch">
-            <input id="fitting-details-enabled" type="checkbox" disabled />
-            <span class="switch-track" aria-hidden="true"></span>
-          </span>
-        </label>
-        <p id="fitting-details-status" class="icon-status" role="status" aria-live="polite"></p>
-        <!-- Retain the independent selected-package search preference. -->
-        <label class="search-display-control" for="designer-search-display-mode">
-          <span class="setting-title">Designer Pipeline Search</span>
-          <select id="designer-search-display-mode" disabled>
-            <option value="box">Search Box</option>
-            <option value="icon">Icon</option>
-            <option value="hidden">Hidden</option>
-          </select>
-        </label>
-      </details>
-
-      <!-- Keep optional personalization compact until the user opens it. -->
-      <details class="settings-card icon-appearance-card">
-        <summary>Icon &amp; Favorites</summary>
-        <div class="icon-appearance-controls">
+        </section>
+        <section id="panel-appearance" class="settings-card settings-panel icon-appearance-card" role="tabpanel" aria-labelledby="tab-appearance" hidden>
+          <h2>Icon &amp; Favorites</h2>
+<div class="icon-appearance-controls">
           <!-- Provide a native color picker and a short initials field. -->
           <label class="icon-control" for="icon-color">
             <span>Background</span>
@@ -216,12 +228,10 @@
           </div>
           <p id="favorite-color-status" class="icon-status" role="status" aria-live="polite"></p>
         </div>
-      </details>
-
-      <!-- Keep vanity-domain setup collapsed so everyday settings remain compact. -->
-      <details class="settings-card custom-sites-card">
-        <summary>Custom Sites</summary>
-        <p class="card-description">Standard Experience Test and Production sites are already enabled.</p>
+        </section>
+        <section id="panel-sites" class="settings-card settings-panel custom-sites-card" role="tabpanel" aria-labelledby="tab-sites" hidden>
+          <h2>Custom Sites</h2>
+<p class="card-description">Standard Experience Test and Production sites are already enabled.</p>
         <form id="custom-site-form">
           <label for="custom-site-url">University Experience URL</label>
           <div class="custom-site-entry">
@@ -233,23 +243,22 @@
         <!-- Render saved domains as text, never as user-provided HTML. -->
         <ul id="custom-site-list" aria-label="Custom Experience sites"></ul>
         <p id="custom-site-status" role="status" aria-live="polite"></p>
-      </details>
-
-      <!-- Keep: group export/import in the last settings section, with Refresh left under Shared From (1.22.3). -->
-      <details class="settings-card backup-card">
-        <summary>Export &amp; Backup</summary>
-        <!-- Open only metadata preview; source reads require Download ZIP in the separate export tab. -->
-        <div class="pipeline-export-section">
+        </section>
+        <!-- Keep: backups remain in the final task tab, independent of page-specific source/export availability (2.1.3). -->
+        <section id="panel-export" class="settings-card settings-panel backup-card" role="tabpanel" aria-labelledby="tab-export" hidden>
+<!-- Open only metadata preview; source reads require Download ZIP in the separate export tab. -->
+        <div class="pipeline-export-section" id="pipeline-export-section">
           <h2>Pipeline Export</h2>
           <p class="card-description">Export published pipelines and transformers.</p>
           <p class="export-setup-notice">Shared From setup is required.</p>
           <button id="export-pipelines" type="button" disabled aria-describedby="pipeline-export-status">Preview Pipeline Export</button>
-          <p id="pipeline-export-status" class="icon-status">Loading export preview…</p>
+          <p id="pipeline-export-status" class="icon-status" role="status" aria-live="polite"></p>
           <div id="export-advanced" hidden>
             <label><input id="export-all-accessible" type="checkbox" /> Include All Accessible Content</label>
             <p class="icon-status">Temporary preview override. Not saved.</p>
           </div>
         </div>
+        <p id="pipeline-export-availability" class="card-description">Open Integration Packages to export pipelines.</p>
         <!-- JSON backups remain independent of ZIP pipeline downloads. -->
         <h2>Backup &amp; Restore</h2>
         <p class="card-description">Back up favorites and saved sources.</p>
@@ -271,7 +280,8 @@
           <button id="assign-favorites" type="button">Use Old Favorites for This Tenant</button>
         </div>
         <p id="backup-status" class="icon-status" role="status" aria-live="polite"></p>
-      </details>
+        </section>
+      </div>
 
       <!-- Clarify scope, version, and the extension's independent status. -->
       <footer>
@@ -293,6 +303,8 @@
     </main>
 
     <!-- Load the preference behavior after the popup controls exist. -->
+    <!-- Initialize presentation-only task tabs before existing preference behaviors. -->
+    <script src="popup-tabs.js"></script>
     <script src="icon-appearance.js"></script>
     <script src="favorite-appearance.js"></script>
     <script src="favorites-data.js"></script>

@@ -1,11 +1,11 @@
 # User Guide
 
-> Develop's 2.1.2 test candidate shows every published Sub-Pipeline major in the Packages main table, keeping the newest minor/patch within each major. APIs still show the latest overall; native Integration rows and the sidebar are unchanged. Reload the same unpacked folder and refresh Integration Packages. Export behavior and favorites are unchanged. Signed-in confirmation remains required. V1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
+> Develop's 2.1.3 test candidate uses task tabs: Navigation, Sharing, Appearance, Sites, and Export. Navigation groups General, Integration Packages, and Integration Designer. Existing saved settings, favorites, consent, and export contents are unchanged. Refresh Sources works only in Integration Designer; Pipeline Export works only in Integration Packages. Reload the same unpacked folder, refresh your Integration page, and reopen settings to test. See [v2 Development](V2-Development.md).
 
 ## Pipeline Export — v2 Test Candidate
 
 1. Enable Shared From and visit Designer in each source environment to record package/pipeline names.
-2. Open Integration Packages, then select **Export & Backup → Preview Pipeline Export** in settings.
+2. Open Integration Packages, then select **Export → Preview Pipeline Export** in settings.
 3. Review the package list. Everything starts checked; use **Select All**, a package checkbox, or expand a package to select individual files/major versions. A partial package selection shows a mixed checkbox and its selected count. The top summary shows selected package/file counts plus Pipeline, Sub-Pipeline, API, and Transformer counts. Every package heading is listed immediately; there is no Show More limit in the exporter.
 4. Leave **Formatted** unchecked for the existing package/file layout, or check it for Source/Formatted folders plus a package README.
 5. Select **Download ZIP**. After all selected files are collected successfully, the complete archive starts downloading automatically. Your browser may show its usual save prompt. Use **Download Again** afterward only if you need another copy; it reuses the prepared ZIP without fetching sources again.
@@ -50,7 +50,7 @@ Use a package's star to pin it. In Integration Packages, you can also pin publis
 
 Favorites and their layout stay separate by site, tenant ID, and Packages/Designer page. Multiple tenants on one vanity domain have separate lists. Hiding favorites does not delete them. Unavailable favorites are hidden without deleting their saved pins. Unknown tenant identity cannot load another tenant's favorites.
 
-On upgrade from host-only favorites, old lists carry over automatically to the actual loaded tenant if it is the only tenant known on that domain. Packages and Designer remain separate. Original copies are preserved, and a completed migration never repeats after you remove pins. The first detected tenant is the default; a later tenant gets its own list without inheriting those old favorites. If multiple tenants are already known there, use **Backup & Restore → Use Old Favorites for This Tenant** on the intended page instead. Refresh the page after reloading the extension before testing.
+On upgrade from host-only favorites, old lists carry over automatically to the actual loaded tenant if it is the only tenant known on that domain. Packages and Designer remain separate. Original copies are preserved, and a completed migration never repeats after you remove pins. The first detected tenant is the default; a later tenant gets its own list without inheriting those old favorites. If multiple tenants are already known there, use **Export → Backup & Restore → Use Old Favorites for This Tenant** on the intended page instead. Refresh the page after reloading the extension before testing.
 
 Pipeline favorites follow the newest available release within their pinned **major version**. For example, `1.0.3` follows newer `1.x.x` releases, not `2.x.x`.
 
@@ -62,7 +62,7 @@ Designer pipeline search shows the first 20 matches and a count when there are m
 
 Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
 
-Enable **Page Behavior → Show APIs & Sub-Pipelines** to add a **Type** column and the newest published API/Sub-Pipeline release for each name in Integration Packages. These are plain, non-clickable records without run actions; they are not added to the sidebar or favorites. Normal Integration links work as before. These records use the page's normal package response, not extra network lookups or the Designer cache. **Shared From** remains an independent optional column.
+Enable **Navigation → Integration Packages → Show APIs & Sub-Pipelines** to add a **Type** column and the newest published API release overall and newest Sub-Pipeline minor/patch within each major in Integration Packages. These are plain, non-clickable records without run actions; they are not added to the sidebar or favorites. Normal Integration links work as before. These records use the page's normal package response, not extra network lookups or the Designer cache. **Shared From** remains an independent optional column.
 
 Refresh Integration Packages once after installing this update or re-enabling **Show APIs & Sub-Pipelines**. The page then loads the metadata normally, before its sidebar filters out non-runnable entries. Turning this display setting off removes Type and the extra records and clears their temporary in-memory data, without clearing Designer sources or favorites. Turning Shared From off removes only its source column and cache. Source labels require visiting Designer; API/Sub-Pipeline names do not.
 
@@ -74,13 +74,23 @@ Clipped favorite names have the browser's native full-name tooltip; fully visibl
 
 ![Integration Navigator settings with Page Behavior, search, appearance, and custom sites](screenshots/settings.jpg)
 
-### Page Behavior
+### Task Tabs
 
-The section groups width memory, pinned favorites, and **Show APIs & Sub-Pipelines**; **Shared To** and **Shared From**; then published fitting viewing and the two search dropdowns. Both sharing features and published fitting viewing are off by default. Search titles use the same size and weight as the other setting titles.
+The popup has five tabs; only the active panel scrolls, keeping tabs and footer visible.
+
+- **Navigation → General:** width memory, pinned favorites, package sidebar search.
+- **Navigation → Integration Packages:** optional API/Sub-Pipeline reference records.
+- **Navigation → Integration Designer:** published fitting viewing and selected-package Pipeline Search.
+- **Sharing:** Shared To, Shared From, current-Designer cache status, and Refresh Sources.
+- **Appearance:** toolbar icon and favorite shape/color choices.
+- **Sites:** optional university vanity URLs.
+- **Export:** Pipeline Export and independent JSON Backup & Restore.
+
+Sharing features and published fitting viewing remain off by default. Page names in headings/help explain scope. Refresh Sources is grayed out outside Integration Designer or without Shared From consent; Pipeline Export is grayed out outside Integration Packages or without source setup (unless a separately confirmed temporary override applies). A missing page connection keeps page-specific actions unavailable; refresh the page or check site access. These UI checks do not replace operation authorization. Opening settings reads only the active page's existing route/status, not pipeline contents or extra services. Tab choice is not saved.
 
 ### Published Fitting Details — Designer
 
-Enable **Page Behavior → View Published Fitting Details** to scroll, select, and copy text/code in a published fitting without creating a draft. It is off by default and independent of sharing settings. Code/text remains read-only; checkboxes, dropdowns, reset buttons, and other fitting actions remain disabled. Blanket grey dimming is removed while viewing is enabled; disabled actions still look inactive. Draft editing is unchanged. Switching off or leaving the published fitting restores native UI locks and appearance.
+Enable **Navigation → Integration Designer → View Published Fitting Details** to scroll, select, and copy text/code in a published fitting without creating a draft. It is off by default and independent of sharing settings. Code/text remains read-only; checkboxes, dropdowns, reset buttons, and other fitting actions remain disabled. Blanket grey dimming is removed while viewing is enabled; disabled actions still look inactive. Draft editing is unchanged. Switching off or leaving the published fitting restores native UI locks and appearance.
 
 Normal selection and Ctrl+A/Ctrl+C work in supported Ace editors, including a published version that already has a draft. Viewing does not create or change drafts. Editing shortcuts, typing, paste, cut, and drop are blocked. If the existing editor cannot be safely identified, it stays locked; refresh the page and retry, or report the issue without confidential source code. The feature saves only its preference, not fitting contents, and adds no service requests.
 
@@ -96,7 +106,7 @@ Pipelines update individually as their checks finish. Queue waiting does not cou
 
 This feature identifies sources from the Designer environments you have visited, rather than reading live share history from Integration Packages.
 
-1. Enable **Shared From** under **Page Behavior** and accept the local-data notice.
+1. Enable **Shared From** under **Sharing** and accept the local-data notice.
 2. Visit Designer in each source environment to collect its package and pipeline names.
 3. Return to Integration Packages to see known sources in **Shared From**.
 
@@ -104,31 +114,31 @@ Collection starts automatically after Designer's package data loads, including w
 
 Unknown or conflicting sources show a dash. Hover or focus the column heading for setup guidance. Information reflects the last successful Designer collection and can become stale; revisit that environment to update it. The extension does not contact all environments from one page.
 
-For a manual retry, open Designer in the source environment and select **Page Behavior → Shared From → Refresh** in settings. Setup guidance appears on hover and in the consent notice instead of a permanent extra line. Refresh feedback explains when Designer needs to be opened. It refreshes only that currently open Designer environment. A working circle stays visible until collection and saving finish, or a failure is reported.
+For a manual retry, open Designer in the source environment and select **Sharing → Refresh Sources** in settings. Setup guidance appears on hover and in the consent notice instead of a permanent extra line. Refresh feedback explains when Designer needs to be opened. It refreshes only that currently open Designer environment. A working circle stays visible until collection and saving finish, or a failure is reported.
 
-In Designer, settings shows **Cached MM-DD-YY**, **No Cache**, or **Caching…** for the current environment. The date uses your browser's local time and reflects the last successful save, not a live share check. A failed refresh retains the date and shows its failure separately. **Status Unavailable** means the page connection or environment cannot be identified. Opening settings does not collect more data.
+In Integration Designer, Sharing shows **Cached MM-DD-YY**, **No Cache**, or **Caching…** for the current environment. The date uses your browser's local time and reflects the last successful save, not a live share check. A failed refresh retains the date and shows its failure separately. **Status Unavailable** means the page connection or environment cannot be identified. Opening settings does not collect more data.
 
-**Backup & Restore → Export JSON** downloads a backup of favorites by site, tenant ID, and page, including pipeline pins, order, and layout. Backup & Restore is the last settings section. Any saved Shared From data is included, grouped by **Environment → Package → Pipelines**, with original last-checked times. Older source names without a recorded package appear under **Package Not Yet Recorded**. It works without cached sources and does not change favorites or settings. Nothing is uploaded; review institution-specific names and identifiers before sharing.
+**Export → Backup & Restore → Export JSON** downloads a backup of favorites by site, tenant ID, and page, including pipeline pins, order, and layout. Backup & Restore remains in the final Export tab. Any saved Shared From data is included, grouped by **Environment → Package → Pipelines**, with original last-checked times. Older source names without a recorded package appear under **Package Not Yet Recorded**. It works without cached sources and does not change favorites or settings. Nothing is uploaded; review institution-specific names and identifiers before sharing.
 
 The `favorites` section is the active tenant-specific data. Older recovery copies remain in `unassignedFavorites` until their destination and pins are verified; an `assignedTenantId` there means assignment is known but the copy has not yet been safely retired. Version 1.22.4 removes a duplicate only after reading back the saved tenant list and confirming every old pin is present. Compact `assignments` markers keep that ownership after cleanup, without repeating package/pipeline data. Missing pins or a failed verification keep the copy rather than deleting or silently merging it.
 
-**Backup & Restore → Import JSON** previews the tenant lists before you confirm. Merge keeps existing order and adds missing pins. Replace requires separate confirmation and affects only the matching lists in the file; other tenants are untouched. Current tenant lists take precedence over their older recovery copies. Backups preserve migration associations so pins removed afterward are not revived; older files with one matching current list are handled the same way. Old lists without a corresponding current list follow the upgrade assignment rules on your next visit. **Also Restore Shared From Data** is optional and requires Shared From to be enabled first. Restoring does not change preferences or site permissions, refresh source dates, or replace newer source snapshots with older ones. Older source-only exports are not importable backups. A different site domain does not automatically reuse another domain's favorites.
+**Export → Backup & Restore → Import JSON** previews the tenant lists before you confirm. Merge keeps existing order and adds missing pins. Replace requires separate confirmation and affects only the matching lists in the file; other tenants are untouched. Current tenant lists take precedence over their older recovery copies. Backups preserve migration associations so pins removed afterward are not revived; older files with one matching current list are handled the same way. Old lists without a corresponding current list follow the upgrade assignment rules on your next visit. **Also Restore Shared From Data** is optional and requires Shared From to be enabled first. Restoring does not change preferences or site permissions, refresh source dates, or replace newer source snapshots with older ones. Older source-only exports are not importable backups. A different site domain does not automatically reuse another domain's favorites.
 
 Turning Shared From off clears only its browser cache, not favorites. Exported files remain separate snapshots and do not update or disappear automatically.
 
-### Search and Reference Display — Page Behavior
+### Search and Reference Display — Navigation
 
-Under **Page Behavior**, choose **Search Box**, **Icon**, or **Hidden** independently for **Package Sidebar Search** on both pages and **Designer Pipeline Search** inside a selected Designer package. Both default to Search Box. Icon opens search when needed; Escape or clicking elsewhere closes it. The whole behavior group can be collapsed.
+Under **Navigation**, choose **Search Box**, **Icon**, or **Hidden** independently for **Package Sidebar Search** on both pages and **Pipeline Search** inside a selected Designer package. Both default to Search Box. Icon opens search when needed; Escape or clicking elsewhere closes it. Switch tabs to keep unrelated controls out of view.
 
 **Show APIs & Sub-Pipelines** controls reference rows only in Integration Packages. It is off for new installs. Upgrading preserves your previous display choice once; later changes to Shared From do not change this setting. No additional local metadata storage or source-collection consent is needed for reference rows.
 
-### Icon & Favorites
+### Icon & Favorites — Appearance
 
 Choose the toolbar icon's background, one or two letters, and black or white lettering. The default is a black **E** on purple. Under **Favorites**, choose **Star**, **Circle**, or **Bear**, then a separate color or **Match Icon Color**. All three shapes use your chosen color; unpinned icons remain gray outlines.
 
 The previews reflect your choices. **Reset** restores the toolbar default; **Reset Favorites** restores independent purple stars. Appearance changes leave saved pins, ordering, and expanded packages alone. These settings stay in this browser and do not change the store listing icon. The settings window follows your system's light or dark appearance.
 
-### Custom Sites
+### Custom Sites — Sites
 
 Add your university's HTTPS Experience URL and allow access when prompted, then refresh the page. Setup finishes in the background even if settings close. Custom sites must use the normal Integration Packages/Designer page paths.
 

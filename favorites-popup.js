@@ -38,7 +38,7 @@
       if (!Array.isArray(oldItems) || !oldItems.length || settings[data.ASSIGNED]?.[oldKey]) return;
       document.querySelector('#legacy-summary').textContent = `Old ${activeScope.page === 'designer' ? 'Designer' : 'Packages'} favorites have no tenant ID. Assign ${oldItems.length} package groups to tenant ${activeScope.tenantId} on ${activeScope.site}? The old copy is kept.`;
       document.querySelector('#legacy-favorites').hidden = false;
-      document.querySelector('.backup-card').open = true;
+      // Do not force a task change on startup; assignment remains visible inside Export when opened.
     } catch (_error) {
       // Unsupported tabs need no warning; imports and exports still work from settings.
     }
@@ -94,9 +94,9 @@
     } catch (error) { status.textContent = error.message || 'Could not import. Please try again.'; }
     finally { importButton.disabled = false; importButton.setAttribute('aria-busy', 'false'); }
   });
-  // Recheck when opening the disclosure after the active page has finished loading.
-  document.querySelector('.backup-card').addEventListener('toggle', () => {
-    if (document.querySelector('.backup-card').open) readLegacyAssignment();
+  // Recheck when opening Export after the active page has finished loading, without polling.
+  document.addEventListener('settings-task-changed', event => {
+    if (event.detail?.task === 'export') readLegacyAssignment();
   });
   readLegacyAssignment();
 })();

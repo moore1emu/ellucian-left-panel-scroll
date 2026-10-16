@@ -25,7 +25,9 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.1.2 is 2.1.3, while the next v1 maintenance revision after 1.22.8 is 1.22.9. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.1.3 is 2.1.4, while the next v1 maintenance revision after 1.22.8 is 1.22.9. Do not rename historical releases.
+
+- Settings use task tabs: Navigation (General/Integration Packages/Integration Designer), Sharing, Appearance, Sites, Export. Keep existing IDs/storage keys, consent, temporary Shift+D override, summary dismissal, backup assignment/import, and save-race handling. Only active content scrolls within the 580px popup; tabs/footer stay visible. Source refresh is Designer-only and pipeline export Packages-only; missing page connection fails closed, while backup/restore stays independent. Reuse the existing top-frame route message without URL permissions, polling, service lookups, or saved tab selection. UI gating never replaces worker/content authorization.
 
 - Packages reference display keeps the newest published Sub-Pipeline minor/patch within every major. Keep MAIN response capture and isolated normalization aligned; APIs remain latest-overall, native Integration rows and sidebar stay untouched, and existing transient memory bounds/opt-out remain. Verify both capture and real table rendering with the maintained package-artifact-majors regression.
 

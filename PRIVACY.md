@@ -1,5 +1,7 @@
 # Privacy Policy
 
+The settings popup uses task tabs without saving your selected tab. It reads the active top-level Integration page's existing route/status to show context and disable unavailable source-refresh/export actions. This does not request pipeline contents, contact additional services, inspect unrelated tabs, add tab-URL permissions, or change saved preferences or consent. Backup/restore remains independent of the active page.
+
 Integration Navigator · Updated October 16, 2026 (v2 development checkpoint)
 
 Publisher: Andrew Moore · Contact: moore.life@gmail.com

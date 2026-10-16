@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.1.3 — 2026-10-16 — Task-Based Settings Tabs
+
+- Replaced stacked settings disclosures with Navigation, Sharing, Appearance, Sites, and Export tabs. Navigation groups General, Integration Packages, and Integration Designer; Sharing keeps Shared To, Shared From, current-Designer cache status, and Refresh Sources together. Existing control IDs, saved values, consent, favorites, cache formats, and export contents are unchanged; no migration.
+- Pipeline Export is grayed out outside Integration Packages; Refresh Sources is grayed out outside Integration Designer. Source-dependent actions also require consent/setup, apart from the existing separately confirmed temporary export override. Visible guidance explains availability. The popup reuses the active top-level page's existing route message for UI context only; no tab-URL permission, new service requests, polling, or saved task selection. Worker/content authorization remains unchanged; JSON backup/restore stays independent.
+- Tabs/footer remain visible within the 580px popup while active content, consent notices, and long errors scroll. Keyboard tab navigation, summary-dismissal focus, backup assignment/import, failed-save recovery, and hidden Shift+D behavior are adapted to tabs without rebuilding controls or retaining advanced consent.
+- Updated synthetic popup, installed exporter/favorites, switch-save, and summary regressions for the real tab layout, context/connection gates, themes, long feedback, consent/cancellation, and independent backups. Signed-in confirmation remains required. No main merge or store update.
+
 ## 2.1.2 — 2026-10-16 — Display Every Published Sub-Pipeline Major
 
 - Integration Packages' optional reference table now shows the newest published minor/patch within every Sub-Pipeline major, rather than only the newest major overall. Both early native-response capture and isolated display normalization preserve the independent majors; same-name rows sort numerically by version.

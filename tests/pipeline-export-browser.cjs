@@ -61,10 +61,20 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     await source.evaluate(() => enterPackages());
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${id}/popup.html`);
+    // An extension opened as a test tab has sender.tab; the worker preserves toolbar-style route reads.
+    await popup.exposeFunction('fixturePageContext', () => worker.evaluate(async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      return chrome.tabs.sendMessage(tab.id, { type: 'designer-ownership-context' }, { frameId: 0 });
+    }));
+    await popup.evaluate(() => {
+      const send = chrome.tabs.sendMessage.bind(chrome.tabs);
+      chrome.tabs.sendMessage = (...args) => args[1]?.type === 'designer-ownership-context' ? window.fixturePageContext() : send(...args);
+    });
 
     async function openExport() {
       // Keep the synthetic Packages page active while invoking the real settings button in its own document.
       await source.bringToFront();
+      await popup.evaluate(async () => { await PopupTabs.refreshContext(); PopupTabs.select('export'); });
       const opened = context.waitForEvent('page');
       await popup.evaluate(() => document.querySelector('#export-pipelines').click());
       const page = await opened;

@@ -38,6 +38,9 @@
   // Keep export feedback beside the moved backup actions, not under the independent source refresh.
   const backupStatus = document.querySelector('#backup-status');
   const refreshSharedFromButton = document.querySelector("#refresh-shared-from");
+  const refreshAvailability = document.querySelector('#source-refresh-availability');
+  let preferencesLoaded = false;
+  let manualRefreshBusy = false;
   const versionLabel = document.querySelector("#extension-version");
   const iconColorInput = document.querySelector("#icon-color");
   const iconLettersInput = document.querySelector("#icon-letters");
@@ -97,7 +100,9 @@
       // Restore opt-in without collecting anything while the popup initializes.
       sharedFromSwitch.checked = settings[SHARED_FROM_ENABLED_KEY] === true;
       sharedFromSwitch.disabled = false;
-      refreshSharedFromButton.disabled = false;
+      preferencesLoaded = true;
+      updateRefreshAvailability();
+      document.dispatchEvent(new Event('settings-consent-changed'));
       readOwnershipStatus();
 
       // Keep: existing users keep their previous choice once; new installs start with reference rows off (1.21.5).
@@ -150,6 +155,16 @@
       favoriteShapeSelect.disabled = false;
     },
   );
+
+  // Keep Refresh Sources unavailable outside Integration Designer without disabling saved display preferences.
+  function updateRefreshAvailability() {
+    const designer = PopupTabs.page === 'designer';
+    refreshSharedFromButton.disabled = !preferencesLoaded || manualRefreshBusy || !designer || !sharedFromSwitch.checked;
+    document.querySelector('#source-refresh-block').classList.toggle('is-unavailable', !designer || !sharedFromSwitch.checked);
+    refreshAvailability.textContent = !designer ? 'Open Integration Designer to refresh sources.'
+      : !sharedFromSwitch.checked ? 'Enable Shared From to refresh sources.' : 'Refresh updates this Integration Designer environment only.';
+  }
+  document.addEventListener('settings-context-changed', updateRefreshAvailability);
 
   // Preview color and initials immediately without generating artwork on every keystroke.
   function previewIcon() {
@@ -373,6 +388,8 @@
       sharedFromSwitch.disabled = false;
       sharedFromSwitch.setAttribute('aria-busy', 'false');
       sharedFromStatus.textContent = failed ? "Could not save. Please try again." : enabled ? "Enabled. Visit Designer in each source environment." : "Disabled. Clearing source cache; favorites kept.";
+      updateRefreshAvailability();
+      document.dispatchEvent(new Event('settings-consent-changed'));
       readOwnershipStatus();
     });
   }
@@ -401,11 +418,14 @@
 
   // Ask only the active tab to recollect its own Designer sources, without extra permissions.
   refreshSharedFromButton.addEventListener('click', async () => {
+    // UI availability is advisory; recheck page context before requesting the existing guarded refresh.
+    if (PopupTabs.page !== 'designer' || manualRefreshBusy) return;
     if (!sharedFromSwitch.checked) {
       sharedFromStatus.textContent = 'Enable Shared From first.';
       return;
     }
     refreshSharedFromButton.disabled = true;
+    manualRefreshBusy = true;
     // Show the CSS working circle until collection and persistence return a result.
     refreshSharedFromButton.setAttribute('aria-busy', 'true');
     sharedFromStatus.textContent = 'Refreshing Shared From data…';
@@ -441,7 +461,8 @@
       sharedFromStatus.textContent = 'Open Designer on an enabled site, then try again. If already open, refresh that page once.';
     } finally {
       // Stop the working circle on success, failure, or a lost page connection.
-      refreshSharedFromButton.disabled = false;
+      manualRefreshBusy = false;
+      updateRefreshAvailability();
       refreshSharedFromButton.setAttribute('aria-busy', 'false');
       readOwnershipStatus();
     }

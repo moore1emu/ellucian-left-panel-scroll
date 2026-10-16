@@ -73,6 +73,10 @@ async function run() {
   assert.equal(summary.notesFor(saved, "2.1.2").length, 3);
   assert.match(summary.notesFor(saved, "2.1.2")[0], /every published major/);
   assert.equal(summary.notesFor(saved, "2.1.1").length, 0);
+  // Task-based settings notes never alter saved preferences or favorites.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.1.2" }, storage, "2.1.3");
+  assert.equal(summary.notesFor(saved, "2.1.3").length, 3);
+  assert.match(summary.notesFor(saved, "2.1.3")[0], /tabs/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

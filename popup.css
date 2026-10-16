@@ -40,12 +40,12 @@
 body {
   background: var(--background);
   color: var(--text);
-  font-family: Arial, sans-serif;
+  font-family: "Segoe UI", Arial, sans-serif;
   margin: 0;
   min-width: 360px;
   width: 360px;
   max-height: 580px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* Arrange the popup as a header, settings card, and scope footer. */
@@ -54,6 +54,7 @@ body {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
+  height: 580px;
 }
 
 /* Align the extension symbol with its title and subtitle. */
@@ -182,7 +183,7 @@ h1 {
 
 /* Use the theme accent when remembering is enabled. */
 .switch input:checked + .switch-track {
-  background: var(--accent);
+  background: var(--purple);
 }
 
 /* Move the thumb to the on position. */
@@ -463,3 +464,39 @@ footer {
 .update-summary-heading button { background: var(--background); border: 1px solid var(--border); border-radius: 5px; color: var(--text); cursor: pointer; font: 12px Arial, sans-serif; padding: 4px 6px; }
 .update-summary-card ul { color: var(--muted); font-size: 12px; line-height: 1.4; margin: 8px 0 0; padding-left: 17px; }
 .update-summary-card li + li { margin-top: 5px; }
+
+/* Keep task navigation/footer visible within the browser's popup height, even with consent/errors open. */
+[hidden] { display: none !important; }
+.popup-header, .settings-context, .settings-tabs, footer { flex-shrink: 0; }
+.settings-context { color: var(--muted); font-size: 12px; line-height: 1.3; margin: 0; }
+.settings-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.settings-tabs button {
+  background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted);
+  cursor: pointer; flex: 1; font: 12px "Segoe UI", Arial, sans-serif; min-width: 0; padding: 9px 2px;
+}
+.settings-tabs button[aria-selected="true"] { border-bottom-color: var(--purple); color: var(--purple); font-weight: 700; }
+.settings-tabs button:hover { background: var(--purple-soft); }
+.settings-tabs button:focus-visible { outline: 2px solid var(--purple); outline-offset: -2px; }
+.settings-panels { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
+.settings-panel { background: transparent; border: 0; border-radius: 0; padding: 0 2px 8px; overflow: visible; }
+.navigation-card .navigation-group { padding: 0; }
+.navigation-group + .navigation-group { border-top: 1px solid var(--border); margin-top: 7px; padding-top: 9px !important; }
+.navigation-group h2 { color: var(--purple); font-size: 12px; margin: 2px 0 3px; }
+.settings-panel > h2:first-child { margin-top: 2px; }
+.navigation-group .setting-title { font-size: 13px; }
+.navigation-group .setting-row { padding: 7px 0; }
+.navigation-group .search-display-control { margin: 7px 0 5px; }
+.settings-panel .setting-description, .settings-panel .card-description, .icon-status { overflow-wrap: anywhere; }
+
+/* Readable reasons stay outside the dimmed action block, with normal backup controls below Export. */
+.source-refresh-block { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; margin-top: 12px; padding: 10px; }
+.source-cache-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; justify-content: space-between; font-size: 12px; }
+.is-unavailable > :not(.export-setup-notice) { opacity: .55; }
+.source-refresh-block .shared-from-actions { margin-top: 8px; }
+#source-refresh-availability, #pipeline-export-availability { font-weight: 400; line-height: 1.4; margin: 8px 0; }
+.pipeline-export-section { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 10px; }
+.pipeline-export-section h2 { margin-top: 0; }
+.backup-card > button { display: inline-block; width: auto; }
+.update-summary-card { max-height: 140px; overflow-y: auto; }
+footer { border-top: 1px solid var(--border); padding-top: 8px; }
+.affiliation-notice { max-width: none; }

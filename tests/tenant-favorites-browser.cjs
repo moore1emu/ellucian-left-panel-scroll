@@ -112,12 +112,20 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await page.bringToFront();
     const tabId = await worker.evaluate(async () => (await chrome.tabs.query({ active: true, currentWindow: true }))[0]?.id);
     assert.ok(Number.isInteger(tabId), 'The active synthetic tab must have an identifier');
-    await popup.evaluate((id) => { chrome.tabs.query = async () => [{ id }]; const card = document.querySelector('.backup-card'); card.open = true; card.dispatchEvent(new Event('toggle')); }, tabId);
+    // A test tab has sender.tab; proxy only the existing route-status read through the worker like a toolbar popup.
+    await popup.exposeFunction('fixturePageContext', () => worker.evaluate(id => chrome.tabs.sendMessage(id, { type: 'designer-ownership-context' }, { frameId: 0 }), tabId));
+    await popup.evaluate(async (id) => {
+      chrome.tabs.query = async () => [{ id }];
+      const send = chrome.tabs.sendMessage.bind(chrome.tabs);
+      chrome.tabs.sendMessage = (...args) => args[1]?.type === 'designer-ownership-context' ? window.fixturePageContext() : send(...args);
+      await PopupTabs.refreshContext();
+      PopupTabs.select('export');
+    }, tabId);
     try { await popup.locator('#assign-favorites').waitFor(); }
     catch (error) {
       console.log('Synthetic assignment diagnostics:', errors, await popup.evaluate(async () => ({
         status: document.querySelector('#backup-status').textContent,
-        open: document.querySelector('.backup-card').open,
+        open: !document.querySelector('.backup-card').hidden,
         hidden: document.querySelector('#legacy-favorites').hidden,
         settings: await chrome.storage.local.get(FavoritesData.defaults),
       })));
@@ -126,11 +134,11 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await popup.locator('#assign-favorites').click();
     await popup.waitForFunction(() => document.querySelector('#backup-status').textContent.includes('assigned'));
     // Keep portable backup actions together in the final section, with source Refresh unmoved.
-    assert.deepEqual(await popup.locator('main > details > summary').allTextContents(), ['Navigation', 'Integration Packages', 'Integration Designer', 'Icon & Favorites', 'Custom Sites', 'Export & Backup']);
+    assert.deepEqual(await popup.locator('[role="tab"]').allTextContents(), ['Navigation', 'Sharing', 'Appearance', 'Sites', 'Export']);
     assert.equal(await popup.locator('.backup-card #export-shared-from').count(), 1);
     assert.equal(await popup.locator('.backup-card #import-favorites').count(), 1);
     assert.equal(await popup.locator('.page-behavior-card #export-shared-from').count(), 0);
-    assert.deepEqual(await popup.locator('.shared-from-actions button').allTextContents(), ['Refresh']);
+    assert.deepEqual(await popup.locator('.shared-from-actions button').allTextContents(), ['Refresh Sources']);
     const refreshFeedback = await popup.locator('#shared-from-status').textContent();
     const downloadEvent = popup.waitForEvent('download');
     await popup.locator('#export-shared-from').click();
@@ -175,7 +183,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
       chrome.tabs.sendMessage = (...args) => args[1]?.type === 'designer-ownership-refresh' ? window.fixtureRefreshSources() : send(...args);
     });
     // Accept consent through the synthetic settings UI so its switch and status reflect the saved choice.
-    await popup.locator('details > summary').filter({ hasText: /^Integration Packages$/ }).click();
+    await popup.getByRole('tab', { name: 'Sharing', exact: true }).click();
     await popup.locator('label[for="shared-from-enabled"]').click();
     await popup.locator('#confirm-shared-from').click();
     await popup.waitForFunction(() => !document.querySelector('#refresh-shared-from').disabled);
@@ -192,7 +200,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
       const previews = path.resolve(process.env.INTEGRATION_NAVIGATOR_ARTIFACT_DIR);
       fs.mkdirSync(previews, {recursive:true});
       await popup.setViewportSize({width:360,height:640});
-      await popup.locator('.page-behavior-card summary').click();
+      await popup.getByRole('tab', { name: 'Export', exact: true }).click();
       // Collapsed behavior and open backups must fit without horizontal overflow or wrapped action labels.
       assert.equal(await popup.evaluate(() => document.body.scrollWidth <= document.body.clientWidth), true);
       for (const colorScheme of ['light','dark']) {

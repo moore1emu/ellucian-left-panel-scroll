@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.1.2):** Integration Packages now displays the newest published Sub-Pipeline release within every major, not just the highest major. Export selection, environment-named ZIPs, and optional Formatted output are unchanged. Reload the extension and refresh Packages to test. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.1.3):** Settings now use Navigation, Sharing, Appearance, Sites, and Export tabs. Navigation groups General and page-specific controls; unavailable source-refresh/export actions explain which page to open. Saved preferences, favorites, consent, and export contents are unchanged. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -46,7 +46,7 @@ Open the extension's toolbar icon to adjust its settings. Store-installed copies
 
 ![Integration Packages showing the optional Shared From column](docs/screenshots/shared-from.jpg)
 
-**Settings:** choose page behavior, search display, icon and favorite colors, and custom sites.
+**Settings:** choose navigation, sharing, icon and favorite colors, custom sites, and export/backup options. The image below shows the earlier store layout; v2 uses task tabs.
 
 ![Integration Navigator settings showing Page Behavior and the collapsible settings sections](docs/screenshots/settings.jpg)
 

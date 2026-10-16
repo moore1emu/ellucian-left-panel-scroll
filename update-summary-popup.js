@@ -32,7 +32,8 @@
       dismiss.disabled = false;
       if (failed) { status.textContent = "Could not dismiss. Please try again."; return; }
       card.hidden = true;
-      document.querySelector(".navigation-card summary").focus();
+      // Return focus to the active task, preserving whichever settings the user is viewing.
+      document.querySelector('.settings-tabs [aria-selected="true"]').focus();
     });
   });
 })();

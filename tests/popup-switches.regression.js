@@ -72,8 +72,7 @@ async function openPopup(browser, savedValues) {
   await page.addInitScript(installChromeStub);
   await page.addInitScript((values) => { Object.assign(window.__store, values); }, savedValues);
   await page.goto(`${ORIGIN}/popup.html`);
-  // Open regrouped cards in this fixture so hidden controls receive real pointer input.
-  await page.locator(".behavior-card").evaluateAll((cards) => cards.forEach((card) => { card.open = true; }));
+  // The Navigation task is visible initially; individual tests select other tasks when needed.
   await page.waitForFunction(() => !document.querySelector("#remember-width").disabled);
   return { page, errors };
 }
@@ -107,6 +106,7 @@ async function expectMatches(page, item, expected, step) {
   try {
     for (const item of SWITCHES) {
       const { page, errors } = await openPopup(browser, { [item.key]: false });
+      if (item.id === 'shared-version-enabled') await page.getByRole('tab', { name: 'Sharing', exact: true }).click();
       // Keep the new label and help compact in the actual 360px settings layout.
       if (item.id === 'fitting-details-enabled') {
         await page.setViewportSize({ width: 360, height: 580 });
