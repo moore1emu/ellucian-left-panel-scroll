@@ -95,6 +95,11 @@
     return `${folderName(entry.packageName)}/${folderName(entry.name)}${suffix}.${entry.type === 'transformer' ? 'js' : 'json'}`;
   }
 
+  // Use the resolved environment only as a portable download filename, never as an identity lookup.
+  function archiveName(environment) {
+    return `integration-navigator-${folderName(environment)}.zip`;
+  }
+
   // Precompute standard ZIP CRC-32 values once, with no external ZIP dependency.
   const crcTable = Uint32Array.from({ length: 256 }, (_, initial) => {
     let value = initial;
@@ -118,8 +123,8 @@
     let offset = 0;
     let payloadBytes = 0;
     for (const file of files) {
-      // Accept only already-sanitized, relative, two-level JSON/JavaScript paths and real byte buffers.
-      if (!/^[^\u0000-\u001f<>:"/\\|?*]+\/[^\u0000-\u001f<>:"/\\|?*]+\.(?:json|js)$/u.test(file.path) || file.path.split("/").some((part) => part === "." || part === "..") || !(file.bytes instanceof Uint8Array)) throw new Error("Invalid export file.");
+      // Allow only raw package files, fixed Source/Formatted children, or a package README—not arbitrary nesting.
+      if (!/^[^\u0000-\u001f<>:"/\\|?*]+\/(?:(?:(?:Source|Formatted)\/)?[^\u0000-\u001f<>:"/\\|?*]+\.(?:json|js)|README\.md)$/u.test(file.path) || file.path.split("/").some((part) => part === "." || part === "..") || !(file.bytes instanceof Uint8Array)) throw new Error("Invalid export file.");
       const key = file.path.toLowerCase();
       if (seen.has(key)) throw new Error("Export filenames collide.");
       seen.add(key);
@@ -174,5 +179,5 @@
   }
 
   // Keep pure planning and archive assembly separate from session access and user confirmation.
-  globalThis.PipelineExportCore = Object.freeze({ buildPlan, sourceNames, compareVersions, folderName, filePath, crc32, makeZip, MAX_BYTES });
+  globalThis.PipelineExportCore = Object.freeze({ buildPlan, sourceNames, compareVersions, folderName, filePath, archiveName, crc32, makeZip, MAX_FILES, MAX_BYTES });
 })();

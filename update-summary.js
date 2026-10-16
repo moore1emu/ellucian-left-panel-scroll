@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.1.0": Object.freeze([
+      "Export ZIP filenames include the resolved current environment name.",
+      "Optional Formatted exports include Source/Formatted folders and a package README.",
+      "Unchecked exports keep their existing layout, source contents, and one-click download.",
+    ]),
     "2.0.9": Object.freeze([
       "Package headings show selected counts by type without changing their expanded lists.",
       "Download ZIP now builds the complete archive and starts its download in one click.",

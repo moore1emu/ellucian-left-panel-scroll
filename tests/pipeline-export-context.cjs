@@ -41,7 +41,7 @@ async function run() {
   const preview = call({ type: 'pipeline-export-preview' });
   await turn();
   const request = messages.at(-1);
-  const metadata = { requestId: request.requestId, ok: true,
+  const metadata = { requestId: request.requestId, ok: true, environment: 'Synthetic Environment',
     context: { url: window.location.href, tenantId: 'tenant', documentKey: 'document', sessionId: request.sessionId, secret: 'discard' },
     packages: [{ name: 'Package', version: 'v1.0.0', secret: 'discard', pipelines: [{ name: 'Pipeline', version: '1.0.0', type: 'api', secret: 'discard' }] }], secret: 'discard' };
   respond(metadata, 'https://other.test');
@@ -50,6 +50,7 @@ async function run() {
   const result = await preview;
   assert.equal(result.ok, true);
   assert.equal(result.plan.entries.length, 1);
+  assert.equal(result.environment, 'Synthetic Environment');
   assert.equal(JSON.stringify(result).includes('secret'), false);
   assert.equal(timers.size, 0);
 

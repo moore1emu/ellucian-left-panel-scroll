@@ -24,7 +24,8 @@ window.owner={context:{tenantId:'synthetic-tenant',getJwt:()=>{throw Error('Sess
 const row=document.querySelector('li');row.__reactFiber$fixture={return:{stateNode:owner}};
 row.__reactProps$fixture={'package-element':owned};
 const opaque={};
-const server={G9:async(callback,tenant,expand)=>{if(expand!==false)throw Error('Unbounded fan-out');stats.lists++;return [owned,supplied].map(pkg=>({nameAndExtension:pkg.nameAndExtension,version:'v1.0.0'}));},
+const server={JR:async tenant=>{if(tenant!=='synthetic-tenant')throw Error('Wrong tenant lookup');return {name:'synthetic-production',label:'SaaSProduction'};},
+ G9:async(callback,tenant,expand)=>{if(expand!==false)throw Error('Unbounded fan-out');stats.lists++;return [owned,supplied].map(pkg=>({nameAndExtension:pkg.nameAndExtension,version:'v1.0.0'}));},
  db:async()=>opaque,bP:async(config,tenant,version,file)=>{if(config!==opaque)throw Error('Opaque config changed');stats.packages++;return file==='owned.json'?owned:supplied;},
  // Sub-Pipeline downloads use a major-only path and retain the service's null source version.
  B0:async(callback,tenant,version,name)=>{stats.sources++;if(name==='Sub'&&!['1','2'].includes(version))throw Error('Wrong Sub-Pipeline route');return {name,version:name==='Sub'?null:version.replace(/^v/,''),requestedRoute:version,fittings:[]};}};
@@ -99,7 +100,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     const downloadEvent = exported.waitForEvent('download');
     await exported.locator('#download-zip').click();
     const downloaded = await downloadEvent;
-    assert.equal(downloaded.suggestedFilename(), 'integration-navigator-pipelines.zip');
+    assert.equal(downloaded.suggestedFilename(), 'integration-navigator-synthetic-production.zip');
     await exported.locator('#save-zip').waitFor();
     worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     const bytes = Buffer.from(await exported.evaluate(async () => [...new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())]));

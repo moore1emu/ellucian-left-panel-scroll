@@ -8,6 +8,7 @@
   const packages = document.querySelector('#export-packages');
   const selection = document.querySelector('#export-selection');
   const selectAll = document.querySelector('#select-all');
+  const formatted = document.querySelector('#include-formatted');
   const refresh = document.querySelector('#refresh-preview');
   const download = document.querySelector('#download-zip');
   const cancel = document.querySelector('#cancel-export');
@@ -158,7 +159,7 @@
       if (current !== generation) return;
       if (!result?.ok) throw new Error(result?.reason === 'session-unavailable' ? 'Temporary export storage is unavailable. Reload the extension, refresh Packages, and reopen export.' : result?.reason === 'preview-expired' ? 'Preview expired. Reopen export from settings.' : result?.reason === 'context-changed' ? 'Source page changed. Reopen export from settings.' : result?.reason === 'open-packages' ? 'Open Integration Packages, then reopen export from settings.' : result?.reason === 'requests-stalled' ? 'Earlier service requests are still running. Wait, then refresh preview.' : 'Package metadata is unavailable. Refresh the original page, then reopen export from settings.');
       // Default exact-name eligibility is computed in the extension, not in untrusted page code.
-      plan = { ...result.plan, context: result.context };
+      plan = { ...result.plan, context: result.context, environment: result.environment || result.context.tenantId };
       document.querySelector('#export-mode').textContent = launch.overrideConfirmed ? 'Temporary advanced mode: all accessible content. No additional permissions are granted.' : 'Designer-recorded content only. Saved source observations may be stale.';
       renderPackages();
       download.disabled = !DOWNLOADS_READY || !plan.entries.length;
@@ -178,7 +179,7 @@
   // Keep source download separate from metadata preview and backup/import actions.
   download.addEventListener('click', async () => {
     if (!DOWNLOADS_READY || !selected.size || controller) return;
-    const snapshot = { ...plan, entries: selectedEntries() };
+    const snapshot = { ...plan, entries: selectedEntries(), formatted: formatted.checked };
     const current = ++generation;
     discardZip();
     controller = new AbortController();
@@ -194,7 +195,7 @@
     };
     try {
       const zip = await PipelineExportSession.collect(snapshot.entries, {
-        signal: controller.signal, verify,
+        signal: controller.signal, verify, formatted: snapshot.formatted, environment: snapshot.environment,
         read: async (entry) => {
           const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'read', context: snapshot.context, entry });
           if (!result?.ok) throw Object.assign(new Error('Published JSON unavailable.'), { reason: result?.reason });
@@ -205,7 +206,7 @@
       if (current !== generation) return;
       objectUrl = URL.createObjectURL(zip);
       save.href = objectUrl;
-      save.download = 'integration-navigator-pipelines.zip';
+      save.download = PipelineExportCore.archiveName(snapshot.environment);
       save.hidden = false;
       // Keep: one explicit Download ZIP action builds the complete archive and requests its browser download (2.0.9).
       status.textContent = 'ZIP prepared. Download requested; use Download Again if needed.';
@@ -245,6 +246,8 @@
     plan.entries.forEach((entry, index) => { if (selectAll.checked) selected.add(index); else selected.delete(index); });
     updateSelection(true);
   });
+  // A changed layout must not leave Download Again pointing at the previous archive format.
+  formatted.addEventListener('change', () => updateSelection(true));
   refresh.addEventListener('click', preview);
   // A default export loses eligibility immediately when the user withdraws Shared From consent.
   chrome.storage.onChanged.addListener((changes, area) => {

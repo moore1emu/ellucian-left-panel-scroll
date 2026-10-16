@@ -2,6 +2,14 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.1.0 — 2026-10-16 — Environment Names and Optional Formatted Export
+
+- Export ZIP filenames include the resolved current tenant name, for example integration-navigator-uncproductions.zip. The existing tenant-details helper runs under the combined six-request budget; missing names fall back to the verified tenant ID, never a guessed domain/path. The display name is bounded metadata, not authorization, and tenant/context checks remain unchanged.
+- Added an unchecked-by-default Formatted option on the export page. Unchecked preserves the previous package/file layout and source serialization. Checked writes Package/Source and Package/Formatted plus one Package/README.md listing only selected names, types, majors, and package-reported published versions/environment. Changing the option invalidates Download Again; no setting or preference is saved.
+- Matched the owner-confirmed auto-sync reference's whitespace-review behavior: expand escaped CR/LF/tab while preserving literal escaped backslash pairs, quotes, and Unicode. Source JSON remains valid and JavaScript response text stays unchanged; Formatted is review-only, not for import or execution. README versions do not imply exact Sub-Pipeline/transformer source-version verification. No audit/user lookups or source execution.
+- Both layouts retain one source read per selected entry, all-or-nothing output, one-click download, six native slots, consent/context/entry guards, and unchanged favorites/cache. Existing 10,000 physical ZIP-file and 64 MB payload limits include generated copies and READMEs; excessive formatted file counts fail before source reads. ZIP paths permit only fixed Source/Formatted children and package README files, with existing containment/collision checks.
+- Added synthetic coverage for raw/Source byte equivalence, readable whitespace/literal escapes, inert README labels, multiple majors/types, environment-name/fallback/context behavior, opt-in/retry invalidation, real browser ZIP downloads, and size/path limits. Signed-in confirmation remains required; no main merge, store update, or auto-sync modification. Version rolls from 2.0.9 to 2.1.0 under the agreed convention.
+
 ## 2.0.9 — 2026-10-16 — Package Counts and One-Click ZIP
 
 - Package headings now show selected counts by type beside their existing selected/total count, for example 2 of 2 selected (Pipelines: 1, APIs: 1). Counts update with individual, package, and Select All choices; zero-selected types are omitted. The expanded list stays unchanged, and long summaries can wrap rather than overflow.

@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.0.9):** package headings show selected type counts without changing the expanded lists. Download ZIP now builds and starts the download in one click, with Download Again available afterward. Every published Pipeline/Sub-Pipeline major and transformer `.js` exports remain included. Signed-in confirmation is still required. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.1.0):** ZIP filenames include the current environment name. Optional Formatted exports add Source/Formatted folders and a package README; unchecked exports keep the existing layout. Per-major selection, type counts, and one-click download remain included. Signed-in confirmation is still required. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -81,6 +81,7 @@ node tests/browser-profile-cleanup.cjs
 node tests/update-summary.cjs
 node tests/pipeline-export-core.cjs
 node tests/pipeline-export-session.cjs
+node tests/pipeline-export-formatted.cjs
 node tests/pipeline-export-worker.cjs
 node tests/pipeline-export-browser.cjs
 node tests/pipeline-export-context.cjs

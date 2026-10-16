@@ -31,7 +31,7 @@ function stub() {
       if (message.type === 'pipeline-export-read') return window.__failSource ? { ok: false, reason: 'source-unavailable' }
         : { ok: true, data: { name: message.entry.name, version: '1.0.0', fittings: [] } };
       if (message.type !== 'pipeline-export-preview') return { ok: true };
-      return { ok: true, context: { url: 'https://packages.test/data-connect/home', tenantId: 'synthetic', documentKey: 'document', sessionId: 'session' },
+      return { ok: true, environment: 'synthetic-test', context: { url: 'https://packages.test/data-connect/home', tenantId: 'synthetic', documentKey: 'document', sessionId: 'session' },
         plan: { entries: pipelines.map((item, index) => ({ ...item, packageName: window.__manyPackages ? `Package ${index}` : index >= 110 ? 'Small Package' : 'Demo Package' })), skipped: 1 } };
   };
 }
@@ -57,6 +57,7 @@ async function run() {
       assert.equal(await page.locator('.export-package').count(), 2);
       assert.equal(await page.locator('.pipeline-checkbox').count(), 0, 'Collapsed packages avoid eager row creation');
       assert.equal(await page.locator('#show-more').count(), 0);
+      assert.equal(await page.locator('#include-formatted').isChecked(), false);
       const demo = page.locator('.export-package').filter({ hasText: 'Demo Package' });
       assert.equal(await demo.locator('.package-count').innerText(), '110 of 110 selected (Pipelines: 55, APIs: 55)');
       // Package checkboxes select without expanding; individual exclusions set the mixed state.
@@ -90,7 +91,7 @@ async function run() {
       const firstDownload = page.waitForEvent('download');
       await page.locator('#download-zip').click();
       const firstFile = await firstDownload;
-      assert.equal(firstFile.suggestedFilename(), 'integration-navigator-pipelines.zip');
+      assert.equal(firstFile.suggestedFilename(), 'integration-navigator-synthetic-test.zip');
       await page.waitForFunction(() => !document.querySelector('#save-zip').hidden);
       const payload = await page.evaluate(async () => Array.from(new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())));
       // Verify the browser really received this complete ZIP, not only that a local link appeared.
@@ -103,12 +104,25 @@ async function run() {
       assert.match(Buffer.from(payload).toString('utf8'), /Small Package\/Pipeline 118_v1.json/);
       assert.match(Buffer.from(payload).toString('utf8'), /Small Package\/Pipeline 119.json/);
       assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 10);
-      assert.equal(Buffer.from(payload).includes(Buffer.from('Demo Package/')), false);
       // Retrying the already prepared archive requires no additional source lookups.
       const repeatedDownload = page.waitForEvent('download');
       await page.locator('#save-zip').click();
       await repeatedDownload;
       assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 10);
+      // The opt-in changes only local output and invalidates the old raw archive retry link.
+      await page.locator('#include-formatted').check();
+      assert.equal(await page.locator('#save-zip').isHidden(), true);
+      const formattedDownload = page.waitForEvent('download');
+      await page.locator('#download-zip').click();
+      await formattedDownload;
+      const formattedPayload = Buffer.from(await page.evaluate(async () => Array.from(new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer()))));
+      assert.ok(formattedPayload.includes(Buffer.from('Small Package/Source/Pipeline 118_v1.json')));
+      assert.ok(formattedPayload.includes(Buffer.from('Small Package/Formatted/Pipeline 118_v1.json')));
+      assert.ok(formattedPayload.includes(Buffer.from('Small Package/README.md')));
+      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 20);
+      // Switching back restores the original layout for the following all-selected export.
+      await page.locator('#include-formatted').uncheck();
+      assert.equal(Buffer.from(payload).includes(Buffer.from('Demo Package/')), false);
       // A new selection invalidates its old ZIP, then reuses the still-valid preview for another download.
       await page.locator('#select-all').check();
       assert.equal(await page.locator('#save-zip').isHidden(), true);
@@ -116,7 +130,7 @@ async function run() {
       await page.locator('#download-zip').click();
       await allDownload;
       await page.locator('#save-zip').waitFor();
-      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 130);
+      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 140);
       // Removing saved ownership revokes the completed link as well as any in-flight default job.
       await page.evaluate(() => window.__storageChange({ designerOwnershipCache: { newValue: {} } }, 'local'));
       assert.equal(await page.locator('#save-zip').isHidden(), true);

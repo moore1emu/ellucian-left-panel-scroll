@@ -60,6 +60,10 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.0.8" }, storage, "2.0.9");
   assert.equal(summary.notesFor(saved, "2.0.9").length, 3);
   assert.match(summary.notesFor(saved, "2.0.9")[1], /one click/);
+  // The agreed patch rollover and optional formatting notes belong to 2.1.0 only.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.0.9" }, storage, "2.1.0");
+  assert.equal(summary.notesFor(saved, "2.1.0").length, 3);
+  assert.match(summary.notesFor(saved, "2.1.0")[1], /Formatted/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

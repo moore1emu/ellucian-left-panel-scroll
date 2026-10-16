@@ -34,6 +34,12 @@ function fixture() {
     try { await turn(); if (flags.hold) await new Promise((resolve) => holds.push(resolve)); return run(); } finally { stats.active--; }
   };
   const server = {
+    // Resolve only this verified tenant and keep lookup failure independent of source eligibility.
+    JR: async tenant => { assert.equal(tenant, 'synthetic-tenant'); return service(() => {
+      if (flags.labelFailure) throw Error('Synthetic label unavailable');
+      if (flags.switchOnLabel) owner.context.tenantId = 'changed';
+      return { name: 'synthetic-production', label: 'SaaSProduction' };
+    }); },
     G9: async (callback, tenant, expand) => { assert.equal(callback, getJwt); assert.equal(tenant, 'synthetic-tenant'); assert.equal(expand, false); stats.lists++; return service(() => refs); },
     db: async (callback) => { assert.equal(callback, getJwt); return opaque; },
     bP: async (config, tenant, release, filename) => { assert.equal(config, opaque); assert.equal(tenant, 'synthetic-tenant'); assert.equal(release, 'v1.0.0'); stats.packageReads++; return service(() => packages.find((pkg) => pkg.nameAndExtension === filename)); },
@@ -68,6 +74,14 @@ async function run() {
   const f = fixture();
   const preview = await f.call({ type: 'pipeline-export-preview' });
   assert.equal(preview.ok, true);
+  assert.equal(preview.environment, 'synthetic-production');
+  // A missing label falls back to the verified ID; identity changes during lookup still fail closed.
+  const unnamed = fixture();
+  unnamed.flags.labelFailure = true;
+  assert.equal((await unnamed.call({ type: 'pipeline-export-preview' })).environment, 'synthetic-tenant');
+  const switched = fixture();
+  switched.flags.switchOnLabel = true;
+  assert.equal((await switched.call({ type: 'pipeline-export-preview' })).ok, false);
   assert.equal(preview.plan.entries.length, 120);
   assert.equal(f.stats.packageReads, 120);
   assert.equal(f.stats.reads, 0, 'Preview must not request pipeline code');

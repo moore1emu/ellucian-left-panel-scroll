@@ -421,7 +421,16 @@
       const failed = outcomes.find((item) => item.status === 'rejected');
       if (failed) throw failed.reason;
       checkExportSession(session);
-      return { context: { url: session.url, tenantId: session.tenantId, documentKey: exportDocumentKey, sessionId: id }, packages: results };
+      // Resolve the current tenant's display name through the existing helper, under the same request budget.
+      let environment = session.tenantId;
+      if (typeof server.JR === 'function') {
+        try {
+          const details = await scheduleExportJob(session, () => getTenantDetails(server, session.tenantId));
+          environment = details.tenantName || details.environment || session.tenantId;
+        } catch { /* A missing name may use the verified ID; context/timeout failure still stops below. */ }
+      }
+      checkExportSession(session);
+      return { context: { url: session.url, tenantId: session.tenantId, documentKey: exportDocumentKey, sessionId: id }, environment, packages: results };
     } catch (error) { closeExportSession(id); throw error; }
   }
 
