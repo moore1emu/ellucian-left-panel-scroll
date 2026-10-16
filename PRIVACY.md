@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Integration Navigator · Updated October 15, 2026 (v2 development checkpoint)
+Integration Navigator · Updated October 16, 2026 (v2 development checkpoint)
 
 Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
@@ -24,7 +24,7 @@ Shared From is a separate, optional feature that is off by default. It requires 
 
 The v2 development checkpoint also saves small version markers to show and dismiss What's New on the next settings opening after an update. These markers contain only extension version numbers and stay local. Opening or dismissing notes does not collect sources, reset preferences, or open a browser tab.
 
-**Pipeline Export** explicitly opens a separate extension tab from Integration Packages. Its preview requests latest package references and eligible package definitions through the page's existing authenticated native helpers, retaining only names, types, versions, and current document/site/tenant context. Preview does not request pipeline source code or refresh Shared From. Default eligibility requires Shared From consent and exact package/pipeline names in your existing saved Designer observations. Preview metadata stays in memory and is not written to extension storage.
+**Pipeline Export** explicitly opens a separate extension tab from Integration Packages. Its preview requests latest package references and eligible package definitions through the page's existing authenticated native helpers, retaining only names, types, versions, and current document/site/tenant context. Pipeline/Sub-Pipeline selection keeps the newest published version within each available major; APIs/transformers retain latest-overall selection. Only checked records are retrieved, and type counts are calculated locally from that selection. Preview does not request pipeline source code or refresh Shared From. Default eligibility requires Shared From consent and exact package/pipeline names in your existing saved Designer observations. Preview metadata stays in memory and is not written to extension storage.
 
 In the v2 test candidate, selecting **Download ZIP** explicitly retrieves chosen published Pipeline, API, and Sub-Pipeline JSON through those same native services, plus selected transformer JavaScript through a fixed read-only service path using the page's existing HTTP client. Native helpers prepare the authentication configuration; it is passed untouched to that client in the page world. The extension does not inspect token/header values, invoke the session callback itself, or copy authentication configuration into messages, files, logs, or storage. Source text/JSON is temporarily held in memory and assembled locally into a package-folder ZIP; JavaScript is never executed. **Save ZIP** downloads it using your browser. Source contents may include confidential embedded values; review exported files before sharing and store them securely. Cancellation/failure discards partial output; closing the export tab discards temporary state. Completed downloads remain wherever you save them. The extension does not upload these files or change published artifacts. Synthetic tests use no institution data; a separately owner-approved single transformer read verified text availability without logging source or credentials. Integrated signed-in ZIP confirmation remains pending.
 

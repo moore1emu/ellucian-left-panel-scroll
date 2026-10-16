@@ -85,6 +85,8 @@ async function run() {
       await page.waitForFunction(() => !document.querySelector('#save-zip').hidden);
       const payload = await page.evaluate(async () => Array.from(new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())));
       assert.equal(Buffer.from(payload).readUInt32LE(0), 0x04034b50);
+      // Even-numbered fixture rows are Pipelines; odd-numbered APIs keep their original filenames.
+      assert.match(Buffer.from(payload).toString('utf8'), /Small Package\/Pipeline 118_v1.json/);
       assert.match(Buffer.from(payload).toString('utf8'), /Small Package\/Pipeline 119.json/);
       assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 10);
       assert.equal(Buffer.from(payload).includes(Buffer.from('Demo Package/')), false);

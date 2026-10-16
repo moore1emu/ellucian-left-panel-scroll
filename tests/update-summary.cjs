@@ -52,6 +52,10 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.0.6" }, storage, "2.0.7");
   assert.equal(summary.notesFor(saved, "2.0.7").length, 3);
   assert.match(summary.notesFor(saved, "2.0.7")[0], /transformer/i);
+  // Queue major-version export notes only for the new delivered version.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.0.7" }, storage, "2.0.8");
+  assert.equal(summary.notesFor(saved, "2.0.8").length, 3);
+  assert.match(summary.notesFor(saved, "2.0.8")[0], /every major version/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

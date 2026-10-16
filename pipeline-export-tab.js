@@ -61,7 +61,10 @@
     }
     selectAll.checked = selected.size === plan.entries.length;
     selectAll.indeterminate = selected.size > 0 && selected.size < plan.entries.length;
-    counts.textContent = `${selectedPackages} of ${groups.size} packages · ${selected.size} of ${plan.entries.length} files selected · ${plan.skipped} unrecorded records in inspected packages skipped`;
+    // Count checked artifacts by type so independent major versions and non-pipeline files are visible.
+    const byType = { pipeline: 0, 'sub-pipeline': 0, api: 0, transformer: 0 };
+    for (const entry of selectedEntries()) byType[entry.type] += 1;
+    counts.textContent = `${selectedPackages} of ${groups.size} packages · ${selected.size} of ${plan.entries.length} files selected (Pipelines: ${byType.pipeline}, Sub-Pipelines: ${byType['sub-pipeline']}, APIs: ${byType.api}, Transformers: ${byType.transformer}) · ${plan.skipped} unrecorded records in inspected packages skipped`;
     download.disabled = !DOWNLOADS_READY || !selected.size || Boolean(controller);
     if (changed) status.textContent = selected.size ? 'Selection updated. Select Download ZIP to retrieve checked records.' : 'No files selected. Check a package or file to download.';
   }

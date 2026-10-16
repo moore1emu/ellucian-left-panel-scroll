@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.0.8 — 2026-10-16 — Export Each Published Major
+
+- Pipeline and Sub-Pipeline export selection now retains the latest published minor/patch within every available major, rather than dropping older majors. Each major has its own checkbox and version row; for example, 1.0.4 and 2.0.5 can both be selected. APIs and transformers retain latest-overall selection.
+- Pipeline/Sub-Pipeline ZIP filenames always include a stable major suffix, such as Name_v1.json and Name_v2.json, so files cannot overwrite one another. Pipeline requests still use their exact selected full version; Sub-Pipeline requests still use their selected numeric major and preserve null/omitted source versions. No source JSON is relabeled.
+- The top preview summary now shows selected Pipeline, Sub-Pipeline, API, and Transformer counts alongside package/file counts. Counts update with individual, package, and Select All changes; each retained major counts separately.
+- Synthetic coverage checks numeric major ordering, newest-within-major deduplication, the existing file cap across majors, independent same-name checkboxes, live type counts, correct native routes, and distinct ZIP entries/content. Existing ownership, consent, six-request, context, cancellation, favorites, and transformer safeguards remain unchanged. Signed-in confirmation remains required; no main merge or store update.
+
 ## 2.0.7 — 2026-10-16 — Published Transformer Export
 
 - Shared From now records published transform-function names separately under their Designer package/environment, with no source-code collection or extra lookup. Draft-only names and same-named pipelines cannot authorize transformer exports. Existing caches/backups/favorites stay valid; refresh each source Designer to add transformer observations.

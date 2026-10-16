@@ -36,10 +36,27 @@ assert.throws(() => core.buildPlan(packages, { tenant: { packages: [{ name: null
 assert.throws(() => core.compareVersions("1.0.0-beta", "1.0.0"), /Unsupported/);
 assert.equal(core.compareVersions("v2.0.0", "1.99.99"), 1);
 
+// Keep independent published majors and collapse only minor/patch revisions within the same major.
+const versions = ['v1.0.0', 'v1.0.4', 'v2.0.1', 'v2.0.5', 'v10.0.0', 'v10.0.2'];
+const majors = core.buildPlan([{ name: 'Majors', pipelines: ['pipeline', 'sub-pipeline', 'api', 'transformer'].flatMap((type) =>
+  versions.map((version) => ({ name: type, type, version }))) }], { tenant: { packages: [{ name: 'Majors', pipelines: ['pipeline', 'sub-pipeline', 'api'], transformFunctions: ['transformer'] }] } }, { sharedFromEnabled: true });
+for (const type of ['pipeline', 'sub-pipeline']) {
+  assert.deepEqual(Array.from(majors.entries.filter((entry) => entry.type === type), (entry) => entry.version), ['v1.0.4', 'v2.0.5', 'v10.0.2']);
+  assert.deepEqual(Array.from(majors.entries.filter((entry) => entry.type === type), core.filePath), [`Majors/${type}_v1.json`, `Majors/${type}_v2.json`, `Majors/${type}_v10.json`]);
+}
+// Unrequested API/transformer version selection and filename formats stay unchanged.
+assert.equal(majors.entries.filter((entry) => entry.type === 'api').length, 1);
+assert.equal(majors.entries.find((entry) => entry.type === 'api').version, 'v10.0.2');
+assert.equal(core.filePath(majors.entries.find((entry) => entry.type === 'api')), 'Majors/api.json');
+assert.equal(majors.entries.filter((entry) => entry.type === 'transformer').length, 1);
+assert.equal(core.filePath(majors.entries.find((entry) => entry.type === 'transformer')), 'Majors/transformer.js');
+
 // Exercise large metadata sets without a 20/100-result display cap.
 const many = Array.from({ length: 120 }, (_, index) => ({ name: `Package ${index}`, pipelines: Array.from({ length: 120 }, (_, number) => ({ name: `Pipeline ${index}-${number}`, type: "pipeline", version: "1.0.0" })) }));
 assert.equal(core.buildPlan([many[0]], {}, { overrideConfirmed: true }).entries.length, 120);
 assert.throws(() => core.buildPlan(many, {}, { overrideConfirmed: true }), /Too many/);
+// Every retained major counts toward the existing file limit, even when names repeat.
+assert.throws(() => core.buildPlan([{ name: 'Many Majors', pipelines: Array.from({ length: 10001 }, (_, major) => ({ name: 'One Name', type: 'pipeline', version: `${major}.0.0` })) }], {}, { overrideConfirmed: true }), /Too many/);
 assert.equal(core.buildPlan(many.map((item) => ({ ...item, pipelines: item.pipelines.slice(0, 1) })), {}, { overrideConfirmed: true }).entries.length, 120);
 
 // Keep folder names portable and distinguish literal percent signs from escaped separators.

@@ -62,10 +62,11 @@
         const label = (pipeline.type || "pipeline").toLowerCase().replace(/[ _-]/gu, "");
         const type = types.get(label);
         if (!type) continue;
-        versionParts(pipeline.version);
+        const major = versionParts(pipeline.version)[0];
         const eligible = type === 'transformer' ? knownTransforms : known;
         if (!overrideConfirmed && !eligible.get(item.name)?.has(pipeline.name)) { skipped += 1; continue; }
-        const key = JSON.stringify([item.name, type, pipeline.name]);
+        // Keep: Pipeline/Sub-Pipeline majors are independent published artifacts; retain the latest within each (2.0.8).
+        const key = JSON.stringify([item.name, type, pipeline.name, type === 'pipeline' || type === 'sub-pipeline' ? major : null]);
         const previous = selected.get(key);
         if (!previous || compareVersions(pipeline.version, previous.version) > 0) {
           selected.set(key, { packageName: item.name, name: pipeline.name, version: pipeline.version, type });
@@ -73,7 +74,8 @@
       }
     }
     if (selected.size > MAX_FILES) throw new Error("Too many export files.");
-    const entries = [...selected.values()].sort((a, b) => a.packageName.localeCompare(b.packageName) || a.name.localeCompare(b.name));
+    // Show same-named major versions together in numeric order, not lexical order (10 before 2).
+    const entries = [...selected.values()].sort((a, b) => a.packageName.localeCompare(b.packageName) || a.name.localeCompare(b.name) || a.type.localeCompare(b.type) || compareVersions(a.version, b.version));
     // Expose only preview metadata and whether a separately confirmed override was used.
     return { entries, skipped, override: overrideConfirmed };
   }
@@ -87,9 +89,10 @@
     return result;
   }
 
-  // Save every pipeline in its own package folder; versions remain in the preview metadata.
+  // Give independent Pipeline/Sub-Pipeline majors stable filenames without rewriting source JSON.
   function filePath(entry) {
-    return `${folderName(entry.packageName)}/${folderName(entry.name)}.${entry.type === 'transformer' ? 'js' : 'json'}`;
+    const suffix = entry.type === 'pipeline' || entry.type === 'sub-pipeline' ? `_v${versionParts(entry.version)[0]}` : '';
+    return `${folderName(entry.packageName)}/${folderName(entry.name)}${suffix}.${entry.type === 'transformer' ? 'js' : 'json'}`;
   }
 
   // Precompute standard ZIP CRC-32 values once, with no external ZIP dependency.
@@ -115,7 +118,7 @@
     let offset = 0;
     let payloadBytes = 0;
     for (const file of files) {
-      // Accept only already-sanitized, relative, two-level JSON paths and real byte buffers.
+      // Accept only already-sanitized, relative, two-level JSON/JavaScript paths and real byte buffers.
       if (!/^[^\u0000-\u001f<>:"/\\|?*]+\/[^\u0000-\u001f<>:"/\\|?*]+\.(?:json|js)$/u.test(file.path) || file.path.split("/").some((part) => part === "." || part === "..") || !(file.bytes instanceof Uint8Array)) throw new Error("Invalid export file.");
       const key = file.path.toLowerCase();
       if (seen.has(key)) throw new Error("Export filenames collide.");
