@@ -42,12 +42,15 @@
         const expected = version(entry.version);
         segment(entry.name);
         // Sub-Pipeline service paths use the major number; other artifacts use an exact full version.
-        const route = entry.type === 'sub-pipeline' ? expected.split('.')[0] : `v${expected}`;
+        const isSubPipeline = entry.type === 'sub-pipeline';
+        const route = isSubPipeline ? expected.split('.')[0] : `v${expected}`;
         const result = await schedule(() => server.B0(getJwt, tenantId, route, entry.name, ref.provisioned));
         if (!result || typeof result !== 'object' || Array.isArray(result) || result.error || result.name !== entry.name) throw fail('source-unavailable');
-        // A major-only read must carry its exact version, or the adapter refuses to label it as this release.
-        if (entry.type === 'sub-pipeline' && !result.version) throw fail('version-unverified');
-        if (result.version && version(result.version) !== expected) throw fail('version-mismatch');
+        // Keep: Sub-Pipelines resolve within a major and normally return version:null; metadata stays package-reported (2.0.6).
+        if (isSubPipeline) {
+          // If the service supplies a version, reject another major but allow compatible minor/patch updates.
+          if (result.version != null && version(result.version).split('.')[0] !== route) throw fail('version-mismatch');
+        } else if (result.version && version(result.version) !== expected) throw fail('version-mismatch');
         if (result.type && type(result.type) !== entry.type) throw fail('source-mismatch');
         return result;
       },

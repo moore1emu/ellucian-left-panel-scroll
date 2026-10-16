@@ -25,7 +25,7 @@ function fixture() {
   const saved = { sharedFromEnabled: true, designerOwnershipCache: { synthetic: { packages: packages.slice(0, 120).map((pkg) => ({ name: pkg.name, pipelines: pkg.pipelines.map((item) => item.name) })) } } };
   const stats = { active: 0, max: 0, reads: 0, packageReads: 0, lists: 0, storageReads: 0 };
   const holds = [];
-  const flags = { hold: false, missingVersion: false, mismatch: false };
+  const flags = { hold: false, missingVersion: false, mismatch: false, returnedVersion: undefined, wrongName: false, wrongType: false };
   // A proxy catches even accidental inspection/spreading of the opaque native authentication config.
   // Promise resolution checks thenability; reject every actual authentication-property read.
   const opaque = new Proxy({}, { get: (_, key) => { if (key === 'then') return undefined; throw new Error('Authentication config inspected'); }, ownKeys: () => { throw new Error('Authentication config copied'); } });
@@ -37,7 +37,10 @@ function fixture() {
     G9: async (callback, tenant, expand) => { assert.equal(callback, getJwt); assert.equal(tenant, 'synthetic-tenant'); assert.equal(expand, false); stats.lists++; return service(() => refs); },
     db: async (callback) => { assert.equal(callback, getJwt); return opaque; },
     bP: async (config, tenant, release, filename) => { assert.equal(config, opaque); assert.equal(tenant, 'synthetic-tenant'); assert.equal(release, 'v1.0.0'); stats.packageReads++; return service(() => packages.find((pkg) => pkg.nameAndExtension === filename)); },
-    B0: async (callback, tenant, release, name) => { assert.equal(callback, getJwt); assert.equal(tenant, 'synthetic-tenant'); stats.reads++; return service(() => ({ name, version: flags.missingVersion ? undefined : flags.mismatch ? '1.2.4' : '1.2.3', fittings: [], routeUsed: release })); },
+    // Model the observed null Sub-Pipeline version without reading or rewriting native authentication.
+    B0: async (callback, tenant, release, name) => { assert.equal(callback, getJwt); assert.equal(tenant, 'synthetic-tenant'); stats.reads++; return service(() => ({ name: flags.wrongName ? 'Wrong source' : name,
+      version: flags.missingVersion ? (flags.omitVersion ? undefined : null) : flags.returnedVersion ?? (flags.mismatch ? '2.0.0' : '1.2.3'),
+      ...(flags.wrongType ? { type: 'api' } : {}), fittings: [], routeUsed: release })); },
   };
   const window = { location: { protocol: 'https:', origin: 'https://synthetic.test', pathname: '/fixture/data-connect/home', href: 'https://synthetic.test/fixture/data-connect/home' }, crypto: { randomUUID },
     addEventListener: (type, callback) => { if (!events.has(type)) events.set(type, []); events.get(type).push(callback); },
@@ -92,15 +95,40 @@ async function run() {
   const all = await f.call({ type: 'pipeline-export-preview', overrideConfirmed: true });
   assert.equal(all.plan.entries.length, 121);
 
-  // Missing or mismatched Sub-Pipeline versions fail closed instead of becoming mislabeled exports.
+  // Sub-Pipelines use the package-reported major, preserving the native null version in source JSON.
   const sub = all.plan.entries.find((entry) => entry.type === 'sub-pipeline');
   f.flags.missingVersion = true;
   const missing = await f.call({ type: 'pipeline-export-read', context: all.context, entry: sub });
-  assert.equal(missing.reason, 'version-unverified');
-  assert.equal(missing.data, undefined);
+  assert.equal(missing.ok, true);
+  assert.equal(missing.data.version, null);
+  assert.equal(missing.data.routeUsed, '1');
+  assert.equal(sub.version, 'v1.2.3', 'Package metadata must not be overwritten by the source response');
+  // Older responses may omit the version entirely; do not manufacture a package version in their place.
+  f.flags.omitVersion = true;
+  const omitted = await f.call({ type: 'pipeline-export-read', context: all.context, entry: sub });
+  assert.equal(omitted.ok, true);
+  assert.equal(omitted.data.version, undefined);
+  f.flags.omitVersion = false;
+  f.flags.missingVersion = false; f.flags.returnedVersion = 'v1.9.8';
+  assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry: sub })).ok, true);
+  f.flags.returnedVersion = undefined;
   f.flags.missingVersion = false; f.flags.mismatch = true;
   assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry: sub })).reason, 'version-mismatch');
   f.flags.mismatch = false;
+
+  // Keep exact full-version checks for normal pipelines/APIs and identity/type checks for Sub-Pipelines.
+  for (const kind of ['pipeline', 'api']) {
+    const entry = all.plan.entries.find((item) => item.type === kind);
+    f.flags.returnedVersion = '1.2.4';
+    assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');
+  }
+  f.flags.returnedVersion = 'not-a-version';
+  assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry: sub })).ok, false);
+  f.flags.returnedVersion = undefined; f.flags.wrongName = true;
+  assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry: sub })).reason, 'source-unavailable');
+  f.flags.wrongName = false; f.flags.wrongType = true;
+  assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry: sub })).reason, 'source-mismatch');
+  f.flags.wrongType = false;
 
   // A changed native tenant is detected before another service call can begin.
   const before = f.stats.reads;

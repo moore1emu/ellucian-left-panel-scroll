@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.0.5):** choose packages or individual pipelines with collapsible checkboxes. Temporary document grants survive normal worker sleep using browser-memory session storage. Includes both v1.22.8 hotfixes; no exporter source code or credentials are saved to extension storage. Signed-in export testing is still required. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.0.6):** fixes Sub-Pipeline downloads with null source versions by resolving their package-reported major version. Package/pipeline checkbox selection, temporary worker-sleep recovery, and both v1.22.8 hotfixes remain included; no exporter source code or credentials are saved to extension storage. Signed-in export testing is still required. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 

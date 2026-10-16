@@ -1,6 +1,6 @@
 # User Guide
 
-> Develop's 2.0.5 test candidate adds package/pipeline checkboxes and keeps temporary export authorization through normal worker sleep. Reload the same unpacked folder, refresh Integration Packages, and reopen export from settings after an extension update. Signed-in download testing remains required. V1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
+> Develop's 2.0.6 test candidate fixes Sub-Pipeline null-version downloads while retaining package/pipeline checkboxes and temporary authorization through normal worker sleep. Reload the same unpacked folder, refresh Integration Packages, and reopen export from settings after an extension update. Signed-in download testing remains required. V1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
 
 ## Pipeline Export — v2 Test Candidate
 
@@ -15,7 +15,7 @@ Only checked records are downloaded. Changing the selection removes a previous S
 
 For temporary advanced mode, press **Shift+D** while settings is open and you are not typing. Reveal alone does not enable it: confirm the separate **Include All Accessible Content** warning, then launch export. This bypasses only the saved-source filter, not Ellucian permissions. It is not saved as a preference. Settings resets the choice on close; the launched workflow retains only a temporary memory-session grant until cancelled or closed. It can include vendor-provided content; use it only when authorized to download that content.
 
-Keep the original Packages tab open and on the same tenant until collection finishes. Cancel, navigation, removed eligibility, lost access, timeouts, or mismatched source/version data stop the job without a partial ZIP. Reopen or refresh preview to retry. Sub-Pipeline routes return a major version; if the response cannot verify its exact version, this candidate refuses the export rather than mislabeling it. This needs a real-session test. Limits are 10,000 files and 64 MB of source JSON, with six native requests at a time.
+Keep the original Packages tab open and on the same tenant until collection finishes. Cancel, navigation, removed eligibility, lost access, timeouts, or mismatched source/version data stop the job without a partial ZIP. Reopen or refresh preview to retry. Sub-Pipelines resolve to the current source within their package-reported major version; preview versions come from package metadata, not the returned JSON. A null/omitted source version is expected and preserved; a supplied version must match the requested major. Pipelines/APIs retain exact full-version requests and mismatch checks. Limits are 10,000 files and 64 MB of source JSON, with six native requests at a time.
 
 Downloaded code may contain confidential values embedded in your pipelines. Keep files private and review them before sharing. Export does not modify pipelines, favorites, Shared From data, site access, or JSON backup contents.
 

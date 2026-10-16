@@ -25,7 +25,8 @@ row.__reactProps$fixture={'package-element':owned};
 const opaque={};
 const server={G9:async(callback,tenant,expand)=>{if(expand!==false)throw Error('Unbounded fan-out');stats.lists++;return [owned,supplied].map(pkg=>({nameAndExtension:pkg.nameAndExtension,version:'v1.0.0'}));},
  db:async()=>opaque,bP:async(config,tenant,version,file)=>{if(config!==opaque)throw Error('Opaque config changed');stats.packages++;return file==='owned.json'?owned:supplied;},
- B0:async(callback,tenant,version,name)=>{stats.sources++;return {name,version:'1.0.0',fittings:[]};}};
+ // Sub-Pipeline downloads use a major-only path and retain the service's null source version.
+ B0:async(callback,tenant,version,name)=>{stats.sources++;if(name==='Sub'&&version!=='1')throw Error('Wrong Sub-Pipeline route');return {name,version:name==='Sub'?null:'1.0.0',fittings:[]};}};
 window.webpackChunkexperience_exchange_extension=[];
 window.webpackChunkexperience_exchange_extension.push=entry=>entry[2](name=>name==='./src/server/ServerHelper.js'?server:{});
 window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEvent(new Event('ellucian-left-panel-dom-changed'));};
@@ -88,6 +89,16 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     const bytes = Buffer.from(await exported.evaluate(async () => [...new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())]));
     assert.equal(bytes.readUInt32LE(0), 0x04034b50);
     for (const name of ['API', 'Integration', 'Sub']) assert.ok(bytes.includes(Buffer.from(`Owned Package/${name}.json`)));
+    // Read STORE entries to prove the ZIP preserves null rather than inserting the package version.
+    let offset = 0;
+    while (bytes.readUInt32LE(offset) === 0x04034b50) {
+      const size = bytes.readUInt32LE(offset + 18);
+      const nameLength = bytes.readUInt16LE(offset + 26);
+      const start = offset + 30 + nameLength + bytes.readUInt16LE(offset + 28);
+      const name = bytes.subarray(offset + 30, offset + 30 + nameLength).toString();
+      if (name === 'Owned Package/Sub.json') assert.equal(JSON.parse(bytes.subarray(start, start + size)).version, null);
+      offset = start + size;
+    }
     assert.equal(await source.evaluate(() => stats.sources), 3);
     assert.equal(bytes.includes(Buffer.from('Supplier Package/')), false);
     // A new export document cannot replay the consumed ticket or inherit its source authorization.

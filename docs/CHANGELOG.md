@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.0.6 — 2026-10-15 — Sub-Pipeline Major-Version Downloads
+
+- Fixes successful Sub-Pipeline reads being rejected because the service returns version:null. Sub-Pipelines resolve to the current source within the package-reported major version, allowing compatible updates without republishing parent pipelines. Preview metadata retains the package-reported full version; downloaded JSON is not relabeled with it.
+- Accepts null/omitted source versions for Sub-Pipelines. If a source version is supplied, it must be valid and match the requested major; compatible minor/patch differences are allowed. Normal Pipeline/API exact-version checks, source name/type checks, native authentication, Designer filtering, six-request limits, and all-or-nothing ZIP behavior remain unchanged.
+- Adds null-version installed-browser ZIP coverage and native regressions for compatible updates, wrong major/name/type, malformed versions, unchanged package metadata, and Pipeline/API mismatches. Signed-in inspection confirmed two successful major-route responses with version:null; the repaired download still needs owner confirmation. No auto-sync scripts, favorites, cache format, permissions, main branch, or store state changed.
+
 ## 2.0.5 — 2026-10-15 — Export Selection and Session Recovery
 
 - Replaces the export preview's flat Show More list and single-package selector with collapsible packages and package/pipeline checkboxes. All package headings are listed immediately; expanding a package reveals every eligible pipeline. Select All, partial-selection indicators, and live counts make the selection explicit.

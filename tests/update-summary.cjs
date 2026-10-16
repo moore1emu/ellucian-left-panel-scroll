@@ -44,6 +44,10 @@ async function run() {
   assert.equal(summary.notesFor(saved, "2.0.5").length, 3);
   assert.match(summary.notesFor(saved, "2.0.5")[0], /checkbox/);
   assert.match(summary.notesFor(saved, "2.0.5")[2], /v1.22.8/);
+  // Describe the Sub-Pipeline fix only for its own delivered revision.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.0.5" }, storage, "2.0.6");
+  assert.equal(summary.notesFor(saved, "2.0.6").length, 3);
+  assert.match(summary.notesFor(saved, "2.0.6")[0], /null version/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.0.6": Object.freeze([
+      "Fixes Sub-Pipeline exports whose source JSON has a null version.",
+      "Sub-Pipelines resolve by major; preview versions come from package metadata.",
+      "Pipeline/API exact-version checks and export safeguards remain unchanged.",
+    ]),
     "2.0.5": Object.freeze([
       "Choose whole packages or individual pipelines with collapsible checkbox lists.",
       "Temporary export sessions survive normal background-worker sleep.",
