@@ -18,13 +18,13 @@
         <p id="export-counts"></p>
         <!-- Show every package heading; expanding a group creates only its pipeline rows. -->
         <fieldset id="export-selection" hidden disabled>
-          <legend>Select Packages &amp; Pipelines</legend>
+          <legend>Select Packages &amp; Files</legend>
           <label class="select-all"><input id="select-all" type="checkbox" /> Select All</label>
-          <p class="selection-help">Expand a package to choose individual pipelines. Only checked items are downloaded.</p>
+          <p class="selection-help">Expand a package to choose pipelines or transformers. Only checked items are downloaded.</p>
           <div id="export-packages"></div>
         </fieldset>
         <div class="actions"><button id="refresh-preview" type="button">Refresh Preview</button><button id="download-zip" type="button" disabled>Download ZIP</button><button id="cancel-export" type="button">Cancel</button><a id="save-zip" hidden>Save ZIP</a></div>
-        <p class="notice">Test build: exported JSON may contain confidential values from your pipeline code. Keep downloaded files private.</p>
+        <p class="notice">Test build: exported code may contain confidential values. Keep downloaded files private.</p>
         <p>Opening this tab does not refresh Shared From, change favorites, or grant site access. Closing it discards temporary export state.</p>
       </section>
     </main>

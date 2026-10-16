@@ -391,7 +391,11 @@
     if (!id || exportSessions.has(id)) throw PipelineExportNative.fail('invalid-session');
     exportSessions.set(id, session);
     try {
-      session.adapter = PipelineExportNative.create(getExportServer(), session.getJwt, session.tenantId, (run) => scheduleExportJob(session, run));
+      // Packages has no transformer reader; reuse only its existing native HTTP client, never a token value.
+      const server = getExportServer();
+      let http;
+      try { http = packagesWebpackRequire?.('./node_modules/axios/lib/axios.js')?.A; } catch { /* Other source types remain available. */ }
+      session.adapter = PipelineExportNative.create(server, session.getJwt, session.tenantId, (run) => scheduleExportJob(session, run), http, () => checkExportSession(session));
       const refs = await session.adapter.list();
       checkExportSession(session);
       const known = message.overrideConfirmed === true ? null : new Set(Array.isArray(message.packageNames) ? message.packageNames : []);
@@ -701,12 +705,18 @@
     const tenant = await getTenantDetails(modules.server, tenantId);
     const environment = tenant.environment || tenant.tenantName;
     // Retain the already-loaded package relationship without adding any service requests.
-    const packages = buildSearchIndex().map((entry) => ({
-      name: entry.name,
-      // Store names once per package, not once per published or draft version.
-      pipelines: [...new Set(entry.pipelines.map((pipeline) => pipeline.name).filter(Boolean))],
-    }));
-    const pipelineCount = packages.reduce((count, entry) => count + entry.pipelines.length, 0);
+    const packages = Array.from(document.querySelectorAll(PACKAGE_ROW_SELECTOR), (row) => {
+      const entry = getPackageData(row);
+      // Store pipeline names as before; transformers require their own observed published metadata.
+      const pipelines = Array.isArray(entry?.pipelines) ? entry.pipelines : [];
+      const transforms = Array.isArray(entry?.transformFunctions) ? entry.transformFunctions : [];
+      return { name: normalizeText(entry?.name),
+        pipelines: [...new Set(pipelines.map((pipeline) => normalizeText(pipeline?.name)).filter(Boolean))],
+        // Keep: Designer's versioned transformFunctions list authorizes only transformers, never draft-only names (2.0.7).
+        transformFunctions: [...new Set(transforms.filter((item) => /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u.test(item?.version) && String(item?.status || '').toLowerCase() !== 'draft')
+          .map((item) => normalizeText(item?.name)).filter(Boolean))] };
+    }).filter((entry) => entry.name);
+    const pipelineCount = packages.reduce((count, entry) => count + entry.pipelines.length + entry.transformFunctions.length, 0);
     if (!ownershipEnabled || !environment || packages.length > 10000 || pipelineCount > 10000 || !isDesignerPage()) return;
     window.postMessage({ source: MESSAGE_SOURCE, type: "designer-ownership-response", requestId, tenantId, environment, packages }, window.location.origin);
   }

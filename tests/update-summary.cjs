@@ -48,6 +48,10 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.0.5" }, storage, "2.0.6");
   assert.equal(summary.notesFor(saved, "2.0.6").length, 3);
   assert.match(summary.notesFor(saved, "2.0.6")[0], /null version/);
+  // Transformer notes require the new candidate rather than reappearing for older releases.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.0.6" }, storage, "2.0.7");
+  assert.equal(summary.notesFor(saved, "2.0.7").length, 3);
+  assert.match(summary.notesFor(saved, "2.0.7")[0], /transformer/i);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

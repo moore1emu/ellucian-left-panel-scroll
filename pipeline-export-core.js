@@ -6,7 +6,7 @@
   const MAX_BYTES = 64 * 1024 * 1024;
   const encoder = new TextEncoder();
   // Whitelist types without accepting inherited object names such as constructor.
-  const types = new Map([["pipeline", "pipeline"], ["integration", "pipeline"], ["api", "api"], ["subpipeline", "sub-pipeline"]]);
+  const types = new Map([["pipeline", "pipeline"], ["integration", "pipeline"], ["api", "api"], ["subpipeline", "sub-pipeline"], ["transformer", "transformer"]]);
 
   // Match published stable versions numerically, not by lexical filename order.
   function versionParts(value) {
@@ -28,14 +28,16 @@
   }
 
   // Keep exact package/name relationships; smart-search normalization is not an ownership check.
-  function sourceNames(cache) {
+  function sourceNames(cache, type = 'pipeline') {
     const known = new Map();
     for (const source of Object.values(cache || {})) {
       for (const item of Array.isArray(source?.packages) ? source.packages : []) {
         // Old names without a recorded package cannot authorize a package download.
         if (typeof item?.name !== "string" || !item.name) continue;
         if (!known.has(item.name)) known.set(item.name, new Set());
-        for (const name of Array.isArray(item.pipelines) ? item.pipelines : []) {
+        // Keep transformer ownership separate: a same-named pipeline or legacy snapshot cannot authorize JavaScript.
+        const names = type === 'transformer' ? item.transformFunctions : item.pipelines;
+        for (const name of Array.isArray(names) ? names : []) {
           if (typeof name === "string" && name) known.get(item.name).add(name);
         }
       }
@@ -47,6 +49,7 @@
   function buildPlan(packages, cache, { sharedFromEnabled = false, overrideConfirmed = false } = {}) {
     if (!sharedFromEnabled && !overrideConfirmed) throw new Error("Enable Shared From first.");
     const known = sourceNames(cache);
+    const knownTransforms = sourceNames(cache, 'transformer');
     if (!known.size && !overrideConfirmed) throw new Error("Visit Designer in each source environment first.");
     const selected = new Map();
     let skipped = 0;
@@ -60,7 +63,8 @@
         const type = types.get(label);
         if (!type) continue;
         versionParts(pipeline.version);
-        if (!overrideConfirmed && !known.get(item.name)?.has(pipeline.name)) { skipped += 1; continue; }
+        const eligible = type === 'transformer' ? knownTransforms : known;
+        if (!overrideConfirmed && !eligible.get(item.name)?.has(pipeline.name)) { skipped += 1; continue; }
         const key = JSON.stringify([item.name, type, pipeline.name]);
         const previous = selected.get(key);
         if (!previous || compareVersions(pipeline.version, previous.version) > 0) {
@@ -85,7 +89,7 @@
 
   // Save every pipeline in its own package folder; versions remain in the preview metadata.
   function filePath(entry) {
-    return `${folderName(entry.packageName)}/${folderName(entry.name)}.json`;
+    return `${folderName(entry.packageName)}/${folderName(entry.name)}.${entry.type === 'transformer' ? 'js' : 'json'}`;
   }
 
   // Precompute standard ZIP CRC-32 values once, with no external ZIP dependency.
@@ -112,7 +116,7 @@
     let payloadBytes = 0;
     for (const file of files) {
       // Accept only already-sanitized, relative, two-level JSON paths and real byte buffers.
-      if (!/^[^\u0000-\u001f<>:"/\\|?*]+\/[^\u0000-\u001f<>:"/\\|?*]+\.json$/u.test(file.path) || file.path.split("/").some((part) => part === "." || part === "..") || !(file.bytes instanceof Uint8Array)) throw new Error("Invalid export file.");
+      if (!/^[^\u0000-\u001f<>:"/\\|?*]+\/[^\u0000-\u001f<>:"/\\|?*]+\.(?:json|js)$/u.test(file.path) || file.path.split("/").some((part) => part === "." || part === "..") || !(file.bytes instanceof Uint8Array)) throw new Error("Invalid export file.");
       const key = file.path.toLowerCase();
       if (seen.has(key)) throw new Error("Export filenames collide.");
       seen.add(key);

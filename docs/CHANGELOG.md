@@ -2,6 +2,13 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.0.7 — 2026-10-16 — Published Transformer Export
+
+- Shared From now records published transform-function names separately under their Designer package/environment, with no source-code collection or extra lookup. Draft-only names and same-named pipelines cannot authorize transformer exports. Existing caches/backups/favorites stay valid; refresh each source Designer to add transformer observations.
+- Export preview includes eligible published transformers with a Transformer type and independent checkboxes. Download ZIP retrieves their current published JavaScript using the fixed Packages transformFunction/latest route, matching auto-sync. Package metadata supplies the displayed version; JavaScript has no independently verified exact source version. Files use .js beside package pipeline JSON, preserving the native response text without execution or JSON wrapping.
+- The approved reader reuses Packages' existing HTTP client and passes the native authentication configuration untouched, in the MAIN world only. No token/header inspection, direct session-callback invocation, arbitrary URL/method, new permission, permanent override, favorite migration, or source-code storage is introduced. The shared six-request budget, tenant/document/consent checks, cancellation, and all-or-nothing ZIP remain.
+- JSON backup/restore preserves optional transformer-name lists with the same validation, consent, timestamps, and total-cache limits. Tests cover typed ownership/legacy-cache exclusion, malformed source/HTML/status rejection, context changes before GET, JavaScript ZIP text, Designer capture, and backup round trips. One owner-approved read verified a JavaScript response without logging its code or credentials; the integrated signed-in ZIP still needs owner confirmation. Main/store remain unchanged.
+
 ## 2.0.6 — 2026-10-15 — Sub-Pipeline Major-Version Downloads
 
 - Fixes successful Sub-Pipeline reads being rejected because the service returns version:null. Sub-Pipelines resolve to the current source within the package-reported major version, allowing compatible updates without republishing parent pipelines. Preview metadata retains the package-reported full version; downloaded JSON is not relabeled with it.

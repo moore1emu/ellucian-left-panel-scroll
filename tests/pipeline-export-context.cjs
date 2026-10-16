@@ -13,6 +13,8 @@ const messages = [];
 let runtime;
 let nextTimer = 0;
 let storageHold;
+let storageChanged;
+let sourceCache = { demo: { packages: [{ name: 'Package', pipelines: ['Pipeline', 'Function'], transformFunctions: ['Function'] }] } };
 const timers = new Map();
 const window = { location: { href: 'https://synthetic.test/data-connect/home', origin: 'https://synthetic.test', protocol: 'https:', pathname: '/data-connect/home' },
   addEventListener: (type, callback) => events.set(type, callback), postMessage: (message) => messages.push(message),
@@ -20,7 +22,7 @@ const window = { location: { href: 'https://synthetic.test/data-connect/home', o
 // Worker-to-content envelopes omit sender.tab; routing fields come from the authenticated worker.
 const sender = { id: 'synthetic', url: 'chrome-extension://synthetic/background.js' };
 const chrome = { runtime: { id: sender.id, getURL: (file) => 'chrome-extension://synthetic/' + file, onMessage: { addListener: (callback) => { runtime = callback; } } },
-  storage: { local: { get: async () => { if (storageHold) await storageHold; return { sharedFromEnabled: true, designerOwnershipCache: { demo: { packages: [{ name: 'Package', pipelines: ['Pipeline'] }] } } }; } }, onChanged: { addListener() {} } } };
+  storage: { local: { get: async () => { if (storageHold) await storageHold; return { sharedFromEnabled: true, designerOwnershipCache: sourceCache }; } }, onChanged: { addListener(callback) { storageChanged = callback; } } } };
 const context = vm.createContext({ window, chrome, crypto: { randomUUID }, TextEncoder, Uint8Array, Uint32Array });
 for (const file of ['pipeline-export-core.js', 'pipeline-export-bridge.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context);
 const respond = (data, origin = window.location.origin) => events.get('message')({ source: window, origin, data: { source: 'ellucian-left-panel-scroll', type: 'pipeline-export-operation-response', ...data } });
@@ -81,6 +83,18 @@ async function run() {
   assert.equal((await second).ok, true);
   await call({ type: 'pipeline-export-cancel' });
   assert.equal(timers.size, 0);
+  // A same-named pipeline cannot retain authorization after transformer membership is removed.
+  const transformerPreview = call({ type: 'pipeline-export-preview' });
+  await turn();
+  const transformerRequest = messages.at(-1);
+  respond({ ...metadata, requestId: transformerRequest.requestId,
+    context: { ...metadata.context, url: window.location.href, sessionId: transformerRequest.sessionId },
+    packages: [{ name: 'Package', version: 'v1.0.0', pipelines: [{ name: 'Function', version: 'v1.0.0', type: 'transformer' }] }] });
+  const transformerResult = await transformerPreview;
+  assert.equal(transformerResult.plan.entries.length, 1);
+  sourceCache = { demo: { packages: [{ name: 'Package', pipelines: ['Pipeline', 'Function'] }] } };
+  storageChanged({ designerOwnershipCache: { newValue: sourceCache } }, 'local');
+  assert.equal((await call({ type: 'pipeline-export-read', context: transformerResult.context, entry: transformerResult.plan.entries[0] })).reason, 'context-changed');
   console.log('PASS export boundary: Packages-only entry, sender/origin/route checks, metadata projection, and navigation cleanup');
 }
 run().catch((error) => { console.error(error); process.exitCode = 1; });

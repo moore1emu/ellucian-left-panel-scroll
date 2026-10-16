@@ -244,12 +244,13 @@ const enter = (tenantId, page = 'packages') => { current = { scope: scope(tenant
 
   // A backup round trip retains tenant IDs, pipeline order, disclosure, and unknown source packages.
   settings.designerOwnershipCache = { 'test-a': { environment: 'Test A', checkedAt: Date.now() - 1000,
-    packages: [{ name: null, pipelines: ['Unknown Package Child'] }] } };
+    packages: [{ name: null, pipelines: ['Unknown Package Child'] }, { name: 'Owned Package', pipelines: [], transformFunctions: ['Owned Function'] }] } };
   const exported = clone(data.exportData(settings, '1.22.1'));
   assert.equal(exported.favorites.length, 3);
   assert.equal(exported.unassignedFavorites.length, 0);
   assert.equal(exported.assignments.length, 1);
   assert.equal(exported.environments[0].packages[0].packageNameRecorded, false);
+  assert.deepEqual(exported.environments[0].packages[1].transformFunctions, ['Owned Function']);
   assert.deepEqual(clone(data.backup(data.backup(exported))), clone(data.backup(exported)));
   const incoming = { ...exported, favorites: [{ ...scope('test-a'), packages: [group('New')], expanded: false }] };
   assert.equal((await send({ type: 'favorites-import', backup: incoming, mode: 'merge' }, popup)).ok, true);
@@ -267,6 +268,10 @@ const enter = (tenantId, page = 'packages') => { current = { scope: scope(tenant
   assert.equal((await send({ type: 'favorites-import', backup: incoming, mode: 'merge', restoreSources: true }, popup)).ok, true);
   assert.equal(settings.designerOwnershipCache['test-a'].packages[0].name, null);
   assert.ok(settings.designerOwnershipCache['test-a'].checkedAt > Date.parse(exported.environments[0].lastCheckedAt));
+  // Restoring a selected newer source snapshot retains transformer names without changing tenant favorites.
+  settings.designerOwnershipCache['test-a'].checkedAt = 1;
+  assert.equal((await send({ type: 'favorites-import', backup: incoming, mode: 'merge', restoreSources: true }, popup)).ok, true);
+  assert.deepEqual(settings.designerOwnershipCache['test-a'].packages[1].transformFunctions, ['Owned Function']);
 
   // Invalid backups must fail before any write; importing cannot be called by a web page sender.
   const count = writes;

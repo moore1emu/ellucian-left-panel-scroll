@@ -22,7 +22,8 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     const list=document.querySelector('ul');list.innerHTML='';
     const row=document.createElement('li');row.dataset.level='1';row.dataset.nodeid=tenant;
     row.setAttribute('package-element','');row.innerHTML='<div class="MuiTreeItem-content"><span class="MuiTreeItem-label">'+tenant+' Package</span></div>';
-    row.__reactProps$fixture={'package-element':{name:tenant+' Package',pipelines:[{name:tenant+' Pipeline',version:'1.0.0'}]}};
+    row.__reactProps$fixture={'package-element':{name:tenant+' Package',pipelines:[{name:tenant+' Pipeline',version:'1.0.0'}],
+      transformFunctions:[{name:tenant+' Function',version:'v1.0.0',previousVersions:[]},{name:'Draft Only',version:'draft'},{name:'Explicit Draft',version:'v1.0.0',status:'draft'}]}};
     // Designer's real tenant owner is outside sidebar ancestry; Packages still exposes its row state.
     // Real Packages can expose identity only through its menu/session context; Designer uses its separate manager.
     row.__reactFiber$fixture=page==='designer'?{}:{stateNode:{state:{menu:[]},context:{tenantId:tenant,getJwt:()=>{throw Error('Identity must not invoke a session callback');}}}};list.appendChild(row);
@@ -182,6 +183,9 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await popup.waitForFunction(() => document.querySelector('#shared-from-cache-status').textContent.startsWith('Cached'));
     await popup.locator('#refresh-shared-from').click();
     await popup.waitForFunction(() => document.querySelector('#shared-from-status').textContent === 'Shared From data refreshed.');
+    // Designer's real MAIN/isolated/worker path stores only published transformer names and leaves favorites alone.
+    const sourceCache = await worker.evaluate(() => chrome.storage.local.get('designerOwnershipCache'));
+    assert.deepEqual(sourceCache.designerOwnershipCache['test-a'].packages[0].transformFunctions, ['test-a Function']);
     assert.equal(await popup.locator('#backup-status').textContent(), importFeedback);
     // Optionally capture synthetic settings previews without putting personal paths in the test.
     if (process.env.INTEGRATION_NAVIGATOR_ARTIFACT_DIR) {

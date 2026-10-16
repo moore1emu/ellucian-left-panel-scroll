@@ -126,9 +126,10 @@
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     const known = changes.designerOwnershipCache ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue) : null;
+    const knownTransforms = known ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue, 'transformer') : null;
     for (const [id, session] of sessions) {
       if (session.override) continue;
-      if (changes.sharedFromEnabled?.newValue === false || known && (!session.context || [...session.entries.values()].some((entry) => !known.get(entry.packageName)?.has(entry.name)))) close(id);
+      if (changes.sharedFromEnabled?.newValue === false || known && (!session.context || [...session.entries.values()].some((entry) => !(entry.type === 'transformer' ? knownTransforms : known).get(entry.packageName)?.has(entry.name)))) close(id);
     }
   });
   window.addEventListener('pagehide', () => { for (const id of [...sessions.keys()]) close(id); });

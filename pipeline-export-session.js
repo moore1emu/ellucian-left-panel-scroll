@@ -27,9 +27,11 @@
           check();
           await verify();
           check();
-          if (!data || typeof data !== 'object' || Array.isArray(data) || data.error) throw new Error('Published JSON unavailable.');
+          const transformer = entry.type === 'transformer';
+          if (transformer ? typeof data !== 'string' || !data.trim() : !data || typeof data !== 'object' || Array.isArray(data) || data.error) throw new Error('Published source unavailable.');
           // Native helpers return parsed JSON, so retain content while formatting portable CRLF text.
-          const payload = encoder.encode(JSON.stringify(data, null, 2).replace(/\r?\n/gu, '\r\n') + '\r\n');
+          // Transformer source stays plain JavaScript with the native response text unchanged, never evaluated.
+          const payload = encoder.encode(transformer ? data : JSON.stringify(data, null, 2).replace(/\r?\n/gu, '\r\n') + '\r\n');
           bytes += payload.length;
           if (bytes > PipelineExportCore.MAX_BYTES) throw new Error('Export exceeds the 64 MB development limit.');
           files[index] = { path: PipelineExportCore.filePath(entry), bytes: payload };

@@ -63,7 +63,7 @@
     selectAll.indeterminate = selected.size > 0 && selected.size < plan.entries.length;
     counts.textContent = `${selectedPackages} of ${groups.size} packages · ${selected.size} of ${plan.entries.length} files selected · ${plan.skipped} unrecorded records in inspected packages skipped`;
     download.disabled = !DOWNLOADS_READY || !selected.size || Boolean(controller);
-    if (changed) status.textContent = selected.size ? 'Selection updated. Select Download ZIP to retrieve checked records.' : 'No pipelines selected. Check a package or pipeline to download.';
+    if (changed) status.textContent = selected.size ? 'Selection updated. Select Download ZIP to retrieve checked records.' : 'No files selected. Check a package or file to download.';
   }
 
   // Create all rows of an expanded package once; no Show More cap can hide records within it.
@@ -74,7 +74,7 @@
     wrapper.className = 'pipeline-list';
     const table = document.createElement('table');
     const head = table.createTHead().insertRow();
-    for (const label of ['Select', 'Pipeline Name', 'Type', 'Version']) {
+    for (const label of ['Select', 'Name', 'Type', 'Version']) {
       const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = label; head.append(cell);
     }
     const body = table.createTBody();
@@ -82,11 +82,11 @@
       const row = body.insertRow();
       const checkbox = document.createElement('input'); checkbox.type = 'checkbox';
       checkbox.className = 'pipeline-checkbox';
-      checkbox.setAttribute('aria-label', `Select Pipeline: ${item.entry.name} (${item.entry.type}, ${item.entry.version})`);
+      checkbox.setAttribute('aria-label', `Select ${item.entry.type === 'transformer' ? 'Transformer' : 'Pipeline'}: ${item.entry.name} (${item.entry.type}, ${item.entry.version})`);
       checkbox.checked = selected.has(item.index);
       item.checkbox = checkbox;
       row.insertCell().append(checkbox);
-      for (const value of [item.entry.name, item.entry.type === 'api' ? 'API' : item.entry.type === 'sub-pipeline' ? 'Sub-Pipeline' : 'Integration', item.entry.version.replace(/^v/u, '')]) row.insertCell().textContent = value;
+      for (const value of [item.entry.name, item.entry.type === 'transformer' ? 'Transformer' : item.entry.type === 'api' ? 'API' : item.entry.type === 'sub-pipeline' ? 'Sub-Pipeline' : 'Integration', item.entry.version.replace(/^v/u, '')]) row.insertCell().textContent = value;
       checkbox.addEventListener('change', () => { if (checkbox.checked) selected.add(item.index); else selected.delete(item.index); updateSelection(true); });
     }
     wrapper.append(table);
@@ -150,7 +150,7 @@
       document.querySelector('#export-mode').textContent = launch.overrideConfirmed ? 'Temporary advanced mode: all accessible content. No additional permissions are granted.' : 'Designer-recorded content only. Saved source observations may be stale.';
       renderPackages();
       download.disabled = !DOWNLOADS_READY || !plan.entries.length;
-      status.textContent = plan.entries.length ? 'Preview ready. Select Download ZIP to retrieve these published records.' : 'No eligible published pipelines found. Refresh Shared From in the source Designer first.';
+      status.textContent = plan.entries.length ? 'Preview ready. Select Download ZIP to retrieve these published records.' : 'No eligible published files found. Refresh Shared From in the source Designer first.';
     } catch (error) {
       if (current === generation) {
         // Display only our fixed validation messages, never arbitrary native service exceptions.
@@ -199,7 +199,7 @@
     } catch (error) {
       if (current === generation) {
         discard();
-        const reasons = { 'version-unverified': 'The service did not provide a verifiable Sub-Pipeline version.', 'version-mismatch': 'A published version changed.', 'source-unavailable': 'Published JSON was unavailable or access was denied.', 'requests-stalled': 'Earlier service requests are still running.', 'request-timeout': 'The service timed out.', 'context-changed': 'The source page, tenant, or consent changed.', 'preview-expired': 'The export session expired.', 'session-unavailable': 'Temporary export storage is unavailable.' };
+        const reasons = { 'version-unverified': 'The service did not provide a verifiable Sub-Pipeline version.', 'version-mismatch': 'A published version changed.', 'source-unavailable': 'Published source was unavailable or access was denied.', 'requests-stalled': 'Earlier service requests are still running.', 'request-timeout': 'The service timed out.', 'context-changed': 'The source page, tenant, or consent changed.', 'preview-expired': 'The export session expired.', 'session-unavailable': 'Temporary export storage is unavailable.' };
         // A replaced source document or cleared browser/extension session requires a new launch.
         const retry = error.reason === 'session-unavailable' ? 'Reload the extension, refresh Packages, and reopen export.' : ['context-changed', 'preview-expired'].includes(error.reason) ? 'Reopen export from settings.' : 'Refresh preview to retry.';
         status.textContent = `${reasons[error.reason] || 'Export stopped.'} No partial ZIP was created. ${retry}`;
@@ -236,8 +236,9 @@
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local' || launch?.overrideConfirmed) return;
     const known = changes.designerOwnershipCache ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue) : null;
+    const knownTransforms = known ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue, 'transformer') : null;
     // Removed eligibility revokes even a completed local Save ZIP link; timestamp-only refreshes do not.
-    if (changes.sharedFromEnabled?.newValue === false || known && plan?.entries.some((entry) => !known.get(entry.packageName)?.has(entry.name))) cancel.click();
+    if (changes.sharedFromEnabled?.newValue === false || known && plan?.entries.some((entry) => !(entry.type === 'transformer' ? knownTransforms : known).get(entry.packageName)?.has(entry.name))) cancel.click();
   });
   window.addEventListener('pagehide', () => { controller?.abort(); if (launch) chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'cancel', release: true }).catch(() => {}); discard(); launch = null; });
   preview();

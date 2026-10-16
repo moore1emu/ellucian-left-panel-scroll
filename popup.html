@@ -238,10 +238,10 @@
       <!-- Keep: group export/import in the last settings section, with Refresh left under Shared From (1.22.3). -->
       <details class="settings-card backup-card">
         <summary>Export &amp; Backup</summary>
-        <!-- Open only a metadata preview; source downloads remain disabled until their adapter is verified. -->
+        <!-- Open only metadata preview; source reads require Download ZIP in the separate export tab. -->
         <div class="pipeline-export-section">
           <h2>Pipeline Export</h2>
-          <p class="card-description">Download your latest published pipelines.</p>
+          <p class="card-description">Export published pipelines and transformers.</p>
           <p class="export-setup-notice">Shared From setup is required.</p>
           <button id="export-pipelines" type="button" disabled aria-describedby="pipeline-export-status">Preview Pipeline Export</button>
           <p id="pipeline-export-status" class="icon-status">Loading export preview…</p>

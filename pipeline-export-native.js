@@ -17,7 +17,7 @@
   };
 
   // Reuse the exact callbacks/readers used by Integration Packages, not copied authentication code.
-  function create(server, getJwt, tenantId, schedule) {
+  function create(server, getJwt, tenantId, schedule, http, verifyContext = () => {}) {
     if (typeof getJwt !== 'function' || !['G9', 'bP', 'B0', 'db'].every((key) => typeof server?.[key] === 'function')) throw fail('reader-unavailable');
     segment(tenantId);
     return {
@@ -32,15 +32,38 @@
         // Native helpers prepare and consume their opaque config; never inspect/copy its headers or token.
         const result = await schedule(async () => server.bP(await server.db(getJwt), tenantId, ref.version, ref.filename, ref.provisioned, ref.merge, ref.provisionedVersion));
         if (!result || result.error || !Array.isArray(result.pipelines)) throw fail('metadata-unavailable');
+        // Match the isolated preview's existing total-record bound before allocating projected metadata.
+        if (result.pipelines.length + (Array.isArray(result.transformFunctions) ? result.transformFunctions.length : 0) > 100000) throw fail('metadata-unavailable');
         segment(result.name);
         // Retain only metadata in the preview/session; package descriptions and any other fields are discarded.
-        return { name: result.name, version: ref.version, ref, pipelines: result.pipelines.filter((entry) => entry?.version && type(entry.type)).map((entry) => ({
+        const pipelines = result.pipelines.filter((entry) => entry?.version && type(entry.type)).map((entry) => ({
           name: segment(entry.name), version: `v${version(entry.version)}`, type: type(entry.type),
-        })) };
+        }));
+        // Published transform-function metadata is separate from pipelines; never collect source during preview.
+        if (result.transformFunctions !== undefined && !Array.isArray(result.transformFunctions)) throw fail('metadata-unavailable');
+        for (const entry of result.transformFunctions || []) {
+          pipelines.push({ name: segment(entry?.name), version: `v${version(entry?.version)}`, type: 'transformer' });
+        }
+        return { name: result.name, version: ref.version, ref, pipelines };
       },
       async read(entry, ref) {
         const expected = version(entry.version);
         segment(entry.name);
+        // Keep: the owner-approved transformer reader uses only this fixed GET resource and untouched native config (2.0.7).
+        if (entry.type === 'transformer') {
+          if (typeof http?.get !== 'function') throw fail('reader-unavailable');
+          return schedule(async () => {
+            const config = await server.db(getJwt);
+            // A tenant/navigation/consent change during authentication must not start another source request.
+            verifyContext();
+            const url = `https://semver-s3-service.prod.10005.elluciancloud.com/artifact/${encodeURIComponent(tenantId)}/transformFunction/latest/${encodeURIComponent(entry.name)}.js`;
+            const response = await http.get(url, config);
+            const text = response?.data;
+            // Do not execute, JSON-wrap, or silently save a login/error HTML page as JavaScript.
+            if (response?.status !== 200 || typeof text !== 'string' || !text.trim() || /^\s*<(?:!doctype|html|head|body)\b/iu.test(text)) throw fail('source-unavailable');
+            return text;
+          });
+        }
         // Sub-Pipeline service paths use the major number; other artifacts use an exact full version.
         const isSubPipeline = entry.type === 'sub-pipeline';
         const route = isSubPipeline ? expected.split('.')[0] : `v${expected}`;

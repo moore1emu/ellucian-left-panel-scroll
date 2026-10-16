@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.0.7": Object.freeze([
+      "Export published transformers as JavaScript files beside package pipelines.",
+      "Refresh Shared From in Designer to record transformer names separately.",
+      "Existing favorites, source consent, and temporary advanced mode are unchanged.",
+    ]),
     "2.0.6": Object.freeze([
       "Fixes Sub-Pipeline exports whose source JSON has a null version.",
       "Sub-Pipelines resolve by major; preview versions come from package metadata.",

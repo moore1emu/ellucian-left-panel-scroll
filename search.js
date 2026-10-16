@@ -3782,6 +3782,8 @@
           packages: Array.isArray(event.data.packages) ? event.data.packages.slice(0, 10001).map((entry) => ({
             name: normalizeText(entry?.name),
             pipelines: Array.isArray(entry?.pipelines) ? entry.pipelines.slice(0, 10001).map(normalizeText) : null,
+            // Preserve only transformer names, with the same bounded validation as pipeline ownership.
+            ...(entry?.transformFunctions !== undefined ? { transformFunctions: Array.isArray(entry.transformFunctions) ? entry.transformFunctions.slice(0, 10001).map(normalizeText) : null } : {}),
           })) : null }, (result) => {
           // Ignore a late callback after opt-out, navigation, or a replacement request.
           if (ownershipRequest !== requestId) return;

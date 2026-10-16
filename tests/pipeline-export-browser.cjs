@@ -14,7 +14,7 @@ const html = `<div data-testid="master"><h2 id="home_title-packages">PACKAGES</h
 <main id="pipelineManager-main-customBlock"><h1 id="packageDetails-title">Package: Owned Package</h1></main><script>
 // Native fixture helpers accept an opaque config and callback without requesting credentials or service URLs.
 const owned={name:'Owned Package',nameAndExtension:'owned.json',pipelines:[{name:'Integration',version:'v0.9.0',type:'integration'},
-  {name:'Integration',version:'v1.0.0',type:'integration'},{name:'API',version:'v1.0.0',type:'api'},{name:'Sub',version:'v1.0.0',type:'subpipeline'}]};
+  {name:'Integration',version:'v1.0.0',type:'integration'},{name:'API',version:'v1.0.0',type:'api'},{name:'Sub',version:'v1.0.0',type:'subpipeline'}],transformFunctions:[{name:'Function',version:'v1.0.0'}]};
 const supplied={name:'Supplier Package',nameAndExtension:'supplier.json',pipelines:[{name:'Supplier',version:'v1.0.0',type:'api'}]};
 window.stats={lists:0,packages:0,sources:0};
 window.__PRELOADED_STATE__={tenant:'synthetic-tenant'};
@@ -28,7 +28,9 @@ const server={G9:async(callback,tenant,expand)=>{if(expand!==false)throw Error('
  // Sub-Pipeline downloads use a major-only path and retain the service's null source version.
  B0:async(callback,tenant,version,name)=>{stats.sources++;if(name==='Sub'&&version!=='1')throw Error('Wrong Sub-Pipeline route');return {name,version:name==='Sub'?null:'1.0.0',fittings:[]};}};
 window.webpackChunkexperience_exchange_extension=[];
-window.webpackChunkexperience_exchange_extension.push=entry=>entry[2](name=>name==='./src/server/ServerHelper.js'?server:{});
+// The actual adapter passes opaque native configuration to this fixed-endpoint text reader unchanged.
+const http={get:async(url,config)=>{if(config!==opaque||url!=='https://semver-s3-service.prod.10005.elluciancloud.com/artifact/synthetic-tenant/transformFunction/latest/Function.js')throw Error('Unexpected transformer request');stats.sources++;return {status:200,data:'// Synthetic source\\nfunction transform(message) { return message; }\\n'};}};
+window.webpackChunkexperience_exchange_extension.push=entry=>entry[2](name=>name==='./src/server/ServerHelper.js'?server:name==='./node_modules/axios/lib/axios.js'?{A:http}:{});
 window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEvent(new Event('ellucian-left-panel-dom-changed'));};
 </script>`;
 
@@ -50,7 +52,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     let worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     await worker.evaluate(() => pendingOwnershipUpdate);
     await worker.evaluate(() => chrome.storage.local.set({ sharedFromEnabled: true, designerOwnershipCache: {
-      synthetic: { packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'] }] },
+      synthetic: { packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
     }, syntheticPreserve: { favorites: ['untouched'] } }));
     const id = new URL(worker.url()).host;
     const source = await context.newPage();
@@ -76,7 +78,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     assert.equal(await exported.locator('.export-package').count(), 1);
     await exported.locator('.package-name').click();
     await exported.locator('.pipeline-checkbox').first().waitFor();
-    assert.equal(await exported.locator('.pipeline-checkbox').count(), 3);
+    assert.equal(await exported.locator('.pipeline-checkbox').count(), 4);
     assert.equal(await source.evaluate(() => stats.sources), 0, 'Preview must not retrieve code');
     assert.equal(await source.evaluate(() => stats.packages), 1, 'Default preview inspects only recorded packages');
     // Exercise a human-length pause before download; the separate worker regression forces cold rehydration.
@@ -89,6 +91,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     const bytes = Buffer.from(await exported.evaluate(async () => [...new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())]));
     assert.equal(bytes.readUInt32LE(0), 0x04034b50);
     for (const name of ['API', 'Integration', 'Sub']) assert.ok(bytes.includes(Buffer.from(`Owned Package/${name}.json`)));
+    assert.ok(bytes.includes(Buffer.from('Owned Package/Function.js')));
     // Read STORE entries to prove the ZIP preserves null rather than inserting the package version.
     let offset = 0;
     while (bytes.readUInt32LE(offset) === 0x04034b50) {
@@ -97,9 +100,10 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
       const start = offset + 30 + nameLength + bytes.readUInt16LE(offset + 28);
       const name = bytes.subarray(offset + 30, offset + 30 + nameLength).toString();
       if (name === 'Owned Package/Sub.json') assert.equal(JSON.parse(bytes.subarray(start, start + size)).version, null);
+      if (name === 'Owned Package/Function.js') assert.equal(bytes.subarray(start, start + size).toString(), '// Synthetic source\nfunction transform(message) { return message; }\n');
       offset = start + size;
     }
-    assert.equal(await source.evaluate(() => stats.sources), 3);
+    assert.equal(await source.evaluate(() => stats.sources), 4);
     assert.equal(bytes.includes(Buffer.from('Supplier Package/')), false);
     // A new export document cannot replay the consumed ticket or inherit its source authorization.
     const replay = await context.newPage();
@@ -111,7 +115,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     // Refresh and Cancel keep metadata-only preview distinct from source retrieval.
     await exported.locator('#refresh-preview').click();
     await exported.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
-    assert.equal(await source.evaluate(() => stats.sources), 3);
+    assert.equal(await source.evaluate(() => stats.sources), 4);
     await exported.locator('#cancel-export').click();
     assert.equal(await exported.locator('#save-zip').isHidden(), true);
     await exported.close();
@@ -124,8 +128,8 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     const advanced = await openExport();
     assert.equal(await advanced.locator('.export-package').count(), 2);
     for (const group of await advanced.locator('.package-name').all()) await group.click();
-    await advanced.waitForFunction(() => document.querySelectorAll('.pipeline-checkbox').length === 4);
-    assert.equal(await advanced.locator('.pipeline-checkbox').count(), 4);
+    await advanced.waitForFunction(() => document.querySelectorAll('.pipeline-checkbox').length === 5);
+    assert.equal(await advanced.locator('.pipeline-checkbox').count(), 5);
     await advanced.locator('#cancel-export').click();
     await advanced.locator('#refresh-preview').click();
     await advanced.locator('#export-status').filter({ hasText: 'Enable Shared From first.' }).waitFor();
@@ -134,7 +138,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     // A source reload cannot silently retarget an existing launch to the replacement document.
     // Opt-out deliberately clears saved observations; restore only this synthetic fixture for the next case.
     await worker.evaluate(() => chrome.storage.local.set({ sharedFromEnabled: true, designerOwnershipCache: {
-      synthetic: { packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'] }] },
+      synthetic: { packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
     } }));
     const stale = await openExport();
     await source.reload();
