@@ -24,9 +24,7 @@
       if (!Array.isArray(pkg?.pipelines) || (count += pkg.pipelines.length) > 100000) throw new Error('Invalid metadata');
       return { name: text(pkg.name), version: text(pkg.version), pipelines: pkg.pipelines.map((item) => ({ name: text(item.name), version: text(item.version), type: text(item.type) })) };
     });
-    // A display name is bounded metadata, never an authority for tenant identity or source eligibility.
-    const environment = result.environment === undefined ? context.tenantId : text(result.environment);
-    return { ok: true, context, environment, packages };
+    return { ok: true, context, packages };
   }
 
   // Cancel queued native work and resolve local callers; actual native calls retain their service slots.
@@ -97,7 +95,11 @@
         const plan = PipelineExportCore.buildPlan(result.packages, current.designerOwnershipCache, { ...options, sharedFromEnabled: current.sharedFromEnabled === true });
         session.context = result.context;
         session.entries = new Map(plan.entries.map((entry) => [key(entry), entry]));
-        return { ok: true, context: result.context, environment: result.environment, plan };
+        // Keep: use only the saved name for this exact verified tenant ID, never page-supplied names or another tenant (2.1.1).
+        const cache = current.designerOwnershipCache || {};
+        const name = Object.hasOwn(cache, result.context.tenantId) ? cache[result.context.tenantId]?.environment : null;
+        const environment = typeof name === 'string' && name.trim() && name.length <= 500 ? name.trim() : result.context.tenantId;
+        return { ok: true, context: result.context, environment, plan };
       }
       const session = sessions.get(clientId);
       if (!session || !same(session.context, message.context) || session.context.url !== window.location.href) return { ok: false, reason: 'context-changed' };

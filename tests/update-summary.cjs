@@ -64,6 +64,10 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.0.9" }, storage, "2.1.0");
   assert.equal(summary.notesFor(saved, "2.1.0").length, 3);
   assert.match(summary.notesFor(saved, "2.1.0")[1], /Formatted/);
+  // The name repair describes local cache reuse, not an unavailable native service.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.1.0" }, storage, "2.1.1");
+  assert.equal(summary.notesFor(saved, "2.1.1").length, 3);
+  assert.match(summary.notesFor(saved, "2.1.1")[0], /Shared From/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

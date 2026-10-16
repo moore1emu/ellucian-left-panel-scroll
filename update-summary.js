@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.1.1": Object.freeze([
+      "ZIP and package README names use the current tenant's saved Shared From environment name.",
+      "Exact tenant-ID matching needs no additional service lookup.",
+      "If no matching saved name exists, the verified tenant ID remains the fallback.",
+    ]),
     "2.1.0": Object.freeze([
       "Export ZIP filenames include the resolved current environment name.",
       "Optional Formatted exports include Source/Formatted folders and a package README.",

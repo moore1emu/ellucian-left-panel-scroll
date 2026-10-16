@@ -24,8 +24,7 @@ window.owner={context:{tenantId:'synthetic-tenant',getJwt:()=>{throw Error('Sess
 const row=document.querySelector('li');row.__reactFiber$fixture={return:{stateNode:owner}};
 row.__reactProps$fixture={'package-element':owned};
 const opaque={};
-const server={JR:async tenant=>{if(tenant!=='synthetic-tenant')throw Error('Wrong tenant lookup');return {name:'synthetic-production',label:'SaaSProduction'};},
- G9:async(callback,tenant,expand)=>{if(expand!==false)throw Error('Unbounded fan-out');stats.lists++;return [owned,supplied].map(pkg=>({nameAndExtension:pkg.nameAndExtension,version:'v1.0.0'}));},
+const server={G9:async(callback,tenant,expand)=>{if(expand!==false)throw Error('Unbounded fan-out');stats.lists++;return [owned,supplied].map(pkg=>({nameAndExtension:pkg.nameAndExtension,version:'v1.0.0'}));},
  db:async()=>opaque,bP:async(config,tenant,version,file)=>{if(config!==opaque)throw Error('Opaque config changed');stats.packages++;return file==='owned.json'?owned:supplied;},
  // Sub-Pipeline downloads use a major-only path and retain the service's null source version.
  B0:async(callback,tenant,version,name)=>{stats.sources++;if(name==='Sub'&&!['1','2'].includes(version))throw Error('Wrong Sub-Pipeline route');return {name,version:name==='Sub'?null:version.replace(/^v/,''),requestedRoute:version,fittings:[]};}};
@@ -54,7 +53,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     let worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     await worker.evaluate(() => pendingOwnershipUpdate);
     await worker.evaluate(() => chrome.storage.local.set({ sharedFromEnabled: true, designerOwnershipCache: {
-      synthetic: { packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
+      'synthetic-tenant': { environment: 'synthetic-production', packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
     }, syntheticPreserve: { favorites: ['untouched'] } }));
     const id = new URL(worker.url()).host;
     const source = await context.newPage();
@@ -163,7 +162,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     // A source reload cannot silently retarget an existing launch to the replacement document.
     // Opt-out deliberately clears saved observations; restore only this synthetic fixture for the next case.
     await worker.evaluate(() => chrome.storage.local.set({ sharedFromEnabled: true, designerOwnershipCache: {
-      synthetic: { packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
+      'synthetic-tenant': { environment: 'synthetic-production', packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
     } }));
     const stale = await openExport();
     await source.reload();

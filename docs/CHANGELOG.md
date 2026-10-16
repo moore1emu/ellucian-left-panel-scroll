@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.1.1 — 2026-10-16 — Reuse Saved Environment Names
+
+- ZIP filenames and Formatted package READMEs now use the saved Shared From environment name for the exact verified current tenant ID. Missing, blank, oversized, or malformed names retain the tenant-ID fallback; another tenant's snapshot or page-supplied name cannot override it.
+- Removed the export-only tenant-name service lookup. Signed-in read-only inspection confirmed Packages does not export Designer's JR helper; the earlier synthetic fixture incorrectly supplied it. Existing Designer sharing/source helpers remain unchanged. No additional lookup, URL/path guessing, cache migration, or favorite write.
+- Updated native/browser regressions to model Packages without the unavailable helper and verify exact cached name selection, wrong-tenant/malformed-name fallbacks, page-name rejection, and environment-named ZIP downloads. Formatted/raw output, one-click download, context/consent/entry guards, six-request limits, and all-or-nothing behavior are unchanged. Main/store unchanged; signed-in confirmation remains required.
+
 ## 2.1.0 — 2026-10-16 — Environment Names and Optional Formatted Export
 
 - Export ZIP filenames include the resolved current tenant name, for example integration-navigator-uncproductions.zip. The existing tenant-details helper runs under the combined six-request budget; missing names fall back to the verified tenant ID, never a guessed domain/path. The display name is bounded metadata, not authorization, and tenant/context checks remain unchanged.

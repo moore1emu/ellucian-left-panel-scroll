@@ -22,7 +22,7 @@ function fixture() {
   const getJwt = () => { throw new Error('Extension code must not invoke the session callback'); };
   const owner = { context: { getJwt, tenantId: 'synthetic-tenant' }, state: { menu: packages.map((pkg) => ({ 'package-element': pkg })) } };
   const row = { __reactFiber$fixture: { return: { stateNode: owner } } };
-  const saved = { sharedFromEnabled: true, designerOwnershipCache: { synthetic: { packages: packages.slice(0, 120).map((pkg) => ({ name: pkg.name, pipelines: pkg.pipelines.map((item) => item.name) })) } } };
+  const saved = { sharedFromEnabled: true, designerOwnershipCache: { 'synthetic-tenant': { environment: 'synthetic-production', packages: packages.slice(0, 120).map((pkg) => ({ name: pkg.name, pipelines: pkg.pipelines.map((item) => item.name) })) } } };
   const stats = { active: 0, max: 0, reads: 0, packageReads: 0, lists: 0, storageReads: 0 };
   const holds = [];
   const flags = { hold: false, missingVersion: false, mismatch: false, returnedVersion: undefined, wrongName: false, wrongType: false };
@@ -34,12 +34,6 @@ function fixture() {
     try { await turn(); if (flags.hold) await new Promise((resolve) => holds.push(resolve)); return run(); } finally { stats.active--; }
   };
   const server = {
-    // Resolve only this verified tenant and keep lookup failure independent of source eligibility.
-    JR: async tenant => { assert.equal(tenant, 'synthetic-tenant'); return service(() => {
-      if (flags.labelFailure) throw Error('Synthetic label unavailable');
-      if (flags.switchOnLabel) owner.context.tenantId = 'changed';
-      return { name: 'synthetic-production', label: 'SaaSProduction' };
-    }); },
     G9: async (callback, tenant, expand) => { assert.equal(callback, getJwt); assert.equal(tenant, 'synthetic-tenant'); assert.equal(expand, false); stats.lists++; return service(() => refs); },
     db: async (callback) => { assert.equal(callback, getJwt); return opaque; },
     bP: async (config, tenant, release, filename) => { assert.equal(config, opaque); assert.equal(tenant, 'synthetic-tenant'); assert.equal(release, 'v1.0.0'); stats.packageReads++; return service(() => packages.find((pkg) => pkg.nameAndExtension === filename)); },
@@ -75,13 +69,19 @@ async function run() {
   const preview = await f.call({ type: 'pipeline-export-preview' });
   assert.equal(preview.ok, true);
   assert.equal(preview.environment, 'synthetic-production');
-  // A missing label falls back to the verified ID; identity changes during lookup still fail closed.
+  // A missing/malformed name or another tenant's snapshot must not mislabel this export.
   const unnamed = fixture();
-  unnamed.flags.labelFailure = true;
+  delete unnamed.saved.designerOwnershipCache['synthetic-tenant'].environment;
   assert.equal((await unnamed.call({ type: 'pipeline-export-preview' })).environment, 'synthetic-tenant');
-  const switched = fixture();
-  switched.flags.switchOnLabel = true;
-  assert.equal((await switched.call({ type: 'pipeline-export-preview' })).ok, false);
+  const otherTenant = fixture();
+  otherTenant.saved.designerOwnershipCache.other = otherTenant.saved.designerOwnershipCache['synthetic-tenant'];
+  delete otherTenant.saved.designerOwnershipCache['synthetic-tenant'];
+  assert.equal((await otherTenant.call({ type: 'pipeline-export-preview' })).environment, 'synthetic-tenant');
+  for (const invalid of [' ', 'x'.repeat(501), { name: 'Wrong shape' }]) {
+    const malformed = fixture();
+    malformed.saved.designerOwnershipCache['synthetic-tenant'].environment = invalid;
+    assert.equal((await malformed.call({ type: 'pipeline-export-preview' })).environment, 'synthetic-tenant');
+  }
   assert.equal(preview.plan.entries.length, 120);
   assert.equal(f.stats.packageReads, 120);
   assert.equal(f.stats.reads, 0, 'Preview must not request pipeline code');

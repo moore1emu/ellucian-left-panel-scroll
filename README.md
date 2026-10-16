@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.1.0):** ZIP filenames include the current environment name. Optional Formatted exports add Source/Formatted folders and a package README; unchecked exports keep the existing layout. Per-major selection, type counts, and one-click download remain included. Signed-in confirmation is still required. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.1.1):** ZIP and package README names reuse the current tenant's saved Shared From environment name, with no extra lookup. Optional Formatted output, per-major selection, type counts, and one-click download remain included. Signed-in confirmation is still required. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 

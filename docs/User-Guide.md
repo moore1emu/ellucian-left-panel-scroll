@@ -1,6 +1,6 @@
 # User Guide
 
-> Develop's 2.1.0 test candidate adds environment-named ZIPs and optional Formatted exports. Reload the same unpacked folder, refresh Integration Packages and reopen export from settings. Refresh Designer sources if you have not yet recorded transformer names. Existing favorites are unchanged. Signed-in confirmation remains required. V1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
+> Develop's 2.1.1 test candidate fixes environment naming by reusing the exact tenant's Shared From cache. Reload the same unpacked folder, refresh Integration Packages and reopen export from settings. Refresh Designer sources if you have not yet recorded this environment or its transformer names. Existing favorites are unchanged. Signed-in confirmation remains required. V1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
 
 ## Pipeline Export — v2 Test Candidate
 
@@ -10,7 +10,7 @@
 4. Leave **Formatted** unchecked for the existing package/file layout, or check it for Source/Formatted folders plus a package README.
 5. Select **Download ZIP**. After all selected files are collected successfully, the complete archive starts downloading automatically. Your browser may show its usual save prompt. Use **Download Again** afterward only if you need another copy; it reuses the prepared ZIP without fetching sources again.
 
-The ZIP name includes the current resolved tenant name, such as integration-navigator-uncproductions.zip. If its name is unavailable, the verified tenant ID is used instead. Invalid filename characters are escaped. This name does not change which environment is accessed.
+The ZIP filename and package README use the Shared From environment name saved under the exact current tenant ID, such as integration-navigator-SaaSTest.zip. No extra name lookup is made. If no matching valid name is saved, the verified tenant ID is used instead; visit Designer in that environment to record it. Invalid filename characters are escaped. Names never determine which environment is accessed.
 
 With Formatted checked, each package contains Source/<filename>, Formatted/<filename>, and README.md. Source keeps importable JSON or original JavaScript; Formatted expands escaped whitespace for reading, matching auto-sync's review pass while preserving literal escaped backslashes. Formatted copies are not for import or execution. The package README lists selected names, types, majors, environment, and package-reported versions, not authors or audit history. Unchecked exports add no README or extra folders. Changing Formatted invalidates the old Download Again link; the choice is not stored as a preference.
 

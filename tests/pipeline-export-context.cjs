@@ -14,7 +14,7 @@ let runtime;
 let nextTimer = 0;
 let storageHold;
 let storageChanged;
-let sourceCache = { demo: { packages: [{ name: 'Package', pipelines: ['Pipeline', 'Function'], transformFunctions: ['Function'] }] } };
+let sourceCache = { tenant: { environment: 'Saved Environment', packages: [{ name: 'Package', pipelines: ['Pipeline', 'Function'], transformFunctions: ['Function'] }] } };
 const timers = new Map();
 const window = { location: { href: 'https://synthetic.test/data-connect/home', origin: 'https://synthetic.test', protocol: 'https:', pathname: '/data-connect/home' },
   addEventListener: (type, callback) => events.set(type, callback), postMessage: (message) => messages.push(message),
@@ -50,7 +50,7 @@ async function run() {
   const result = await preview;
   assert.equal(result.ok, true);
   assert.equal(result.plan.entries.length, 1);
-  assert.equal(result.environment, 'Synthetic Environment');
+  assert.equal(result.environment, 'Saved Environment', 'Page-supplied environment names must not override the exact cached tenant name');
   assert.equal(JSON.stringify(result).includes('secret'), false);
   assert.equal(timers.size, 0);
 

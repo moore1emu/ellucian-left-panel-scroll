@@ -421,16 +421,8 @@
       const failed = outcomes.find((item) => item.status === 'rejected');
       if (failed) throw failed.reason;
       checkExportSession(session);
-      // Resolve the current tenant's display name through the existing helper, under the same request budget.
-      let environment = session.tenantId;
-      if (typeof server.JR === 'function') {
-        try {
-          const details = await scheduleExportJob(session, () => getTenantDetails(server, session.tenantId));
-          environment = details.tenantName || details.environment || session.tenantId;
-        } catch { /* A missing name may use the verified ID; context/timeout failure still stops below. */ }
-      }
-      checkExportSession(session);
-      return { context: { url: session.url, tenantId: session.tenantId, documentKey: exportDocumentKey, sessionId: id }, environment, packages: results };
+      // Packages has no Designer tenant-name helper; naming comes from the isolated Shared From cache.
+      return { context: { url: session.url, tenantId: session.tenantId, documentKey: exportDocumentKey, sessionId: id }, packages: results };
     } catch (error) { closeExportSession(id); throw error; }
   }
 
