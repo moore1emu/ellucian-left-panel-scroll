@@ -1,6 +1,8 @@
 # v2 Development
 
-This is the **2.1.4 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+This is the **2.1.5 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+
+Controls now sit eight pixels inside their named subgroup headings, with headings retaining their alignment. Sharing/Sites remain unindented. This adds no vertical spacing or new behavior.
 
 Normal Navigation now fits without a scrollbar by removing the repeated page/environment footer line and slightly tightening row/group spacing. Text remains the same size and the popup stays 580px high. Long messages and notices retain scrolling; version/support and affiliation remain visible.
 

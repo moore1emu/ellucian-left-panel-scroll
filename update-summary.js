@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.1.5": Object.freeze([
+      "Controls have a subtle indent beneath their subgroup headings.",
+      "Sharing and Sites stay unindented, with no repeated panel titles.",
+      "Text size, compact Navigation, and saved settings are unchanged.",
+    ]),
     "2.1.4": Object.freeze([
       "Navigation spacing is tighter without shrinking its text.",
       "Removed repeated footer/tab headings; Appearance separates Icon and Favorites.",

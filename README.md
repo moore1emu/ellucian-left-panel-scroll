@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.1.4):** Navigation now has tighter spacing and no repeated footer scope line, so the normal view fits without scrolling. Text size is unchanged. Settings use Navigation, Sharing, Appearance, Sites, and Export tabs. Navigation groups General and page-specific controls; unavailable source-refresh/export actions explain which page to open. Saved preferences, favorites, consent, and export contents are unchanged. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.1.5):** Controls now have a subtle eight-pixel indent beneath their subgroup headings, while Sharing and Sites stay unindented. Navigation has tighter spacing and no repeated footer scope line, so the normal view fits without scrolling. Text size is unchanged. Settings use Navigation, Sharing, Appearance, Sites, and Export tabs. Navigation groups General and page-specific controls; unavailable source-refresh/export actions explain which page to open. Saved preferences, favorites, consent, and export contents are unchanged. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 

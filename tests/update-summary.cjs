@@ -81,6 +81,10 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.1.3" }, storage, "2.1.4");
   assert.equal(summary.notesFor(saved, "2.1.4").length, 3);
   assert.match(summary.notesFor(saved, "2.1.4")[0], /spacing/);
+  // Subgroup hierarchy is a presentation update, not a saved-data change.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.1.4" }, storage, "2.1.5");
+  assert.equal(summary.notesFor(saved, "2.1.5").length, 3);
+  assert.match(summary.notesFor(saved, "2.1.5")[0], /indent/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

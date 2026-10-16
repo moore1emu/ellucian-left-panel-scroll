@@ -1,6 +1,6 @@
 # User Guide
 
-> Develop's 2.1.4 test candidate tightens Navigation spacing and removes the repeated footer scope line without reducing text size. It uses task tabs: Navigation, Sharing, Appearance, Sites, and Export. Navigation groups General, Integration Packages, and Integration Designer. Existing saved settings, favorites, consent, and export contents are unchanged. Refresh Sources works only in Integration Designer; Pipeline Export works only in Integration Packages. Reload the same unpacked folder, refresh your Integration page, and reopen settings to test. See [v2 Development](V2-Development.md).
+> Develop's 2.1.5 test candidate indents subgroup controls eight pixels, keeps headings aligned, and leaves Sharing/Sites unindented. It tightens Navigation spacing and removes the repeated footer scope line without reducing text size. It uses task tabs: Navigation, Sharing, Appearance, Sites, and Export. Navigation groups General, Integration Packages, and Integration Designer. Existing saved settings, favorites, consent, and export contents are unchanged. Refresh Sources works only in Integration Designer; Pipeline Export works only in Integration Packages. Reload the same unpacked folder, refresh your Integration page, and reopen settings to test. See [v2 Development](V2-Development.md).
 
 ## Pipeline Export — v2 Test Candidate
 

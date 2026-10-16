@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.1.5 — 2026-10-16 — Clearer Settings Subgroups
+
+- Indented controls eight pixels beneath General, Integration Packages, Integration Designer, Icon, Favorites, Pipeline Export, and Backup & Restore headings. Headings retain their original alignment; Sharing and Sites stay unindented because they have no subgroup header. Existing export-card boundaries are preserved.
+- Kept the same text size and compact 580px popup. Normal Navigation still fits without scrolling; long notices retain overflow. No new settings, scripts, permissions, saved-data changes, or behavior changes.
+- Extended light/dark popup checks to assert each eight-pixel offset, unchanged Sharing/Sites alignment, no normal Navigation scroll, and no horizontally clipped controls. Save-race and update-summary checks remain applicable. Main/store unchanged; signed-in visual confirmation remains required.
+
 ## 2.1.4 — 2026-10-16 — Compact Navigation Layout
 
 - Appearance now labels its first group Icon, with Favorites kept as the separate heading below; control behavior and saved appearance values are unchanged.

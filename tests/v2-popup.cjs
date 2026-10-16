@@ -10,11 +10,11 @@ const root = path.resolve(__dirname, '..');
 function installStub() {
   // Retain unrelated settings across reloads to catch accidental resets.
   const saved = JSON.parse(localStorage.getItem('syntheticPreferences') || 'null') || {
-    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '2.1.4' }, favorites: { keep: true }, sharedFromEnabled: true,
+    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '2.1.5' }, favorites: { keep: true }, sharedFromEnabled: true,
   };
   window.__messages = [];
   window.__page = 'packages';
-  const runtime = { lastError: undefined, getManifest: () => ({ version: '2.1.4', content_scripts: [{ matches: [] }] }),
+  const runtime = { lastError: undefined, getManifest: () => ({ version: '2.1.5', content_scripts: [{ matches: [] }] }),
     sendMessage: async message => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
   window.chrome = { runtime, storage: { local: {
     get(defaults, callback) { const result = { ...defaults }; for (const key of Object.keys(result)) if (Object.hasOwn(saved, key)) result[key] = saved[key]; if (callback) setTimeout(() => callback(result), 0); return Promise.resolve(result); },
@@ -87,11 +87,34 @@ function installStub() {
       assert.equal(navigation.titleSize, '13px');
       assert.equal(await page.locator('.footer-scope').count(), 0);
 
+      // Named subgroup controls sit eight pixels inside their heading, without moving ungrouped tasks.
+      const pairs = [
+        ['Navigation', '#general-title', 'label[for="remember-width"]'],
+        ['Navigation', '#packages-title', 'label[for="package-artifacts-enabled"]'],
+        ['Navigation', '#designer-title', 'label[for="fitting-details-enabled"]'],
+        ['Appearance', '#panel-appearance > h2', '.icon-appearance-controls'],
+        ['Appearance', '.favorite-appearance-controls > .setting-title', '.favorite-match-control'],
+        ['Export', '.pipeline-export-section h2', '.pipeline-export-section > .card-description'],
+        ['Export', '.backup-card > h2', '#export-shared-from'],
+      ];
+      for (const [name, heading, control] of pairs) {
+        await task(name);
+        const offset = await page.evaluate(([head, child]) => document.querySelector(child).getBoundingClientRect().left - document.querySelector(head).getBoundingClientRect().left, [heading, control]);
+        assert.equal(offset, 8, name + ' subgroup indentation');
+      }
+      for (const [name, selector] of [['Sharing', 'label[for="shared-version-enabled"]'], ['Sites', '#custom-site-form']]) {
+        await task(name);
+        const offset = await page.locator(selector).evaluate(node => node.getBoundingClientRect().left - node.closest('.settings-panel').getBoundingClientRect().left);
+        assert.equal(offset, 2, name + ' stays unindented');
+      }
+
       // Every task preserves a visible tab strip/footer inside the browser popup height.
       for (const name of ['Navigation', 'Sharing', 'Appearance', 'Sites', 'Export']) {
         await task(name);
-        const layout = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, bottom: document.querySelector('footer').getBoundingClientRect().bottom, top: document.querySelector('.settings-tabs').getBoundingClientRect().top }));
+        const layout = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, bottom: document.querySelector('footer').getBoundingClientRect().bottom, top: document.querySelector('.settings-tabs').getBoundingClientRect().top,
+          clipped: document.querySelector('.settings-panels').scrollWidth > document.querySelector('.settings-panels').clientWidth }));
         assert.ok(layout.width <= 360 && layout.bottom <= 580 && layout.top >= 0, name + ' containment');
+        assert.equal(layout.clipped, false, name + ' controls are not horizontally clipped');
         assert.equal(await page.locator('[role="tabpanel"]:visible').count(), 1);
       }
       await page.locator('#tab-export').press('Home');
@@ -154,7 +177,7 @@ function installStub() {
       assert.deepEqual(errors, []);
       if (process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS) {
         await page.evaluate(() => { document.querySelector('#shared-from-status').textContent = ''; });
-        for (const name of ['navigation', 'sharing', 'export']) {
+        for (const name of ['navigation', 'sharing', 'appearance', 'export']) {
           await page.evaluate(name => PopupTabs.select(name), name);
           await page.locator('.popup-shell').screenshot({ path: path.join(process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS, 'v2-' + name + '-' + colorScheme + '.png') });
         }
