@@ -87,6 +87,10 @@
   let favoriteTenantId = '';
   let favoriteTenantUrl = '';
   let favoriteLoadSequence = 0;
+  // Protect optimistic pins from older storage notifications while this visit's writes are pending.
+  const pendingFavoritePackageSaves = new Map();
+  // Reject an older reconciliation read even when its next write batch has already finished.
+  let favoritePackageEditSequence = 0;
   let preferencesLoaded = false;
   const favoriteContextRequests = new Map();
 
@@ -1064,13 +1068,57 @@
   function persistFavoritePatch(patch) {
     const scope = getFavoriteScope();
     if (!favoritesLoaded || !scope || activeFavoritesStorageKey !== FavoritesData.key(scope)) return;
+    const storageKey = FavoritesData.key(scope);
+    const visit = favoriteLoadSequence;
+    let pending = pendingFavoritePackageSaves.get(storageKey);
+    // Track package edits separately; disclosure and height writes cannot rewind pending pins.
+    const packagesChanged = Object.hasOwn(patch, 'packages');
+    if (packagesChanged) {
+      favoritePackageEditSequence += 1;
+      if (!pending || pending.visit !== visit) {
+        pending = { visit, count: 0, failed: false };
+        pendingFavoritePackageSaves.set(storageKey, pending);
+      }
+      pending.count += 1;
+    }
     try {
       chrome.runtime.sendMessage({ type: 'favorites-save', scope, ...patch }, (result) => {
         try {
-          if (chrome.runtime.lastError || result?.ok !== true) {
-            console.warn('Integration Navigator: favorites could not be saved. Reopen settings and retry.');
-            loadFavoritesForCurrentPage();
+          const failed = Boolean(chrome.runtime.lastError) || result?.ok !== true;
+          if (packagesChanged) { pending.count -= 1; pending.failed ||= failed; }
+          // Ignore callbacks belonging to an earlier tenant/page visit, even after returning to its key.
+          if (visit !== favoriteLoadSequence || getFavoriteScopeKey() !== storageKey) {
+            if (packagesChanged && !pending.count && pendingFavoritePackageSaves.get(storageKey) === pending) pendingFavoritePackageSaves.delete(storageKey);
+            return;
           }
+          if (failed) {
+            console.warn('Integration Navigator: favorites could not be saved. Reopen settings and retry.');
+          }
+          // Reconcile only after all queued pin snapshots settle, including an earlier failed write.
+          const outstanding = pendingFavoritePackageSaves.get(storageKey);
+          if (failed && outstanding?.visit === visit) outstanding.failed = true;
+          if (outstanding?.visit === visit && outstanding.count) return;
+          if (packagesChanged && outstanding === pending) pendingFavoritePackageSaves.delete(storageKey);
+          // Failed batches keep the existing locked recovery path; successful saves leave stars usable.
+          if (failed || (packagesChanged && pending.failed)) { loadFavoritesForCurrentPage(); return; }
+          if (!packagesChanged) return;
+          const editSequence = favoritePackageEditSequence;
+          chrome.storage.local.get({ [FAVORITES_BY_HOST_KEY]: {} }, settings => {
+            try {
+              // Consume API failures even for stale callbacks, without disturbing a newer visit.
+              const lastError = chrome.runtime.lastError;
+              // A new edit or destination visit makes this confirmed snapshot too old to apply.
+              if (visit !== favoriteLoadSequence || getFavoriteScopeKey() !== storageKey || editSequence !== favoritePackageEditSequence || pendingFavoritePackageSaves.get(storageKey)?.count) return;
+              // A failed/missing read is not an empty list, and must never replace visible pins.
+              const packages = settings?.[FAVORITES_BY_HOST_KEY]?.[storageKey];
+              if (lastError || !Array.isArray(packages)) {
+                console.warn('Integration Navigator: favorites could not be verified. Refresh this page to retry.');
+                return;
+              }
+              loadFavoriteState(packages);
+              refreshFavoritesUI();
+            } catch (_error) { stopDisconnectedOwnership(); }
+          });
         } catch (_error) { stopDisconnectedOwnership(); }
       });
     } catch (_error) { stopDisconnectedOwnership(); }
@@ -4023,7 +4071,9 @@
 
     // Synchronize changes made by another tab in the same environment.
     if (changes[FAVORITES_BY_HOST_KEY]) {
-      if (favoritesLoaded) loadFavoriteState(changes[FAVORITES_BY_HOST_KEY].newValue?.[getFavoriteScopeKey()]);
+      const pending = pendingFavoritePackageSaves.get(getFavoriteScopeKey());
+      // Preserve later local clicks until the last queued snapshot has been durably acknowledged.
+      if (favoritesLoaded && !(pending?.visit === favoriteLoadSequence && pending.count)) loadFavoriteState(changes[FAVORITES_BY_HOST_KEY].newValue?.[getFavoriteScopeKey()]);
       refreshFavoritesUI();
     }
 

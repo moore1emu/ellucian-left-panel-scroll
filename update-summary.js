@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.1.6": Object.freeze([
+      "Protects rapid favorite edits and cancelled backup previews from stale responses.",
+      "Settings read/save failures now keep confirmed values and explain how to retry.",
+      "Tightens normal export version checks and verifies Download Again before retrying.",
+    ]),
     "2.1.5": Object.freeze([
       "Controls have a subtle indent beneath their subgroup headings.",
       "Sharing and Sites stay unindented, with no repeated panel titles.",

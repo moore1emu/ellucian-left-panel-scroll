@@ -10,11 +10,11 @@ const root = path.resolve(__dirname, '..');
 function installStub() {
   // Retain unrelated settings across reloads to catch accidental resets.
   const saved = JSON.parse(localStorage.getItem('syntheticPreferences') || 'null') || {
-    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '2.1.5' }, favorites: { keep: true }, sharedFromEnabled: true,
+    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '2.1.6' }, favorites: { keep: true }, sharedFromEnabled: true,
   };
   window.__messages = [];
   window.__page = 'packages';
-  const runtime = { lastError: undefined, getManifest: () => ({ version: '2.1.5', content_scripts: [{ matches: [] }] }),
+  const runtime = { lastError: undefined, getManifest: () => ({ version: '2.1.6', content_scripts: [{ matches: [] }] }),
     sendMessage: async message => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
   window.chrome = { runtime, storage: { local: {
     get(defaults, callback) { const result = { ...defaults }; for (const key of Object.keys(result)) if (Object.hasOwn(saved, key)) result[key] = saved[key]; if (callback) setTimeout(() => callback(result), 0); return Promise.resolve(result); },

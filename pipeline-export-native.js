@@ -73,7 +73,10 @@
         if (isSubPipeline) {
           // If the service supplies a version, reject another major but allow compatible minor/patch updates.
           if (result.version != null && version(result.version).split('.')[0] !== route) throw fail('version-mismatch');
-        } else if (result.version && version(result.version) !== expected) throw fail('version-mismatch');
+        } else if (typeof result.version !== 'string' || !result.version || version(result.version) !== expected) {
+          // Only Sub-Pipelines may omit their resolved version; normal Pipeline/API sources must prove the exact release.
+          throw fail('version-mismatch');
+        }
         if (result.type && type(result.type) !== entry.type) throw fail('source-mismatch');
         return result;
       },

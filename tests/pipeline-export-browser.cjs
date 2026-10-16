@@ -112,10 +112,17 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     assert.equal(downloaded.suggestedFilename(), 'integration-navigator-synthetic-production.zip');
     await exported.locator('#save-zip').waitFor();
     worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
-    const bytes = Buffer.from(await exported.evaluate(async () => [...new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())]));
     const chunks = [];
     for await (const chunk of await downloaded.createReadStream()) chunks.push(chunk);
-    assert.deepEqual(Buffer.concat(chunks), bytes);
+    const bytes = Buffer.concat(chunks);
+    assert.equal(await exported.locator('#save-zip').getAttribute('href'), null, 'Retry must not expose an unverified blob link');
+    // A valid retry checks the original document but reuses the same complete ZIP without another source read.
+    const retryEvent = exported.waitForEvent('download');
+    await exported.locator('#save-zip').click();
+    const retryChunks = [];
+    for await (const chunk of await (await retryEvent).createReadStream()) retryChunks.push(chunk);
+    assert.deepEqual(Buffer.concat(retryChunks), bytes);
+    assert.equal(await source.evaluate(() => stats.sources), 6);
     assert.equal(bytes.readUInt32LE(0), 0x04034b50);
     for (const name of ['API', 'Integration_v0', 'Integration_v1', 'Sub_v1', 'Sub_v2']) assert.ok(bytes.includes(Buffer.from(`Owned Package/${name}.json`)));
     assert.ok(bytes.includes(Buffer.from('Owned Package/Function.js')));
@@ -175,10 +182,34 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
       'synthetic-tenant': { environment: 'synthetic-production', packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
     } }));
     const stale = await openExport();
+    const staleDownload = stale.waitForEvent('download');
+    await stale.locator('#download-zip').click();
+    await staleDownload;
     await source.reload();
-    await stale.locator('#refresh-preview').click();
-    await stale.locator('#export-status').filter({ hasText: 'Source page changed. Reopen export from settings.' }).waitFor();
+    await stale.locator('#save-zip').click();
+    await stale.locator('#export-status').filter({ hasText: 'The source page, tenant, or consent changed. Reopen export from settings.' }).waitFor();
+    assert.equal(await stale.locator('#save-zip').isHidden(), true);
     assert.equal(await source.evaluate(() => stats.sources + stats.packages + stats.lists), 0);
+    // A same-document tenant change must also revoke the completed archive, not silently reuse its blob.
+    const switched = await openExport();
+    const switchedDownload = switched.waitForEvent('download');
+    await switched.locator('#download-zip').click();
+    await switchedDownload;
+    await source.evaluate(() => { owner.context.tenantId = 'different-synthetic-tenant'; });
+    await switched.locator('#save-zip').click();
+    await switched.locator('#export-status').filter({ hasText: 'The source page, tenant, or consent changed.' }).waitFor();
+    assert.equal(await switched.locator('#save-zip').isHidden(), true);
+    assert.equal(await source.evaluate(() => stats.sources), 6);
+    await source.evaluate(() => { owner.context.tenantId = 'synthetic-tenant'; });
+    // Closing the original tab retires its worker grant; retry cannot escape through a local blob link.
+    const closed = await openExport();
+    const closedDownload = closed.waitForEvent('download');
+    await closed.locator('#download-zip').click();
+    await closedDownload;
+    await source.close();
+    await closed.locator('#save-zip').click();
+    await closed.locator('#export-status').filter({ hasText: 'The source page, tenant, or consent changed.' }).waitFor();
+    assert.equal(await closed.locator('#save-zip').isHidden(), true);
     assert.deepEqual(await worker.evaluate(() => chrome.storage.local.get('syntheticPreserve')), { syntheticPreserve: { favorites: ['untouched'] } });
     assert.ok(network.every((url) => url === site + home || url === site + packagesPath), 'No live service or unrelated network request');
     console.log('PASS installed exporter messaging: real SPA/popup/worker/content/MAIN preview, all types, explicit ZIP, exact eligibility, advanced confirmation/revocation, ticket replay, original-document reload isolation, no live services');

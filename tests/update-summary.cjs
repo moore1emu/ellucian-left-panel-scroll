@@ -85,6 +85,10 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.1.4" }, storage, "2.1.5");
   assert.equal(summary.notesFor(saved, "2.1.5").length, 3);
   assert.match(summary.notesFor(saved, "2.1.5")[0], /indent/);
+  // Reliability notes remain version-scoped and never mutate unrelated saved data.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.1.5" }, storage, "2.1.6");
+  assert.equal(summary.notesFor(saved, "2.1.6").length, 3);
+  assert.match(summary.notesFor(saved, "2.1.6")[0], /favorite/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

@@ -133,6 +133,14 @@ async function run() {
   // Keep exact full-version checks for normal pipelines/APIs and identity/type checks for Sub-Pipelines.
   for (const kind of ['pipeline', 'api']) {
     const entry = all.plan.entries.find((item) => item.type === kind);
+    // Normal Pipeline/API JSON must prove its exact release; the null/omitted exception belongs only to Sub-Pipelines.
+    f.flags.missingVersion = true;
+    assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');
+    f.flags.omitVersion = true;
+    assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');
+    f.flags.missingVersion = false; f.flags.omitVersion = false;
+    f.flags.returnedVersion = '';
+    assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');
     f.flags.returnedVersion = '1.2.4';
     assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');
   }

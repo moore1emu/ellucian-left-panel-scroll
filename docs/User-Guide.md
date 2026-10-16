@@ -1,6 +1,8 @@
 # User Guide
 
-> Develop's 2.1.5 test candidate indents subgroup controls eight pixels, keeps headings aligned, and leaves Sharing/Sites unindented. It tightens Navigation spacing and removes the repeated footer scope line without reducing text size. It uses task tabs: Navigation, Sharing, Appearance, Sites, and Export. Navigation groups General, Integration Packages, and Integration Designer. Existing saved settings, favorites, consent, and export contents are unchanged. Refresh Sources works only in Integration Designer; Pipeline Export works only in Integration Packages. Reload the same unpacked folder, refresh your Integration page, and reopen settings to test. See [v2 Development](V2-Development.md).
+> Develop's 2.1.6 test candidate hardens rapid favorite saves, settings failures, cancelled backup reads, and export verification. The approved task-tab layout, saved-data formats, permissions, and consent are unchanged. Navigation groups General, Integration Packages, and Integration Designer. Refresh Sources works only in Integration Designer; Pipeline Export works only in Integration Packages. Reload the same unpacked folder, refresh your Integration page, and reopen settings to test. See [v2 Development](V2-Development.md).
+
+If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
 
 ## Pipeline Export — v2 Test Candidate
 
@@ -8,7 +10,7 @@
 2. Open Integration Packages, then select **Export → Preview Pipeline Export** in settings.
 3. Review the package list. Everything starts checked; use **Select All**, a package checkbox, or expand a package to select individual files/major versions. A partial package selection shows a mixed checkbox and its selected count. The top summary shows selected package/file counts plus Pipeline, Sub-Pipeline, API, and Transformer counts. Every package heading is listed immediately; there is no Show More limit in the exporter.
 4. Leave **Formatted** unchecked for the existing package/file layout, or check it for Source/Formatted folders plus a package README.
-5. Select **Download ZIP**. After all selected files are collected successfully, the complete archive starts downloading automatically. Your browser may show its usual save prompt. Use **Download Again** afterward only if you need another copy; it reuses the prepared ZIP without fetching sources again.
+5. Select **Download ZIP**. After all selected files are collected successfully, the complete archive starts downloading automatically. Your browser may show its usual save prompt. Use **Download Again** afterward only if you need another copy; it rechecks the original source context and reuses the prepared ZIP without fetching sources again. If that page was replaced, closed, or changed environments, reopen export instead.
 
 The ZIP filename and package README use the Shared From environment name saved under the exact current tenant ID, such as integration-navigator-SaaSTest.zip. No extra name lookup is made. If no matching valid name is saved, the verified tenant ID is used instead; visit Designer in that environment to record it. Invalid filename characters are escaped. Names never determine which environment is accessed.
 

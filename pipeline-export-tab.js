@@ -21,11 +21,31 @@
   const groups = new Map();
   let controller = null;
   let objectUrl = null;
+  let zipContext = null;
+  let retry = null;
+
+  // Keep the blob URL off the visible control so modified clicks cannot bypass source-context verification.
+  save.setAttribute('role', 'button');
+  save.tabIndex = 0;
+
+  // Hand the complete local archive to the browser only after the caller has checked its context.
+  function requestDownload(url, filename) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.hidden = true;
+    document.body.append(link);
+    try { link.click(); }
+    finally { link.remove(); }
+  }
 
   // A changed selection or new download must not leave a Save link pointing to an older archive.
   function discardZip() {
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     objectUrl = null;
+    zipContext = null;
+    retry = null;
+    save.removeAttribute('aria-busy');
     save.hidden = true;
     save.removeAttribute('href');
   }
@@ -205,12 +225,12 @@
       });
       if (current !== generation) return;
       objectUrl = URL.createObjectURL(zip);
-      save.href = objectUrl;
+      zipContext = snapshot.context;
       save.download = PipelineExportCore.archiveName(snapshot.environment);
       save.hidden = false;
       // Keep: one explicit Download ZIP action builds the complete archive and requests its browser download (2.0.9).
       status.textContent = 'ZIP prepared. Download requested; use Download Again if needed.';
-      save.click();
+      requestDownload(objectUrl, save.download);
     } catch (error) {
       if (current === generation) {
         discard();
@@ -230,6 +250,37 @@
       if (current === generation) { refresh.disabled = false; progress.hidden = true; }
     }
   });
+
+  // Keep: retry the same complete blob only after verifying the original source document, with no source rereads (2.1.6).
+  save.addEventListener('click', async (event) => {
+    event.preventDefault();
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || retry || controller || !objectUrl || save.hidden) return;
+    const attempt = { url: objectUrl, context: zipContext, filename: save.download, generation };
+    retry = attempt;
+    save.setAttribute('aria-busy', 'true');
+    try {
+      const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'verify', context: attempt.context });
+      // Selection, formatting, cancellation, consent, or a new preview/archive invalidates a pending retry.
+      if (retry !== attempt || objectUrl !== attempt.url || generation !== attempt.generation) return;
+      if (!result?.ok) throw new Error('context-changed');
+      requestDownload(attempt.url, attempt.filename);
+      status.textContent = 'Download requested again. No source files were retrieved.';
+    } catch {
+      // A stale reply must not discard a replacement preview or overwrite its current status.
+      if (retry !== attempt || objectUrl !== attempt.url || generation !== attempt.generation) return;
+      discard();
+      status.textContent = 'The source page, tenant, or consent changed. Reopen export from settings.';
+    } finally {
+      if (retry === attempt) { retry = null; save.removeAttribute('aria-busy'); }
+    }
+  });
+  // The retry has button semantics: keyboard activation follows the same verification, while auxiliary clicks do nothing.
+  save.addEventListener('keydown', (event) => {
+    if (!['Enter', ' '].includes(event.key) || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (!event.repeat) save.click();
+  });
+  save.addEventListener('auxclick', (event) => event.preventDefault());
 
   // Cancellation invalidates late responses immediately and clears every displayed temporary record.
   cancel.addEventListener('click', () => {

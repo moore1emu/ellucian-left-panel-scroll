@@ -62,6 +62,10 @@
   // Keep the existing sidebar preference separate from the Designer package search.
   const searchModeSelect = document.querySelector("#search-display-mode");
   const designerSearchModeSelect = document.querySelector("#designer-search-display-mode");
+  // Keep each search choice's save result separate from unrelated switch feedback.
+  const sidebarSearchStatus = document.querySelector('#sidebar-search-status');
+  const designerSearchStatus = document.querySelector('#designer-search-status');
+  const confirmedSearchValues = new WeakMap();
 
   // Accept only one of the three supported search presentation modes.
   function normalizeSearchMode(value) {
@@ -93,6 +97,12 @@
       [FavoriteAppearance.KEY]: FavoriteAppearance.DEFAULT,
     },
     (settings) => {
+      // Failed reads must not present defaults as saved values or unlock preference writes.
+      if (chrome.runtime.lastError || !settings || typeof settings !== 'object' || Array.isArray(settings)) {
+        const message = 'Could not load settings. Close and reopen settings to retry.';
+        [navigationStatus, sharedFromStatus, iconStatus].forEach(status => { status.textContent = message; });
+        return;
+      }
       // Display the width preference and its explanatory status.
       rememberWidthSwitch.checked = Boolean(settings[REMEMBER_WIDTH_KEY]);
       sharedVersionSwitch.checked = settings[SHARED_VERSION_ENABLED_KEY] === true;
@@ -131,8 +141,11 @@
       // Restore both independent choices before allowing changes to be saved.
       searchModeSelect.value = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
       designerSearchModeSelect.value = normalizeSearchMode(settings[DESIGNER_SEARCH_MODE_KEY]);
-      searchModeSelect.disabled = false;
-      designerSearchModeSelect.disabled = false;
+      // Restore both confirmed selections before accepting another asynchronous save.
+      [searchModeSelect, designerSearchModeSelect].forEach(select => {
+        confirmedSearchValues.set(select, select.value);
+        select.disabled = false;
+      });
 
       // Show the saved appearance without changing other popup preferences.
       const appearance = IconAppearance.normalize(settings[IconAppearance.KEY]);
@@ -367,14 +380,32 @@
     saveSwitch(favoritesEnabledSwitch, FAVORITES_ENABLED_KEY, 'Pinned Packages', navigationStatus);
   });
 
+  // Serialize each selector independently and restore its durable value if a write fails.
+  function saveSearchMode(select, key, status) {
+    if (select.disabled || !confirmedSearchValues.has(select)) return;
+    const previous = confirmedSearchValues.get(select);
+    const value = normalizeSearchMode(select.value);
+    select.disabled = true;
+    select.setAttribute('aria-busy', 'true');
+    status.textContent = '';
+    chrome.storage.local.set({ [key]: value }, () => {
+      const failed = Boolean(chrome.runtime.lastError);
+      select.value = failed ? previous : value;
+      if (!failed) confirmedSearchValues.set(select, value);
+      select.disabled = false;
+      select.setAttribute('aria-busy', 'false');
+      status.textContent = failed ? 'Could not save search display. Please try again.' : '';
+    });
+  }
+
   // Save sidebar changes without changing the Designer pipeline preference.
   searchModeSelect.addEventListener("change", () => {
-    chrome.storage.local.set({ [SEARCH_MODE_KEY]: normalizeSearchMode(searchModeSelect.value) });
+    saveSearchMode(searchModeSelect, SEARCH_MODE_KEY, sidebarSearchStatus);
   });
 
   // Apply the selected-package search choice independently on open Designer pages.
   designerSearchModeSelect.addEventListener("change", () => {
-    chrome.storage.local.set({ [DESIGNER_SEARCH_MODE_KEY]: normalizeSearchMode(designerSearchModeSelect.value) });
+    saveSearchMode(designerSearchModeSelect, DESIGNER_SEARCH_MODE_KEY, designerSearchStatus);
   });
 
   // Persist consent only after confirmation; the worker clears data when disabled.

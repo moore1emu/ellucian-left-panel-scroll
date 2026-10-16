@@ -199,14 +199,10 @@ h1 {
 
 /* Group page switches without repeating card borders, padding, or shadows. */
 .behavior-card { flex-shrink: 0; padding: 10px 12px; }
-.behavior-card summary { cursor: pointer; font-size: 14px; font-weight: 700; line-height: 1.3; }
-/* Keep grouped controls compact; the expanded group can scroll in smaller popup windows. */
+/* Keep grouped controls compact within the active task panel. */
 .behavior-card .setting-row { padding: 7px 0; gap: 10px; }
 .behavior-card .setting-copy { gap: 2px; }
-/* Use only two explicit dividers, keeping each related group visually together. */
-.page-behavior-divider { border: 0; border-top: 1px solid var(--border); margin: 8px 0; }
 .behavior-card > .card-description { margin: 0; }
-.behavior-card summary:focus-visible,
 .local-data-notice button:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
 /* Keep the consent notice compact, themed, and invisible until requested. */
 .local-data-notice { border: 1px solid var(--border); border-radius: 6px; padding: 8px; font: 12px/1.4 Arial, sans-serif; }
@@ -275,17 +271,10 @@ h1 {
 /* Avoid an extra trailing gap so expanded search settings still fit the popup. */
 .behavior-card > .card-description:last-child { margin-bottom: 0; }
 
-/* Reveal personalization without making the default popup taller than necessary. */
+/* Keep personalization controls compact inside the Appearance task. */
 .icon-appearance-card {
   flex-shrink: 0;
   padding: 10px 12px;
-}
-
-/* Keep the native disclosure arrow, keyboard behavior, and existing title styling. */
-.icon-appearance-card summary {
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 700;
 }
 
 /* Arrange background, initials, letter color, and reset in one compact row. */
@@ -323,8 +312,7 @@ h1 {
 /* Use the same visible focus treatment as the existing settings controls. */
 .icon-control input:focus-visible,
 .icon-control select:focus-visible,
-#reset-icon:focus-visible,
-.icon-appearance-card summary:focus-visible {
+#reset-icon:focus-visible {
   outline: 2px solid var(--purple);
   outline-offset: 2px;
 }
@@ -333,7 +321,7 @@ h1 {
 .icon-status { color: var(--muted); font-size: 12px; margin: 0; }
 .icon-status:not(:empty) { margin-top: 5px; }
 
-/* Keep star controls inside the existing collapsed appearance card. */
+/* Keep favorite appearance controls together below the Icon subgroup. */
 .favorite-appearance-controls { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; }
 .favorite-shape-control { align-items: center; display: flex; font-size: 12px; gap: 10px; justify-content: space-between; margin-top: 8px; }
 .favorite-shape-control select { background: var(--background); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font: inherit; padding: 5px; width: 128px; }
@@ -362,15 +350,6 @@ footer {
   text-align: center;
 }
 
-/* Keep the compact product and environment scope on one wrapping line. */
-.footer-scope {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-}
-
 /* Give the installed version a small but discoverable location. */
 #extension-version {
   font-weight: 700;
@@ -388,14 +367,8 @@ footer {
   max-width: 310px;
 }
 
-/* De-emphasize the compact separator between scope labels. */
-.footer-separator {
-  opacity: 0.65;
-}
-
-/* Keep custom domains compact and consistent with the existing disclosure card. */
+/* Keep custom domains compact inside their task panel. */
 .custom-sites-card { flex-shrink: 0; padding: 10px 12px; }
-.custom-sites-card summary { cursor: pointer; font-size: 14px; font-weight: 700; }
 .custom-sites-card > .card-description { margin-top: 8px; }
 #custom-site-form label { display: block; font-size: 12px; margin-bottom: 5px; }
 .custom-site-entry { display: flex; gap: 6px; }
@@ -408,7 +381,7 @@ footer {
 .custom-sites-card input { flex: 1; min-width: 0; }
 .custom-sites-card button { cursor: pointer; flex-shrink: 0; }
 .custom-sites-card button:disabled { cursor: default; opacity: 0.6; }
-.custom-sites-card :is(input, button, summary):focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+.custom-sites-card :is(input, button):focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
 
 /* Align each saved domain with its access and removal controls. */
 #custom-site-list { list-style: none; margin: 8px 0 0; padding: 0; }
@@ -426,29 +399,18 @@ footer {
 .setting-row:has(input[aria-busy="true"]) { cursor: wait; }
 .switch input:disabled + .switch-track { opacity: 0.6; }
 
-/* Keep backups collapsed and long tenant/site previews inside the existing popup width. */
+/* Keep long tenant/site backup previews inside the existing popup width. */
 .backup-card { flex-shrink: 0; padding: 10px 12px; }
-.backup-card summary { cursor: pointer; font-size: 14px; font-weight: 700; }
 .backup-card .card-description { overflow-wrap: anywhere; }
 .backup-card button { background: var(--background); border: 1px solid var(--border); border-radius: 4px; color: var(--text); cursor: pointer; font: 12px Arial, sans-serif; padding: 5px 7px; margin-top: 6px; }
 .backup-card .search-display-control { margin-top: 8px; }
 
 /* Use the same themed hover and keyboard focus treatment across settings controls. */
 .settings-card button:hover:not(:disabled) { border-color: var(--purple); }
-.settings-card :is(button, input, select, summary):focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+.settings-card :is(button, input, select):focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
 
 /* Use one restrained card treatment rather than stacked heavy popup shadows. */
 .settings-card { box-shadow: none; }
-.settings-card > summary { align-items: center; display: flex; gap: 10px; list-style: none; }
-.settings-card > summary::-webkit-details-marker { display: none; }
-
-/* Draw sharp disclosure chevrons without introducing an icon font or raster asset. */
-.settings-card > summary::before {
-  border-bottom: 2px solid currentColor; border-right: 2px solid currentColor;
-  content: ""; flex: 0 0 7px; height: 7px; transform: rotate(-45deg);
-}
-.settings-card[open] > summary::before { transform: rotate(45deg); }
-.settings-card[open] > summary { border-bottom: 1px solid var(--border); margin-bottom: 5px; padding-bottom: 8px; }
 
 /* Keep subgroup headings consistent while preserving native form controls and themes. */
 .settings-card h2 { font-size: 14px; line-height: 1.3; margin: 10px 0 5px; }

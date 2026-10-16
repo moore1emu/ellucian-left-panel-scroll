@@ -28,6 +28,11 @@ function stub() {
   window.__relay = async (message) => {
       window.__requests.push({ type: message.type });
       if (window.__delay && message.type === 'pipeline-export-preview') await new Promise((resolve) => { window.__release = resolve; });
+      // Hold only an explicitly requested retry verification; normal source collection remains deterministic.
+      if (message.type === 'pipeline-export-verify') {
+        if (window.__delayVerify) await new Promise((resolve) => { window.__releaseVerify = resolve; });
+        return window.__verifyResult || { ok: true };
+      }
       if (message.type === 'pipeline-export-read') return window.__failSource ? { ok: false, reason: 'source-unavailable' }
         : { ok: true, data: { name: message.entry.name, version: '1.0.0', fittings: [] } };
       if (message.type !== 'pipeline-export-preview') return { ok: true };
@@ -93,11 +98,11 @@ async function run() {
       const firstFile = await firstDownload;
       assert.equal(firstFile.suggestedFilename(), 'integration-navigator-synthetic-test.zip');
       await page.waitForFunction(() => !document.querySelector('#save-zip').hidden);
-      const payload = await page.evaluate(async () => Array.from(new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer())));
       // Verify the browser really received this complete ZIP, not only that a local link appeared.
       const chunks = [];
       for await (const chunk of await firstFile.createReadStream()) chunks.push(chunk);
-      assert.deepEqual(Buffer.concat(chunks), Buffer.from(payload));
+      const payload = Buffer.concat(chunks);
+      assert.equal(await page.locator('#save-zip').getAttribute('href'), null, 'Retry must not expose a blob URL for unverified navigation');
       assert.equal(await page.locator('#save-zip').innerText(), 'Download Again');
       assert.equal(Buffer.from(payload).readUInt32LE(0), 0x04034b50);
       // Even-numbered fixture rows are Pipelines; odd-numbered APIs keep their original filenames.
@@ -106,16 +111,38 @@ async function run() {
       assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 10);
       // Retrying the already prepared archive requires no additional source lookups.
       const repeatedDownload = page.waitForEvent('download');
+      const verificationCount = await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-verify').length);
       await page.locator('#save-zip').click();
-      await repeatedDownload;
+      const repeatedChunks = [];
+      for await (const chunk of await (await repeatedDownload).createReadStream()) repeatedChunks.push(chunk);
+      assert.deepEqual(Buffer.concat(repeatedChunks), payload);
+      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-verify').length), verificationCount + 1);
+      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 10);
+      // Modified and auxiliary clicks cannot navigate directly to an unchecked local archive.
+      const beforeModified = downloads.length;
+      await page.locator('#save-zip').dispatchEvent('click', { button: 0, ctrlKey: true });
+      await page.locator('#save-zip').dispatchEvent('click', { button: 0, metaKey: true });
+      await page.locator('#save-zip').dispatchEvent('click', { button: 0, shiftKey: true });
+      await page.locator('#save-zip').dispatchEvent('auxclick', { button: 1 });
+      assert.equal(downloads.length, beforeModified);
+      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-verify').length), verificationCount + 1);
+      // Button-style keyboard activation must perform the same verified, same-blob retry.
+      const keyboardDownload = page.waitForEvent('download');
+      await page.locator('#save-zip').focus();
+      await page.keyboard.press('Enter');
+      const keyboardChunks = [];
+      for await (const chunk of await (await keyboardDownload).createReadStream()) keyboardChunks.push(chunk);
+      assert.deepEqual(Buffer.concat(keyboardChunks), payload);
+      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-verify').length), verificationCount + 2);
       assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 10);
       // The opt-in changes only local output and invalidates the old raw archive retry link.
       await page.locator('#include-formatted').check();
       assert.equal(await page.locator('#save-zip').isHidden(), true);
       const formattedDownload = page.waitForEvent('download');
       await page.locator('#download-zip').click();
-      await formattedDownload;
-      const formattedPayload = Buffer.from(await page.evaluate(async () => Array.from(new Uint8Array(await (await fetch(document.querySelector('#save-zip').href)).arrayBuffer()))));
+      const formattedChunks = [];
+      for await (const chunk of await (await formattedDownload).createReadStream()) formattedChunks.push(chunk);
+      const formattedPayload = Buffer.concat(formattedChunks);
       assert.ok(formattedPayload.includes(Buffer.from('Small Package/Source/Pipeline 118_v1.json')));
       assert.ok(formattedPayload.includes(Buffer.from('Small Package/Formatted/Pipeline 118_v1.json')));
       assert.ok(formattedPayload.includes(Buffer.from('Small Package/README.md')));
@@ -131,6 +158,46 @@ async function run() {
       await allDownload;
       await page.locator('#save-zip').waitFor();
       assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), 140);
+      // Selection, formatting, cancellation, and refresh each invalidate a pending retry before its verification resolves.
+      for (const change of ['selection', 'formatting', 'cancel', 'refresh']) {
+        if (change !== 'selection') {
+          await page.locator('#refresh-preview').click();
+          await page.waitForFunction(() => document.querySelector('#export-status').textContent.startsWith('Preview ready'));
+          const prepared = page.waitForEvent('download');
+          await page.locator('#download-zip').click();
+          await prepared;
+        }
+        const beforePending = downloads.length;
+        await page.evaluate(() => { window.__delayVerify = true; window.__releaseVerify = null; });
+        await page.locator('#save-zip').click();
+        await page.waitForFunction(() => typeof window.__releaseVerify === 'function');
+        if (change === 'selection') await page.locator('#select-all').uncheck();
+        else if (change === 'formatting') await page.locator('#include-formatted').check();
+        else if (change === 'cancel') await page.locator('#cancel-export').click();
+        else {
+          await page.locator('#refresh-preview').click();
+          await page.waitForFunction(() => document.querySelector('#export-status').textContent.startsWith('Preview ready'));
+        }
+        await page.evaluate(() => { window.__delayVerify = false; window.__releaseVerify(); });
+        await page.waitForFunction(() => !document.querySelector('#save-zip').hasAttribute('aria-busy'));
+        assert.equal(downloads.length, beforePending, `Late ${change} verification must not download`);
+        assert.equal(await page.locator('#save-zip').isHidden(), true);
+      }
+      // A failed context verification discards the local ZIP and never starts another source read or browser download.
+      const prepared = page.waitForEvent('download');
+      await page.locator('#download-zip').click();
+      await prepared;
+      const beforeDenied = downloads.length;
+      const readsBeforeDenied = await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length);
+      await page.evaluate(() => { window.__verifyResult = { ok: false, reason: 'context-changed' }; });
+      await page.locator('#save-zip').click();
+      await page.locator('#export-status').filter({ hasText: 'The source page, tenant, or consent changed.' }).waitFor();
+      assert.equal(downloads.length, beforeDenied);
+      assert.equal(await page.locator('#save-zip').isHidden(), true);
+      assert.equal(await page.evaluate(() => window.__requests.filter((request) => request.type === 'pipeline-export-read').length), readsBeforeDenied);
+      await page.evaluate(() => { window.__verifyResult = null; });
+      await page.locator('#refresh-preview').click();
+      await page.waitForFunction(() => document.querySelector('#export-status').textContent.startsWith('Preview ready'));
       // Removing saved ownership revokes the completed link as well as any in-flight default job.
       await page.evaluate(() => window.__storageChange({ designerOwnershipCache: { newValue: {} } }, 'local'));
       assert.equal(await page.locator('#save-zip').isHidden(), true);

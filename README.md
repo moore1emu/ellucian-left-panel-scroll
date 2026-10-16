@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.1.5):** Controls now have a subtle eight-pixel indent beneath their subgroup headings, while Sharing and Sites stay unindented. Navigation has tighter spacing and no repeated footer scope line, so the normal view fits without scrolling. Text size is unchanged. Settings use Navigation, Sharing, Appearance, Sites, and Export tabs. Navigation groups General and page-specific controls; unavailable source-refresh/export actions explain which page to open. Saved preferences, favorites, consent, and export contents are unchanged. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.1.6):** Adds targeted reliability fixes for rapid favorite edits, failed settings reads/search saves, cancelled backup-file reads, exact normal Pipeline/API source versions, and Download Again context checks. The approved settings layout, data formats, permissions, and Sub-Pipeline version exception remain unchanged. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -74,6 +74,9 @@ npm install --no-save --package-lock=false playwright ace-builds
 npx playwright install chromium
 node tests/popup-switches.regression.js
 node tests/tenant-favorites.cjs
+node tests/favorites-races.cjs
+node tests/backup-read-races.cjs
+node tests/settings-failures.cjs
 node tests/tenant-context.cjs
 node tests/tenant-favorites-browser.cjs
 node tests/published-fitting-details.cjs

@@ -2,6 +2,15 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.1.6 — 2026-10-16 — Targeted Reliability Repairs
+
+- Protects rapid same-page favorite edits from older storage notifications while package saves are queued. Reconciles confirmed package state without merging intentionally removed pins or changing tenant/page scope; old-visit callbacks cannot restore another visit's state. This does not recover previously lost pins or introduce multi-tab conflict merging.
+- Failed opening settings reads keep preferences locked with retry guidance instead of applying speculative defaults. Both search selectors now lock during their independent saves, restore the last confirmed value on failure, and show separate failure feedback.
+- Cancelled/replaced backup-file reads cannot revive stale import previews, overwrite a newer status, or clear a newer file selection. Restore still requires explicit confirmation.
+- Normal Pipeline/API JSON must contain a valid exact selected source version. The deliberate Sub-Pipeline null/omitted-version and major-route behavior is unchanged; transformer handling remains separate.
+- Download Again verifies the original bound document/context before reusing the complete local ZIP, with no source rereads. Stale retry/context/selection/format/cancel/refresh results cannot download or replace current output. The visible retry control does not expose a blob URL that modified/middle clicks could bypass; the initial complete ZIP still requests download with one click.
+- Removes obsolete popup disclosure/footer styles and normalizes moved HTML indentation while preserving the approved tab layout, subgroup offsets, saved-data schema, permissions, consent, six-slot scheduling, and existing authorizations. Adds targeted regressions for the review findings. Main/store unchanged; signed-in testing remains required.
+
 ## 2.1.5 — 2026-10-16 — Clearer Settings Subgroups
 
 - Indented controls eight pixels beneath General, Integration Packages, Integration Designer, Icon, Favorites, Pipeline Export, and Backup & Restore headings. Headings retain their original alignment; Sharing and Sites stay unindented because they have no subgroup header. Existing export-card boundaries are preserved.
