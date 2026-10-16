@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.1.1):** ZIP and package README names reuse the current tenant's saved Shared From environment name, with no extra lookup. Optional Formatted output, per-major selection, type counts, and one-click download remain included. Signed-in confirmation is still required. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.1.2):** Integration Packages now displays the newest published Sub-Pipeline release within every major, not just the highest major. Export selection, environment-named ZIPs, and optional Formatted output are unchanged. Reload the extension and refresh Packages to test. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -12,7 +12,7 @@ Make Ellucian Integration Packages and Integration Designer easier to navigate i
 - Search package and pipeline names, even with different spacing or separators.
 - Pin packages and published pipelines, then drag favorites into your preferred order.
 - Automatically fit pipeline-name columns, with manual resizing when needed.
-- Optionally show the latest published APIs and Sub-Pipelines as read-only main-table records with a **Type** column, independently of Shared From.
+- Optionally show published APIs and Sub-Pipelines as read-only main-table records with a **Type** column, independently of Shared From. Sub-Pipelines retain the newest release within each major; APIs retain the latest overall.
 - Optionally show **Shared To** in Designer, highlighting version mismatches in red.
 - Optionally scroll, select, and copy published fitting text/code in Designer while editing stays locked.
 - Optionally show **Shared From** in Integration Packages using locally saved Designer sources.
@@ -88,6 +88,7 @@ node tests/pipeline-export-context.cjs
 node tests/pipeline-export-native-flow.cjs
 node tests/pipeline-export-transformers.cjs
 node tests/pipeline-export-preview.cjs
+node tests/package-artifact-majors.cjs
 node tests/v2-popup.cjs
 ```
 

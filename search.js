@@ -2882,12 +2882,15 @@
     pipelines.slice(0, 10000).forEach((entry) => {
       const pipeline = { name: normalizeText(entry?.name), version: normalizeText(entry?.version), type: getPackageArtifactType(entry?.type) };
       if (!pipeline.type || !pipeline.name || !/^v?\d+\.\d+\.\d+$/u.test(pipeline.version)) return;
-      const identity = `${pipeline.name}\u0000${pipeline.type}`;
+      // Keep: mirror MAIN capture's per-major Sub-Pipelines without changing latest-overall APIs (2.1.2).
+      const major = pipeline.type === 'Sub-Pipeline' ? pipeline.version.replace(/^v/u, '').split('.')[0] : '';
+      const identity = JSON.stringify([pipeline.name, pipeline.type, major]);
       const previous = latest.get(identity);
       // Numeric version ordering handles patch/minor numbers above nine correctly.
       if (!previous || comparePipelineVersionsDescending(pipeline, previous) < 0) latest.set(identity, pipeline);
     });
-    return Array.from(latest.values()).sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }));
+    // Keep same-name published majors together in numeric ascending order.
+    return Array.from(latest.values()).sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }) || comparePipelineVersionsDescending(second, first));
   }
 
   // Restore placeholders and remove only extension-owned records on package or route changes.

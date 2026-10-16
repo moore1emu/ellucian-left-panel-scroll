@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.1.2": Object.freeze([
+      "Integration Packages shows the newest Sub-Pipeline release within every published major.",
+      "APIs remain latest-overall; native Integration rows and the sidebar stay unchanged.",
+      "Reload the extension and refresh Packages; favorites and export behavior are unchanged.",
+    ]),
     "2.1.1": Object.freeze([
       "ZIP and package README names use the current tenant's saved Shared From environment name.",
       "Exact tenant-ID matching needs no additional service lookup.",

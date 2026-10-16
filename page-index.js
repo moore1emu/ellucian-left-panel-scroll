@@ -42,9 +42,11 @@
       const type = normalizeText(entry?.type).toLowerCase().replace(/[\s_-]/gu, '');
       const pipeline = { name: normalizeText(entry?.name), version: normalizeText(entry?.version), type };
       if (!['api', 'subpipeline'].includes(type) || !pipeline.name || !/^v?\d+\.\d+\.\d+$/u.test(pipeline.version)) continue;
-      const identity = JSON.stringify([pipeline.name, type]);
+      // Keep: Sub-Pipeline majors are independent published records; APIs remain latest-overall (2.1.2).
+      const major = type === 'subpipeline' ? pipeline.version.replace(/^v/u, '').split('.')[0] : '';
+      const identity = JSON.stringify([pipeline.name, type, major]);
       const previous = latest.get(identity);
-      // Retain the newest numeric release instead of holding every historical version in memory.
+      // Retain only the newest numeric release within this identity, not every minor/patch.
       if (!previous || pipeline.version.replace(/^v/u, '').localeCompare(previous.version.replace(/^v/u, ''), undefined, { numeric: true }) > 0) latest.set(identity, pipeline);
     }
     const key = JSON.stringify([context, name]);

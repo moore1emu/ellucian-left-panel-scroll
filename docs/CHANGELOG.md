@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.1.2 — 2026-10-16 — Display Every Published Sub-Pipeline Major
+
+- Integration Packages' optional reference table now shows the newest published minor/patch within every Sub-Pipeline major, rather than only the newest major overall. Both early native-response capture and isolated display normalization preserve the independent majors; same-name rows sort numerically by version.
+- APIs deliberately retain latest-overall display. Native Integration rows/links, the left sidebar, export selection, Shared From eligibility, favorites, and cache formats are unchanged. Existing memory bounds, opt-out clearing, and name-only reference tooltips remain; no extra requests, permissions, or storage writes.
+- Added a synthetic browser regression covering unsorted v1/v2/v3 releases, duplicate entries, numeric minor ordering, both JSON/text native responses before filtering, mixed/empty tables, unchanged API/native behavior, opt-out, and zero extra reads/writes. Reload the unpacked extension and refresh Integration Packages to capture its normal metadata again. Signed-in confirmation remains required; main/store unchanged.
+
 ## 2.1.1 — 2026-10-16 — Reuse Saved Environment Names
 
 - ZIP filenames and Formatted package READMEs now use the saved Shared From environment name for the exact verified current tenant ID. Missing, blank, oversized, or malformed names retain the tenant-ID fallback; another tenant's snapshot or page-supplied name cannot override it.

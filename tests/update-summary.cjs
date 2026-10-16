@@ -68,6 +68,11 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.1.0" }, storage, "2.1.1");
   assert.equal(summary.notesFor(saved, "2.1.1").length, 3);
   assert.match(summary.notesFor(saved, "2.1.1")[0], /Shared From/);
+  // Scope the table-display fix to this revision without replaying older export notes.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.1.1" }, storage, "2.1.2");
+  assert.equal(summary.notesFor(saved, "2.1.2").length, 3);
+  assert.match(summary.notesFor(saved, "2.1.2")[0], /every published major/);
+  assert.equal(summary.notesFor(saved, "2.1.1").length, 0);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

@@ -1,6 +1,8 @@
 # v2 Development
 
-This is the **2.1.1 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+This is the **2.1.2 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+
+Integration Packages' optional reference table now retains the newest published Sub-Pipeline release within each major, in numeric ascending order for the same name. Both early response capture and isolated display normalization preserve those majors. APIs remain latest-overall; native Integration rows, the sidebar, export selection, source eligibility, and favorites are unchanged. Refresh Packages after reloading to capture its normal response again; the extension adds no lookup.
 
 ZIP filenames and package READMEs reuse the saved Shared From environment name for the exact verified current tenant ID, with ID fallback when no valid matching name is cached. Packages has no Designer JR helper; no export label lookup is performed, and page-supplied names are ignored. Names do not authorize reads. Optional Formatted output is off by default and never persisted. Checked output uses Package/Source, Package/Formatted, and a selected-artifact Package/README.md; unchecked output preserves existing bytes/layout. The readable copy matches auto-sync's escaped-whitespace review pass, preserving literal escaped backslashes and never executing source. Source is importable/original; Formatted is review-only. README versions stay package-reported. Generated files count toward the same 10,000 physical-file/64 MB payload limits; no new audit or source requests are made for formatting.
 

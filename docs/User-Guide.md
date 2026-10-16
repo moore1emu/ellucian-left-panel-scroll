@@ -1,6 +1,6 @@
 # User Guide
 
-> Develop's 2.1.1 test candidate fixes environment naming by reusing the exact tenant's Shared From cache. Reload the same unpacked folder, refresh Integration Packages and reopen export from settings. Refresh Designer sources if you have not yet recorded this environment or its transformer names. Existing favorites are unchanged. Signed-in confirmation remains required. V1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
+> Develop's 2.1.2 test candidate shows every published Sub-Pipeline major in the Packages main table, keeping the newest minor/patch within each major. APIs still show the latest overall; native Integration rows and the sidebar are unchanged. Reload the same unpacked folder and refresh Integration Packages. Export behavior and favorites are unchanged. Signed-in confirmation remains required. V1's Page Behavior controls are split between Navigation, Integration Packages, and Integration Designer in v2. See [v2 Development](V2-Development.md).
 
 ## Pipeline Export — v2 Test Candidate
 
