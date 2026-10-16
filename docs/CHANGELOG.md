@@ -2,6 +2,14 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.1.4 — 2026-10-16 — Compact Navigation Layout
+
+- Appearance now labels its first group Icon, with Favorites kept as the separate heading below; control behavior and saved appearance values are unchanged.
+- Removed repetitive Sharing & Sources and Custom Sites headings from their already-labeled task tabs. Kept meaningful Navigation scope groups, Icon/Favorites, and Pipeline Export/Backup & Restore subgroup titles.
+- Removed the repeated footer scope line (Integration Packages & Designer / Test & Production) and slightly reduced Navigation row/group spacing. The normal Navigation view fits without scrolling at the existing 360×580 popup size; setting text remains 13px and descriptions 12px. Version, Report Bug, and affiliation remain visible.
+- Kept the active-panel overflow behavior for update notes, consent, imports, long feedback, or larger text. No clipping or blanket scrollbar hiding. Settings, storage, consent, source refresh, export, favorites, and page-specific availability are unchanged.
+- Added light/dark assertions for no normal Navigation overflow and an immediately visible Pipeline Search control. Existing popup context/consent/keyboard/long-message checks, switch-save recovery, and update-summary rules remain covered. No main merge/store action; signed-in visual confirmation remains required.
+
 ## 2.1.3 — 2026-10-16 — Task-Based Settings Tabs
 
 - Replaced stacked settings disclosures with Navigation, Sharing, Appearance, Sites, and Export tabs. Navigation groups General, Integration Packages, and Integration Designer; Sharing keeps Shared To, Shared From, current-Designer cache status, and Refresh Sources together. Existing control IDs, saved values, consent, favorites, cache formats, and export contents are unchanged; no migration.

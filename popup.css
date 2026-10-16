@@ -480,12 +480,13 @@ footer {
 .settings-panels { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
 .settings-panel { background: transparent; border: 0; border-radius: 0; padding: 0 2px 8px; overflow: visible; }
 .navigation-card .navigation-group { padding: 0; }
-.navigation-group + .navigation-group { border-top: 1px solid var(--border); margin-top: 7px; padding-top: 9px !important; }
+/* Keep: normal Navigation fits without scrolling; long notices still use the panel scroller (2.1.4). */
+.navigation-group + .navigation-group { border-top: 1px solid var(--border); margin-top: 5px; padding-top: 7px !important; }
 .navigation-group h2 { color: var(--purple); font-size: 12px; margin: 2px 0 3px; }
 .settings-panel > h2:first-child { margin-top: 2px; }
 .navigation-group .setting-title { font-size: 13px; }
-.navigation-group .setting-row { padding: 7px 0; }
-.navigation-group .search-display-control { margin: 7px 0 5px; }
+.navigation-group .setting-row { padding: 6px 0; }
+.navigation-group .search-display-control { margin: 6px 0 4px; }
 .settings-panel .setting-description, .settings-panel .card-description, .icon-status { overflow-wrap: anywhere; }
 
 /* Readable reasons stay outside the dimmed action block, with normal backup controls below Export. */

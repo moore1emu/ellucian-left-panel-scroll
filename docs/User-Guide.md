@@ -1,6 +1,6 @@
 # User Guide
 
-> Develop's 2.1.3 test candidate uses task tabs: Navigation, Sharing, Appearance, Sites, and Export. Navigation groups General, Integration Packages, and Integration Designer. Existing saved settings, favorites, consent, and export contents are unchanged. Refresh Sources works only in Integration Designer; Pipeline Export works only in Integration Packages. Reload the same unpacked folder, refresh your Integration page, and reopen settings to test. See [v2 Development](V2-Development.md).
+> Develop's 2.1.4 test candidate tightens Navigation spacing and removes the repeated footer scope line without reducing text size. It uses task tabs: Navigation, Sharing, Appearance, Sites, and Export. Navigation groups General, Integration Packages, and Integration Designer. Existing saved settings, favorites, consent, and export contents are unchanged. Refresh Sources works only in Integration Designer; Pipeline Export works only in Integration Packages. Reload the same unpacked folder, refresh your Integration page, and reopen settings to test. See [v2 Development](V2-Development.md).
 
 ## Pipeline Export — v2 Test Candidate
 
@@ -75,6 +75,8 @@ Clipped favorite names have the browser's native full-name tooltip; fully visibl
 ![Integration Navigator settings with Page Behavior, search, appearance, and custom sites](screenshots/settings.jpg)
 
 ### Task Tabs
+
+Tab names are not repeated as panel headings. Subgroup titles identify distinct content: General/page scope in Navigation, Icon/Favorites in Appearance, and Pipeline Export/Backup & Restore in Export.
 
 The popup has five tabs; only the active panel scrolls, keeping tabs and footer visible.
 

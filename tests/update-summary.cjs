@@ -77,6 +77,10 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "2.1.2" }, storage, "2.1.3");
   assert.equal(summary.notesFor(saved, "2.1.3").length, 3);
   assert.match(summary.notesFor(saved, "2.1.3")[0], /tabs/);
+  // Compact settings notes apply only to their own revision, preserving unrelated saved data.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.1.3" }, storage, "2.1.4");
+  assert.equal(summary.notesFor(saved, "2.1.4").length, 3);
+  assert.match(summary.notesFor(saved, "2.1.4")[0], /spacing/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

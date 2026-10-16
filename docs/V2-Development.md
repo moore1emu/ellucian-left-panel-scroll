@@ -1,6 +1,8 @@
 # v2 Development
 
-This is the **2.1.3 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+This is the **2.1.4 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+
+Normal Navigation now fits without a scrollbar by removing the repeated page/environment footer line and slightly tightening row/group spacing. Text remains the same size and the popup stays 580px high. Long messages and notices retain scrolling; version/support and affiliation remain visible.
 
 Settings use five task tabs: Navigation, Sharing, Appearance, Sites, and Export. Navigation groups General, Integration Packages, and Integration Designer controls. Sharing keeps Shared To, Shared From, current-Designer cache status, and Refresh Sources together. Refresh is unavailable outside Integration Designer; Pipeline Export is unavailable outside Integration Packages. Both explain the required page; backup/restore stays available independently. The active top-level page's existing route message supplies UI context without additional services, tab-URL permissions, polling, or saved tab selection. Worker/content authorization stays unchanged. Tabs/footer stay visible inside the 580px popup while long notices scroll in the active panel. Existing consent, settings IDs/keys, favorites, Shift+D confirmation, update-summary dismissal, and backup operations are preserved.
 

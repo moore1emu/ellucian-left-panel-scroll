@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.1.4": Object.freeze([
+      "Navigation spacing is tighter without shrinking its text.",
+      "Removed repeated footer/tab headings; Appearance separates Icon and Favorites.",
+      "Normal Navigation fits without scrolling; long messages can still scroll.",
+    ]),
     "2.1.3": Object.freeze([
       "Settings use Navigation, Sharing, Appearance, Sites, and Export tabs.",
       "Navigation groups General, Integration Packages, and Integration Designer controls.",

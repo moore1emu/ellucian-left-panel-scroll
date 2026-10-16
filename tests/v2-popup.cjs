@@ -10,11 +10,11 @@ const root = path.resolve(__dirname, '..');
 function installStub() {
   // Retain unrelated settings across reloads to catch accidental resets.
   const saved = JSON.parse(localStorage.getItem('syntheticPreferences') || 'null') || {
-    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '2.1.3' }, favorites: { keep: true }, sharedFromEnabled: true,
+    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '2.1.4' }, favorites: { keep: true }, sharedFromEnabled: true,
   };
   window.__messages = [];
   window.__page = 'packages';
-  const runtime = { lastError: undefined, getManifest: () => ({ version: '2.1.3', content_scripts: [{ matches: [] }] }),
+  const runtime = { lastError: undefined, getManifest: () => ({ version: '2.1.4', content_scripts: [{ matches: [] }] }),
     sendMessage: async message => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
   window.chrome = { runtime, storage: { local: {
     get(defaults, callback) { const result = { ...defaults }; for (const key of Object.keys(result)) if (Object.hasOwn(saved, key)) result[key] = saved[key]; if (callback) setTimeout(() => callback(result), 0); return Promise.resolve(result); },
@@ -60,6 +60,11 @@ function installStub() {
       assert.equal(await page.locator('.sharing-card #shared-from-enabled').count(), 1);
       assert.equal(await page.locator('.sharing-card #shared-version-enabled').count(), 1);
       assert.equal(await page.locator('.designer-card #fitting-details-enabled').count(), 1);
+      assert.equal(await page.locator('#panel-appearance > h2').textContent(), 'Icon');
+      assert.equal(await page.locator('.favorite-appearance-controls > .setting-title').textContent(), 'Favorites');
+      // Task names do not repeat as headings; retain only distinct subgroup titles.
+      assert.equal(await page.locator('#panel-sharing > h2, #panel-sites > h2').count(), 0);
+      assert.deepEqual(await page.locator('#panel-export h2').allTextContents(), ['Pipeline Export', 'Backup & Restore']);
 
       // Dismissal failures remain retryable without changing preferences.
       await page.evaluate(() => { window.__failWrite = true; });
@@ -68,6 +73,19 @@ function installStub() {
       await page.evaluate(() => { window.__failWrite = false; });
       await page.locator('#dismiss-update-summary').click();
       assert.equal(await page.locator('#update-summary').isVisible(), false);
+
+      // The ordinary Navigation panel must fit without hiding the final search control or shrinking text.
+      const navigation = await page.evaluate(() => {
+        const scroller = document.querySelector('.settings-panels');
+        const search = document.querySelector('#designer-search-display-mode').getBoundingClientRect();
+        const viewport = scroller.getBoundingClientRect();
+        return { overflow: scroller.scrollHeight > scroller.clientHeight + 1, bottom: search.bottom, limit: viewport.bottom,
+          titleSize: getComputedStyle(document.querySelector('.navigation-group .setting-title')).fontSize };
+      });
+      assert.equal(navigation.overflow, false, 'Normal Navigation needs no scrollbar');
+      assert.ok(navigation.bottom <= navigation.limit, 'Pipeline Search is visible without scrolling');
+      assert.equal(navigation.titleSize, '13px');
+      assert.equal(await page.locator('.footer-scope').count(), 0);
 
       // Every task preserves a visible tab strip/footer inside the browser popup height.
       for (const name of ['Navigation', 'Sharing', 'Appearance', 'Sites', 'Export']) {
