@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- At 3.0.2 the owner approved matching auto-sync: package-reported Pipeline/API versions select exact full-version service requests; source JSON may omit/null its version and stays unchanged. Reject explicit malformed/conflicting versions, retain Sub-Pipeline major semantics, and preserve name/type/context/consent/six-slot guards. This supersedes older instructions below requiring every normal source to contain an exact version. Return to Export focuses an existing extension export without reload; no new permissions or export grants. Next v3 checkpoint is 3.0.3. No live push, merge, or store submission is authorized by this code change.
+
 - At 3.0.1, the owner approved implementing both encrypted-device and password-unlock options plus self-hosted GitLab. Preserve manual preview/second confirmation, add/update-only semantics, and documented GitLab limits. The 3.0.0 foundation-only statements below are historical; current behavior is in docs/Git-Export.md. No live push, main/develop merge, or store submission is authorized by implementation approval. Next v3 checkpoint is 3.0.2.
 - Secrets stay in extension-origin IndexedDB/trusted-context session keys, never content/MAIN, generic runtime messages, local/sync backups, logs, or exported files. Preserve revision/transaction checks and crypto failures without plaintext fallback. Reserve API hosts through the serialized trusted connection-page worker before permissions so Custom Sites cannot inject scripts there; preserve legitimate interrupted Experience grant recovery.
 

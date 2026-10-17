@@ -134,6 +134,21 @@
 
   // Display only application-owned messages; no provider response body or credential can appear here.
   function gitFailure(error) {
+    // Preserve only fixed source-reader failure codes, never native errors or source payloads.
+    const sourceReasons = {
+      'version-mismatch': 'The service did not confirm the selected published version.',
+      'version-unverified': 'The service did not provide a verifiable published version.',
+      'source-unavailable': 'Published source was unavailable or access was denied.',
+      'source-mismatch': 'The returned artifact did not match the selected type.',
+      'requests-stalled': 'Earlier source requests are still running.',
+      'request-timeout': 'The published source service timed out.',
+      'context-changed': 'The source page, tenant, or consent changed.',
+      'preview-expired': 'The export session expired.',
+      'session-unavailable': 'Temporary export storage is unavailable.',
+      'entry-unavailable': 'The selected artifact no longer matches the package preview.',
+    };
+    // These failures occur during local preparation, before any Git preview or upload.
+    if (Object.hasOwn(sourceReasons, error?.sourceReason)) return `${sourceReasons[error.sourceReason]} No files were uploaded to Git. Refresh preview or reopen export from settings.`;
     const known = new Set(['Git operation cancelled.', 'Source or connection changed. Prepare a new Git preview.', 'Git server permission is missing. Open Manage Connection.', 'Connection changed. Prepare a new preview.', 'Connection is locked or unavailable. Open Manage Connection.',
       'Git authentication failed. Reconnect with a valid token.', 'Git access was denied or rate limited. Check permissions and branch protection.', 'Git repository, branch, or file was not found.', 'Git changed or rejected this commit. Refresh Git preview.', 'Git rejected this change. Check branch protection and refresh preview.', 'Git rate limit reached. Wait before preparing another preview.', 'Git could not be reached. Check the server and connection.',
       'Git supports 1–500 generated files per push. Choose a smaller selection if formatted.', 'Git selection exceeds the request limit. Choose fewer files.', 'Repository tree is too large to compare safely.', 'Git repository visibility could not be verified.', 'Git destination has a file or link where a folder is needed.', 'Git destination collides with a folder, executable, link, or submodule.', 'Git file changed. Refresh Git preview.', 'Remote branch changed. Prepare and confirm a new Git preview.',
@@ -161,7 +176,8 @@
         verify: check, signal, formatted: snapshot.formatted, environment: snapshot.environment,
         read: async entry => {
           const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'read', context: snapshot.context, entry });
-          if (!result?.ok) throw new Error('Published source unavailable.');
+          // Retain the bridge's bounded reason so a version failure does not become a vague Git error.
+          if (!result?.ok) throw Object.assign(new Error('Published source unavailable.'), { sourceReason: result?.reason });
           return result.data;
         },
         onProgress: ({ completed }) => { if (current === generation) { progress.value = completed; gitResult.textContent = `Preparing ${completed} of ${snapshot.entries.length} locally…`; } },
@@ -217,8 +233,12 @@
     }
   });
   document.querySelector('#git-dismiss')?.addEventListener('click', () => { if (!controller) { discardGit(); gitResult.textContent = 'Git preview discarded. No files uploaded.'; } });
-  document.querySelector('#git-manage')?.addEventListener('click', () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL('git-connection.html') }).catch(() => { gitResult.textContent = 'Could not open connection settings.'; });
+  document.querySelector('#git-manage')?.addEventListener('click', async () => {
+    try {
+      // Bind return navigation to this export, even when another export is also open.
+      const current = await chrome.tabs.getCurrent();
+      await chrome.tabs.create({ url: chrome.runtime.getURL('git-connection.html'), openerTabId: current.id });
+    } catch { gitResult.textContent = 'Could not open connection settings.'; }
   });
 
   // Create all rows of an expanded package once; no Show More cap can hide records within it.

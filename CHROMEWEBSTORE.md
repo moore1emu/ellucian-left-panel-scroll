@@ -1,6 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-17 · Candidate: 3.0.1 · Status: synthetic-tested Git candidate, not submitted
+Updated: 2026-10-17 · Candidate: 3.0.2 · Status: Git compatibility candidate, not submitted
+
+3.0.2 preparation note: exports use package-reported versions and versioned download requests when source JSON omits a version; explicit conflicts still stop. Git Connection adds Return to Export and source failures have specific safe messages. No permission, credential-storage, or upload-consent change. Refresh connection-page artwork if used for a future v3 submission; no live store changes made.
 
 This v3 branch is not ready for submission. Connection/storage/provider flows are implemented and synthetic-tested; separate live disposable-repository testing and store privacy-disclosure/asset checks remain required. The public copy below is a v3 draft, not a live listing update. Do not modify the v2 listing from this branch.
 

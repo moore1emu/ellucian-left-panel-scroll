@@ -1,5 +1,11 @@
 # Update history
 
+## 3.0.2 — October 17, 2026
+
+- Match the owner's confirmed read-only auto-sync reference: Pipeline/API versions come from package metadata and exact full-version requests. Accept missing/null source version fields without injecting them into source JSON; reject supplied conflicting/malformed versions. Sub-Pipeline major routing, type/name/context/consent checks, and six slots remain unchanged. Applies equally to ZIP and Git preparation.
+- Preserve fixed source-reader failure reasons in Git preview feedback, distinguishing unavailable sources, version conflicts, timeouts, and expired context before upload. Never display native response bodies or credentials.
+- Add Return to Export on Git Connection, focusing an existing export without reloading its selections. Missing or ambiguous export tabs show guidance instead of starting another session.
+
 ## 3.0.1 — October 17, 2026
 
 - Implement the approved manual GitHub/GitLab connection and add/update-only push workflow, including exact-origin self-hosted GitLab permission, existing branch/folder validation, metadata comparison, explicit upload confirmation, no-op skipping, and bounded commit receipts. No scheduling, deletions, force-push, repository creation, or remote restore.

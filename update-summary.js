@@ -7,6 +7,12 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Explain the compatibility repair without implying a completed live Git upload.
+    "3.0.2": Object.freeze([
+      "Published exports use package versions even when downloaded JSON omits its version, matching auto-sync.",
+      "Return to Export from Git Connection without resetting your selection.",
+      "Git preview reports specific source-reading failures before any upload.",
+    ]),
     // Describe the first functional Git candidate without implying store publication or a live acceptance test.
     "3.0.1": Object.freeze([
       "Manually export selected files to GitHub or GitLab after reviewing and confirming changes.",

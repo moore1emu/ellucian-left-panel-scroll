@@ -130,14 +130,20 @@ async function run() {
   assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry: sub })).reason, 'version-mismatch');
   f.flags.mismatch = false;
 
-  // Keep exact full-version checks for normal pipelines/APIs and identity/type checks for Sub-Pipelines.
+  // Match auto-sync's package-reported full-version requests without manufacturing source version fields.
   for (const kind of ['pipeline', 'api']) {
     const entry = all.plan.entries.find((item) => item.type === kind);
-    // Normal Pipeline/API JSON must prove its exact release; the null/omitted exception belongs only to Sub-Pipelines.
+    // Native Pipeline/API definitions may omit or null their version; the exact request still uses package metadata.
     f.flags.missingVersion = true;
-    assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');
+    const nullVersion = await f.call({ type: 'pipeline-export-read', context: all.context, entry });
+    assert.equal(nullVersion.ok, true);
+    assert.equal(nullVersion.data.version, null);
+    assert.equal(nullVersion.data.routeUsed, 'v1.2.3');
     f.flags.omitVersion = true;
-    assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');
+    const omittedVersion = await f.call({ type: 'pipeline-export-read', context: all.context, entry });
+    assert.equal(omittedVersion.ok, true);
+    assert.equal(omittedVersion.data.version, undefined);
+    assert.equal(omittedVersion.data.routeUsed, 'v1.2.3');
     f.flags.missingVersion = false; f.flags.omitVersion = false;
     f.flags.returnedVersion = '';
     assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');

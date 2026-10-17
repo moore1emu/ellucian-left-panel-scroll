@@ -10,6 +10,9 @@
 <body>
 <main>
   <header><img src="icons/icon48.png" width="40" height="40" alt="" /><div><h1>Git Connection</h1><p>Export &amp; Connections · V3 Test Build</p></div></header>
+  <!-- Focus the existing export instead of reloading its selections or prepared files. -->
+  <button id="git-return-export" type="button">Return to Export</button>
+  <p id="git-return-status" role="status" aria-live="polite"></p>
   <section>
     <h2>Connect a Repository</h2>
     <p>Use an existing repository, branch, and dedicated export folder. This connection is shared by export tabs in this browser profile.</p>
@@ -40,6 +43,6 @@
   </section>
   <section><h2>Recent Pushes</h2><p>No tokens, headers, source contents, or raw service errors are recorded.</p><ul id="git-history"></ul><button id="git-clear-history" type="button">Clear Local History</button><p>Clearing this list does not erase Git history or provider audit records.</p></section>
 </main>
-<script src="git-provider.js"></script><script src="git-vault.js"></script><script src="git-connection.js"></script>
+<script src="git-provider.js"></script><script src="git-vault.js"></script><script src="git-return-export.js"></script><script src="git-connection.js"></script>
 </body>
 </html>

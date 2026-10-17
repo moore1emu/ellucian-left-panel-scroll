@@ -19,7 +19,7 @@ window.stats={sources:0};window.__PRELOADED_STATE__={tenant:'synthetic'};
 const owner={state:{currentTenant:'synthetic',menu:[{'package-element':pkg}]},context:{tenantId:'synthetic',getJwt:()=>{throw Error('Credentials must remain native-owned');}}};
 const row=document.querySelector('li');row.__reactFiber$fixture={return:{stateNode:owner}};row.__reactProps$fixture={'package-element':pkg};
 const opaque={};const helper={G9:async()=>[{nameAndExtension:'owned.json',version:'v1.0.0'}],db:async()=>opaque,bP:async()=>pkg,
-B0:async()=>{stats.sources++;return {name:'Pipeline',version:'1.0.0',fittings:[]};}};
+B0:async()=>{stats.sources++;return {name:'Pipeline',fittings:[]};}};
 window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperience_exchange_extension.push=entry=>entry[2](name=>name==='./src/server/ServerHelper.js'?helper:{});
 </script>`;
 
@@ -140,6 +140,12 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await popup.evaluate(async () => { await PopupTabs.refreshContext(); PopupTabs.select('export'); document.querySelector('#export-pipelines').click(); });
       const exported = await exporting; exported.on('pageerror', error => errors.push(error.message));
       await exported.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
+      // A popup-opened connection can return to the sole export without changing its document or selection.
+      const beforeReturn = exported.url();
+      await connection.locator('#git-return-export').click();
+      assert.equal(await connection.locator('#git-return-status').innerText(), '');
+      assert.equal(exported.url(), beforeReturn);
+      assert.equal(await exported.locator('#select-all').isChecked(), true);
       // Missing permission fails before source collection or provider access.
       await exported.evaluate(() => { chrome.permissions.contains = async () => false; });
       const sourcesBefore = await source.evaluate(() => stats.sources);

@@ -1,6 +1,6 @@
 # Privacy Policy
 
-This policy describes the separate v3.0.1 test candidate. Its optional Git workflow adds the consented uploads and credential storage below. The earlier offline design mockup remains a simulation, not the functional connection page. V2's release/policy and the live store listing are unchanged by this branch.
+This policy describes the separate v3.0.2 test candidate. Its optional Git workflow adds the consented uploads and credential storage below. The earlier offline design mockup remains a simulation, not the functional connection page. V2's release/policy and the live store listing are unchanged by this branch.
 
 ## Optional Git Connections and Uploads
 

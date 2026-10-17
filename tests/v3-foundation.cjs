@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const mock = path.join(root, 'docs/mockups/git-export-settings.html');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-assert.equal(manifest.version, '3.0.1');
+assert.equal(manifest.version, '3.0.2');
 assert.deepEqual(manifest.permissions, ['storage']);
 assert.deepEqual(manifest.optional_permissions, ['scripting']);
 
