@@ -31,6 +31,18 @@
     return { provider: input.provider, server, repository, branch, folder };
   }
 
+  // Resolve a tenant-named child only from the exact verified tenant's saved Designer observation.
+  function tenantDestination(destination, tenantId, cache) {
+    const c = config(destination);
+    const name = typeof tenantId === 'string' && Object.hasOwn(cache || {}, tenantId) ? cache[tenantId]?.environment : null;
+    if (typeof name !== 'string' || !name.trim()) fail('Tenant name is unavailable. Refresh sources in Designer, then reopen export.');
+    const tenantName = name.trim();
+    // Do not silently sanitize two different labels into the same folder or fall back to a different tenant.
+    if (!/^[a-z\d_][a-z\d._-]{0,99}$/iu.test(tenantName) || /^(?:\.git|\.github|\.gitlab)$/iu.test(tenantName)) fail('The saved tenant name cannot be used as a Git folder. Check the Designer environment name.');
+    if (Object.entries(cache).some(([id, entry]) => id !== tenantId && typeof entry?.environment === 'string' && entry.environment.trim().toLowerCase() === tenantName.toLowerCase())) fail('Multiple saved tenants have the same name. Resolve the environment names before Git export.');
+    return config({ ...c, folder: c.folder + '/' + tenantName });
+  }
+
   // Keep byte encoding portable without spreading a large buffer onto the JavaScript call stack.
   function base64(bytes) {
     let text = '';
@@ -246,5 +258,5 @@
     if (!SHA.test(sha || '')) fail('Invalid commit.');
     return c.server + '/' + c.repository.split('/').map(part).join('/') + (c.provider === 'github' ? '/commit/' : '/-/commit/') + sha;
   }
-  globalThis.GitProvider = Object.freeze({ config, origin, preview, push, commitUrl, blobSha });
+  globalThis.GitProvider = Object.freeze({ config, tenantDestination, origin, preview, push, commitUrl, blobSha });
 })();

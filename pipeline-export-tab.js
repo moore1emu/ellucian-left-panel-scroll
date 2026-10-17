@@ -132,6 +132,12 @@
     if (signal.aborted) throw new Error('Git operation cancelled.');
   }
 
+  // Resolve the current tenant's folder once per preparation and again before the confirmed push.
+  async function gitDestination(snapshot, connection) {
+    const saved = await chrome.storage.local.get({ designerOwnershipCache: {} });
+    return GitProvider.tenantDestination(connection.config, snapshot.context.tenantId, saved.designerOwnershipCache);
+  }
+
   // Display only application-owned messages; no provider response body or credential can appear here.
   function gitFailure(error) {
     // Preserve only fixed source-reader failure codes, never native errors or source payloads.
@@ -149,7 +155,7 @@
     };
     // These failures occur during local preparation, before any Git preview or upload.
     if (Object.hasOwn(sourceReasons, error?.sourceReason)) return `${sourceReasons[error.sourceReason]} No files were uploaded to Git. Refresh preview or reopen export from settings.`;
-    const known = new Set(['Git operation cancelled.', 'Source or connection changed. Prepare a new Git preview.', 'Git server permission is missing. Open Manage Connection.', 'Connection changed. Prepare a new preview.', 'Connection is locked or unavailable. Open Manage Connection.',
+    const known = new Set(['Tenant name is unavailable. Refresh sources in Designer, then reopen export.', 'The saved tenant name cannot be used as a Git folder. Check the Designer environment name.', 'Multiple saved tenants have the same name. Resolve the environment names before Git export.', 'Tenant destination changed. Prepare and confirm a new Git preview.', 'Git operation cancelled.', 'Source or connection changed. Prepare a new Git preview.', 'Git server permission is missing. Open Manage Connection.', 'Connection changed. Prepare a new preview.', 'Connection is locked or unavailable. Open Manage Connection.',
       'Git authentication failed. Reconnect with a valid token.', 'Git access was denied or rate limited. Check permissions and branch protection.', 'Git repository, branch, or file was not found.', 'Git changed or rejected this commit. Refresh Git preview.', 'Git rejected this change. Check branch protection and refresh preview.', 'Git rate limit reached. Wait before preparing another preview.', 'Git could not be reached. Check the server and connection.',
       'Select at least one file for Git export.', 'Repository tree is too large to compare safely.', 'Git repository visibility could not be verified.', 'Git destination has a file or link where a folder is needed.', 'Git destination collides with a folder, executable, link, or submodule.', 'Git file changed. Refresh Git preview.', 'Remote branch changed. Prepare and confirm a new Git preview.',
       'Git branch was not advanced by this export, but uploaded Git objects may remain. Prepare a fresh preview before retrying.', 'Git result is uncertain. Check the remote branch/history before any new push.']);
@@ -170,6 +176,8 @@
     try {
       const connection = await GitVault.info();
       if (!connection) throw new Error('Git server permission is missing. Open Manage Connection.');
+      // Treat the saved connection folder as a base; never reuse Test's fixed target for another tenant.
+      const destination = await gitDestination(snapshot, connection);
       const check = () => verifyGit(snapshot, connection, signal);
       await check();
       const files = await PipelineExportSession.collectFiles(snapshot.entries, {
@@ -182,7 +190,7 @@
         },
         onProgress: ({ completed }) => { if (current === generation) { progress.value = completed; gitResult.textContent = `Preparing ${completed} of ${snapshot.entries.length} locally…`; } },
       });
-      const comparison = await GitProvider.preview(connection.config, files, await GitVault.token(connection.revision), { check, signal });
+      const comparison = await GitProvider.preview(destination, files, await GitVault.token(connection.revision), { check, signal });
       await check();
       if (current !== generation) return;
       gitPlan = { comparison, connection, snapshot, created: Date.now() };
@@ -218,12 +226,16 @@
       if (Date.now() - job.created > 10 * 60 * 1000) throw new Error('Source or connection changed. Prepare a new Git preview.');
       const check = () => verifyGit(job.snapshot, job.connection, signal);
       await check();
+      // A renamed/ambiguous/missing source label requires another reviewed destination, not a silent redirect.
+      if ((await gitDestination(job.snapshot, job.connection)).folder !== job.comparison.config.folder) throw new Error('Tenant destination changed. Prepare and confirm a new Git preview.');
       const result = await GitProvider.push(job.comparison, await GitVault.token(job.connection.revision), { check, signal });
       gitResult.replaceChildren(document.createTextNode(`${result.count} files committed. `));
       if (result.commit) {
         const link = document.createElement('a'); link.href = GitProvider.commitUrl(job.connection.config, result.commit);
-        link.textContent = 'View Commit'; link.target = '_blank'; link.rel = 'noopener noreferrer'; gitResult.append(link);
-        try { await GitVault.receipt(job.connection.revision, result); }
+        link.textContent = 'View Commit on ' + (job.comparison.config.provider === 'github' ? 'GitHub' : 'GitLab'); link.target = '_blank'; link.rel = 'noopener noreferrer'; gitResult.append(link);
+        // Browser website authentication is separate from the extension's saved API credential.
+        if (job.comparison.visibility !== 'public') gitResult.append(document.createTextNode(' Private repositories require you to sign in to GitHub or GitLab in this browser to view the commit.'));
+        try { await GitVault.receipt(job.connection.revision, { ...result, folder: job.comparison.config.folder }); }
         catch { gitResult.append(document.createTextNode(' Commit succeeded, but its local receipt could not be saved.')); }
       }
     } catch (error) { gitResult.textContent = gitFailure(error); }

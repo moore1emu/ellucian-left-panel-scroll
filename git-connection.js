@@ -32,7 +32,8 @@
         const item = document.createElement('li');
         const link = document.createElement('a');
         link.href = GitProvider.commitUrl(entry.config, entry.commit); link.target = '_blank'; link.rel = 'noopener noreferrer';
-        link.textContent = `${new Date(entry.time).toLocaleString()} · ${entry.config.repository} · ${entry.count} files`;
+        link.textContent = `${new Date(entry.time).toLocaleString()} · ${entry.config.repository} · ${entry.config.folder} · ${entry.count} files`;
+        link.title = 'Private repositories require you to sign in to GitHub or GitLab in this browser to view the commit.';
         item.append(link); $('git-history').append(item);
       } catch { /* Ignore corrupt local receipts without exposing their contents. */ }
     }
@@ -55,6 +56,15 @@
 
   $('git-provider').addEventListener('change', () => { $('git-server-field').hidden = $('git-provider').value !== 'gitlab'; });
   $('git-storage').addEventListener('change', storageHelp);
+  // Explain the intentional fresh-token requirement when native required-field validation blocks submission.
+  $('git-token').addEventListener('invalid', () => {
+    if ($('git-token').value) return;
+    const message = 'Every change requires you to re-enter the access token before saving.';
+    $('git-token').setCustomValidity(message);
+    $('git-status').textContent = message;
+  });
+  // Clear our own validation text as soon as the user supplies a token; native required validation still applies.
+  $('git-token').addEventListener('input', () => $('git-token').setCustomValidity(''));
   $('git-form').addEventListener('submit', async event => {
     event.preventDefault(); if (busy) return;
     enabled(false);

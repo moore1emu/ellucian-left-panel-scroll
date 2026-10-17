@@ -1,5 +1,11 @@
 # Update history
 
+## 3.0.7 — October 17, 2026
+
+- Treat the saved Git folder as a base and append the saved Designer environment name for the exact verified current tenant ID. Do not guess URL names, fall back to another tenant, sanitize conflicting names into one folder, or change saved base folders automatically. Missing/unsupported names and case-insensitive duplicate names among known cached tenants stop preparation. Recheck the resolved destination before push; renamed/ambiguous/missing labels require another preview. Existing remote files are not moved/deleted; unrelated data and one-commit/no-batching behavior remain unchanged.
+- Label setup Base Export Folder with linked help explaining Base/Tenant/Package layout and reviewing the resolved preview. Existing DataConnect/Test settings are preserved; explicitly resave DataConnect to use it as the base. Successful receipts retain the actual tenant child without changing the encrypted base connection; receipt rendering shows that folder.
+- Add the approved browser sign-in reminder beside successful private/internal commit links and in Recent Pushes; provider-specific View Commit labels never include tokens. Explain that every save requires a freshly entered token, with native empty-token validation and visible linked help. Saving/token rules remain unchanged.
+
 ## 3.0.6 — October 17, 2026
 
 - Remove the owner-rejected separate Git upload-size cap from preview and request serialization, without batching, splitting commits, or changing provider operations. Preserve source-export bounds, the existing 16 MB response-memory bound, timeouts, remote-tree limits, context/consent/conflict checks, and uncertain-write verification. Provider-enforced limits may still reject requests. Synthetic tests send 9 MB raw content (larger base64 payload on GitLab) through preview and the unchanged single-commit path on both providers, including lost-response verification without replay.

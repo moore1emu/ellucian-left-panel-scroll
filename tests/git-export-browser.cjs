@@ -87,6 +87,8 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     await popup.evaluate(() => PopupTabs.select('export'));
     const opened = context.waitForEvent('page'); await popup.locator('#manage-git').click();
     const connection = await opened; await connection.waitForFunction(() => !document.querySelector('#git-fields').disabled);
+    assert.match(await connection.locator('#git-folder-help').innerText(), /automatically use Base Folder \/ Tenant Name \/ Package/);
+    assert.equal(await connection.locator('#git-folder').getAttribute('aria-describedby'), 'git-folder-help');
     await connection.evaluate(() => { chrome.permissions.contains = async () => true; });
     const errors = []; connection.on('pageerror', error => errors.push(error.message));
 
@@ -105,6 +107,14 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await connection.getByRole('button', { name: 'Save Connection', exact: true }).click();
       await connection.locator('#git-status').filter({ hasText: 'encrypted and saved' }).waitFor();
       assert.equal(await connection.locator('#git-token').inputValue(), ''); assert.equal(await connection.locator('#git-password').inputValue(), '');
+      // Native validation must explain why an unchanged stored token cannot be silently reused for saving edits.
+      const revisionBeforeEmptySave = await connection.evaluate(async () => (await GitVault.info()).revision);
+      await connection.getByRole('button', { name: 'Save Connection', exact: true }).click();
+      assert.match(await connection.locator('#git-status').innerText(), /Every change requires you to re-enter the access token before saving/);
+      assert.equal(await connection.evaluate(async () => (await GitVault.info()).revision), revisionBeforeEmptySave);
+      await connection.locator('#git-token').fill(synthetic);
+      assert.equal(await connection.locator('#git-token').evaluate(input => input.validationMessage), '');
+      await connection.locator('#git-token').fill('');
       const stored = await worker.evaluate(() => chrome.storage.local.get(null));
       assert.equal(JSON.stringify(stored).includes(synthetic), false); assert.deepEqual(stored.syntheticFavorites, { keep: true });
       assert.ok(stored.gitProviderOrigins.includes(provider === 'github' ? 'https://api.github.com' : 'https://git.example.edu'));
@@ -159,11 +169,19 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await exported.locator('#git-comparison').waitFor({ state: 'visible' });
       assert.equal(writes.length, 0); assert.equal(await exported.locator('#git-push').isDisabled(), true);
       assert.match(await exported.locator('#git-destination').innerText(), /Visibility: private/);
+      assert.match(await exported.locator('#git-destination').innerText(), /Folder: DataConnect\/Test/);
       assert.equal(await exported.locator('#git-changes li').count(), 1);
       // Layout/selection changes invalidate already-prepared source buffers and confirmation.
       await exported.locator('#include-formatted').check(); assert.equal(await exported.locator('#git-comparison').isHidden(), true);
       await exported.locator('#git-prepare').click(); await exported.locator('#git-comparison').waitFor({ state: 'visible' });
       assert.equal(await exported.locator('#git-changes li').count(), 3);
+      // Renaming a cached environment after comparison must not silently switch the confirmed target.
+      await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache.synthetic.environment = 'RenamedTest'; await chrome.storage.local.set(saved); });
+      await exported.locator('#git-confirm').check(); await exported.locator('#git-push').click();
+      await exported.locator('#git-result').filter({ hasText: 'Tenant destination changed' }).waitFor();
+      assert.equal(writes.length, 0);
+      await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache.synthetic.environment = 'Test'; await chrome.storage.local.set(saved); });
+      await exported.locator('#git-prepare').click(); await exported.locator('#git-comparison').waitFor({ state: 'visible' });
       // A changed remote head causes zero writes and requires a new preview rather than a silent rebase.
       await exported.locator('#git-confirm').check(); failHead = true;
       await exported.locator('#git-push').click();
@@ -177,7 +195,25 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       assert.equal(await source.evaluate(() => stats.sources), collected, 'Push uses the confirmed prepared files without new native source requests');
       assert.ok(writes.length > 0); assert.equal(await exported.locator('#git-comparison').isHidden(), true);
       assert.equal(await exported.locator('#git-result a').getAttribute('href'), provider === 'github' ? `https://github.com/owner/repo/commit/${commit}` : `https://git.example.edu/group/project/-/commit/${commit}`);
+      assert.match(await exported.locator('#git-result').innerText(), /Private repositories require you to sign in/);
+      assert.equal((await exported.evaluate(() => GitVault.history()))[0].config.folder, 'DataConnect/Test');
       await exported.close();
+      // The same saved base connection resolves Production into a different folder without changing Test files.
+      await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache['synthetic-prod'] = { environment: 'Production', packages: [{ name: 'Owned', pipelines: ['Pipeline'] }] }; await chrome.storage.local.set(saved); });
+      await source.evaluate(() => { owner.context.tenantId = 'synthetic-prod'; owner.state.currentTenant = 'synthetic-prod'; window.__PRELOADED_STATE__.tenant = 'synthetic-prod'; });
+      await source.bringToFront();
+      const prodOpening = context.waitForEvent('page');
+      await popup.evaluate(async () => { await PopupTabs.refreshContext(); document.querySelector('#export-pipelines').click(); });
+      const prodExport = await prodOpening;
+      await prodExport.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
+      await prodExport.evaluate(() => { chrome.permissions.contains = async () => true; });
+      const beforeProd = writes.length;
+      await prodExport.locator('#git-prepare').click(); await prodExport.locator('#git-comparison').waitFor({ state: 'visible' });
+      assert.match(await prodExport.locator('#git-destination').innerText(), /Folder: DataConnect\/Production/);
+      assert.ok((await prodExport.locator('#git-changes li').allTextContents()).every(text => text.includes('/Production/') && !text.includes('/Test/')));
+      assert.equal(writes.length, beforeProd, 'Production preview makes no writes');
+      await prodExport.close();
+      await source.evaluate(() => { owner.context.tenantId = 'synthetic'; owner.state.currentTenant = 'synthetic'; window.__PRELOADED_STATE__.tenant = 'synthetic'; });
     }
     assert.deepEqual(errors, []);
     assert.ok(calls.length > 0); assert.deepEqual((await worker.evaluate(() => chrome.storage.local.get('syntheticFavorites'))).syntheticFavorites, { keep: true });

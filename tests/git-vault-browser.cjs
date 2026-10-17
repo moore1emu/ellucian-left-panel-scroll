@@ -96,6 +96,12 @@ const synthetic = 'SYNTHETIC_TEST_TOKEN_NOT_A_CREDENTIAL';
     record = await save(page, 'device', record.revision);
     await page.evaluate(async revision => { for (let i = 0; i < 25; i++) await GitVault.receipt(revision, { commit: 'a'.repeat(40), count: i }); }, record.revision);
     assert.equal((await page.evaluate(() => GitVault.history())).length, 20);
+    // Tenant folder receipts preserve the encrypted base and reject destinations outside it.
+    await page.evaluate(revision => GitVault.receipt(revision, { commit: 'b'.repeat(40), count: 1, folder: 'DataConnect/ExampleTest' }), record.revision);
+    assert.equal((await page.evaluate(() => GitVault.history()))[0].config.folder, 'DataConnect/ExampleTest');
+    assert.equal((await page.evaluate(() => GitVault.info())).config.folder, 'DataConnect');
+    await page.evaluate(revision => GitVault.receipt(revision, { commit: 'c'.repeat(40), count: 1, folder: 'Elsewhere/ExampleTest' }), record.revision);
+    assert.equal((await page.evaluate(() => GitVault.history()))[0].commit, 'b'.repeat(40));
     await page.evaluate(() => GitVault.clearHistory()); assert.equal((await page.evaluate(() => GitVault.history())).length, 0);
     assert.equal(await page.evaluate(revision => GitVault.token(revision), record.revision), synthetic);
     await page.evaluate(revision => GitVault.forget(revision), record.revision);

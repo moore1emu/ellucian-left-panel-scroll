@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- At 3.0.7 the owner approved Base/TenantName Git folders using the exact verified tenant ID's cached Designer label, not a URL guess or ID fallback. Preserve saved base values until explicitly resaved; no automatic remote cleanup/move. Missing/unsupported or duplicate known labels fail closed; recheck the resolved destination before push. Show Base/Tenant/Package help and final preview; record the actual child in receipts without changing encrypted base config. Fresh-token save rules remain, with explicit empty-token feedback. Commit links/history explain separate browser sign-in for private repositories. Next checkpoint is 3.0.8.
+
 - At 3.0.6 the owner explicitly removed the separate Git upload-size cap and rejected batching/splitting. Do not reintroduce a request-byte threshold or change the one-commit workflow. Existing source-export bounds, 16 MB response-memory bound, 30-second timeout, tree/context/consent/conflict safeguards, and provider-enforced limits remain. This supersedes older guidance below retaining the 8 MB request cap. Next v3 checkpoint is 3.0.7.
 
 - At 3.0.5 the owner removed the arbitrary separate 500-file Git cap, not the existing byte/timeout/source-inventory safeguards. Do not silently add a new Git file-count threshold or automatic partial commits. GitHub verification allowance derives from actual changed paths/ancestors; retain remote-tree and response-byte bounds. Provider-specific limits remain possible. Next v3 checkpoint is 3.0.6.

@@ -90,6 +90,15 @@ function service(provider, flags = {}) {
   for (const branch of ['../main', 'refs/../main', '-main', 'a.lock', 'a@{b', 'a b', 'a//b']) assert.throws(() => git.config({ ...destination('github'), branch }));
   for (const folder of ['', '../Data', '.github/workflows', 'Data/.git', '/Data', 'Data//Test']) assert.throws(() => git.config({ ...destination('github'), folder }));
   assert.equal(await git.blobSha(files[0].bytes), blob(files[0].bytes));
+  // Tenant folder names come only from exact-ID observations, not an unrelated label or URL guess.
+  const base = { ...destination('github'), folder: 'DataConnect' };
+  const tenants = { test: { environment: 'ExampleTest' }, prod: { environment: 'ExampleProduction' } };
+  assert.equal(git.tenantDestination(base, 'test', tenants).folder, 'DataConnect/ExampleTest');
+  assert.equal(git.tenantDestination(base, 'prod', tenants).folder, 'DataConnect/ExampleProduction');
+  assert.throws(() => git.tenantDestination(base, 'unknown', tenants), /Tenant name is unavailable/);
+  assert.throws(() => git.tenantDestination(base, 'test', { test: { environment: '../Production' } }), /cannot be used/);
+  assert.throws(() => git.tenantDestination(base, 'test', { ...tenants, other: { environment: 'exampletest' } }), /same name/);
+  assert.equal(base.folder, 'DataConnect', 'Resolution never rewrites the saved base folder');
 
   for (const provider of ['github', 'gitlab']) {
     for (const flags of [{}, { lost: true }, { serverError: true }, ...(provider === 'gitlab' ? [{ update: true, paginate: true }] : [])]) {

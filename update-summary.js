@@ -7,6 +7,12 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Explain tenant routing and intentional credential/browser-login boundaries before a new export.
+    "3.0.7": Object.freeze([
+      "Git destinations automatically add the verified tenant name beneath your base folder.",
+      "Setup explains base folders and the fresh-token requirement when saving changes.",
+      "Commit links remind you to sign in to view private repositories in the browser.",
+    ]),
     // Do not imply the owner removed source collection or provider-enforced limits.
     "3.0.6": Object.freeze([
       "Git export no longer applies a separate upload-size cap.",

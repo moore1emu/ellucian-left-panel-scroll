@@ -1,6 +1,6 @@
 # Git Export — V3 Test Candidate
 
-Version 3.0.6 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.0.7 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
 
 Published versions come from the selected package metadata. Pipeline/API downloads request the exact full version; Sub-Pipelines request its major. Downloaded JSON may omit or null its version, which is preserved unchanged; an explicit conflicting version is rejected. Package-reported versions are not independently certified from missing source fields. Git Connection's Return to Export button focuses an existing export without reloading its selection; if no export is open, start one from Integration Packages settings.
 
@@ -8,12 +8,16 @@ Published versions come from the selected package metadata. Pipeline/API downloa
 
 1. In settings, open **Export → Manage Connection**. This opens a full extension-owned browser tab, not a provider login popup.
 2. Choose GitHub or GitLab. For self-hosted GitLab enter its HTTPS server origin. DNS domains are supported; custom ports and installations under a URL subpath are not supported in this candidate.
-3. Enter an existing repository (`owner/repository` or `group/subgroup/project`), an existing branch, and a dedicated folder such as `DataConnect/Test`. Empty repositories/branches cannot be created here.
+3. Enter an existing repository (`owner/repository` or `group/subgroup/project`), an existing branch, and a **Base Export Folder** such as `DataConnect`, not `DataConnect/Test`. Every Git export automatically adds the current tenant name: `DataConnect/ExampleTenant/ExamplePackage/...`. Empty repositories/branches cannot be created here.
 4. Create an expiring, least-privilege provider token. GitHub fine-grained tokens need Contents read/write for the selected repository. GitLab's multi-file REST API needs API access and a role allowed to commit; a repository-only token scope is not enough. Organization approval and protected-branch rules still apply. Never reuse an Ellucian session token.
 5. Select encrypted device storage, encrypted password unlock, or session only. Accept the separate upload notice and **Save Connection**. A changed destination requires a freshly entered token; saved tokens never appear back in the form.
 6. Select **Allow Server Access**, then **Test Connection**. Testing reads only repository metadata; it does not prove write access to a protected branch or upload a test file.
 
 Git API origins are reserved separately from Custom Sites before permission is requested. Granting Git access does not inject Experience scripts into the server. At most 20 origins can be reserved. Forgetting a connection leaves these safety reservations and browser permissions intact; revoke permission in browser extension details if needed. There is one saved connection per browser profile in this first candidate.
+
+The tenant name comes only from the Shared From cache entry for the verified current tenant ID, even in advanced export mode. Visit/refresh Designer to populate it; Git export stops if it is missing, unsupported as a folder segment, or matches another known cached tenant name ignoring case. ZIP naming/export remains independent. The final destination is shown in Git preview and checked again before push. Cached observations are not a global uniqueness guarantee. Existing saved folder values are preserved: change `DataConnect/Test` to `DataConnect` explicitly and re-enter the token when saving. No old repository folder is moved or deleted; cleanup is manual. Recent Pushes records the actual resolved folder.
+
+Every save requires re-entering the access token, including changes to the base folder. An empty token shows this requirement rather than silently reusing the stored secret. Viewing a private commit on GitHub/GitLab requires signing in to that provider in the same browser; the extension token authenticates API requests, not website browsing.
 
 ## Choose Credential Protection
 

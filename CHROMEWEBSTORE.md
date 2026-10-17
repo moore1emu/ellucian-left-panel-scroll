@@ -1,8 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-17 · Candidate: 3.0.6 · Status: Git compatibility candidate, not submitted
+Updated: 2026-10-17 · Candidate: 3.0.7 · Status: Git compatibility candidate, not submitted
 
-3.0.6 preparation note: remove the separate Git upload-size cap without batching or splitting commits. Existing source-export, response-memory, timeout, and provider safeguards remain. No new data collection, permissions, upload destination, or live store changes.
+3.0.7 preparation note: setup now describes a base export folder with the verified tenant name appended automatically; previews/receipts show the resolved folder. Missing/ambiguous names stop preparation. Save explains fresh-token entry, and private commit links explain browser sign-in. Tenant names appear in confirmed Git paths and successful local receipts; no new lookup, credentials, permissions, automatic cleanup, or store submission. Refresh connection/export screenshots before a future v3 release.
 
 This v3 branch is not ready for submission. Connection/storage/provider flows are implemented and synthetic-tested; separate live disposable-repository testing and store privacy-disclosure/asset checks remain required. The public copy below is a v3 draft, not a live listing update. Do not modify the v2 listing from this branch.
 

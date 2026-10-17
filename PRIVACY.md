@@ -1,8 +1,10 @@
 # Privacy Policy
 
-This policy describes the separate v3.0.6 test candidate. Its optional Git workflow adds the consented uploads and credential storage below. The earlier offline design mockup remains a simulation, not the functional connection page. V2's release/policy and the live store listing are unchanged by this branch.
+This policy describes the separate v3.0.7 test candidate. Its optional Git workflow adds the consented uploads and credential storage below. The earlier offline design mockup remains a simulation, not the functional connection page. V2's release/policy and the live store listing are unchanged by this branch.
 
 ## Optional Git Connections and Uploads
+
+The configured export folder is a base. Git export appends the saved Designer environment name for the exact verified current tenant ID and shows the resolved folder before confirmation. Missing/unsupported names or duplicate names among known cached tenants stop preparation; labels are not guessed from URLs or fetched from other environments. Names changing after preview require a new comparison. Tenant names therefore appear in confirmed Git paths and local successful receipts; no additional lookup, persistent mapping, token disclosure, or automatic folder migration/deletion is added. Existing saved base values remain until explicitly resaved with a fresh token. Browser sign-in to view private commit links is separate from API authentication.
 
 Git is unused until you configure a destination in the extension-owned Git Connection tab. You enter a provider access token, existing repository/branch, dedicated folder, storage choice, and upload consent. Self-hosted GitLab accepts HTTPS DNS origins without URL prefixes or custom ports. Allow Server Access requests only that exact API origin. Up to 20 non-secret reserved Git origins are saved locally so Git permissions cannot enroll a server as an Experience site or inject page scripts. Forget retains those reservations/browser grants; revoke site access in browser extension details if needed. Reservations themselves grant no access.
 

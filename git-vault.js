@@ -157,7 +157,13 @@
     return transaction('readwrite', (store, done) => {
       store.get('connection').onsuccess = event => {
         if (event.target.result?.revision !== revision || !event.target.result.history) return done();
-        const config = event.target.result.config;
+        const savedConfig = event.target.result.config;
+        let config = savedConfig;
+        // Retain the actual tenant child in the receipt, without changing the encrypted base connection.
+        if (typeof result.folder === 'string') {
+          try { config = GitProvider.config({ ...savedConfig, folder: result.folder }); } catch { return done(); }
+          if (!config.folder.startsWith(savedConfig.folder + '/')) return done();
+        }
         store.get('history').onsuccess = previous => {
           const entry = { time: Date.now(), config, commit: result.commit, count: result.count };
           store.put([entry, ...(previous.target.result || [])].slice(0, 20), 'history');
