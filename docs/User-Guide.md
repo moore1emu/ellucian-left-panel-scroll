@@ -1,6 +1,6 @@
 # User Guide
 
-> Develop's 2.1.8 test candidate shows a concise What's New overview since v1: redesigned settings and published artifact ZIP export with optional readable formatting. Minor candidate tweaks remain in the changelog. Existing functionality is unchanged. Reload the same unpacked folder and reopen settings to view the overview. Refresh Sources is Designer-only; Pipeline Export is Packages-only. See [v2 Development](V2-Development.md).
+> Develop's 2.1.9 test candidate adds submission preparation and an explicit security policy for extension pages. Chrome 106 is the declared API compatibility floor; use a current supported browser. What's New still highlights the major improvements since v1. No permissions or export eligibility changed. Reload the same unpacked folder and reopen settings to test. See [v2 Development](V2-Development.md).
 
 If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
 

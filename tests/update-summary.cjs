@@ -109,6 +109,11 @@ async function run() {
   await summary.recordUpdate({ reason: "update", previousVersion: "1.22.8" }, storage, "2.1.8");
   assert.equal(writes.length, beforeDismissedReload);
   assert.equal(summary.notesFor(saved, "2.1.8").length, 0);
+  // Submission hardening must not replace the owner-approved v2 overview with minor release notes.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.1.8" }, storage, "2.1.9");
+  assert.equal(summary.notesFor(saved, "2.1.9").length, 2);
+  assert.match(summary.notesFor(saved, "2.1.9")[0], /Redesigned settings/);
+  assert.match(summary.notesFor(saved, "2.1.9")[1], /Export published Pipelines/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

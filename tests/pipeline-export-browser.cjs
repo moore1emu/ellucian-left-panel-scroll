@@ -61,6 +61,31 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     await source.evaluate(() => enterPackages());
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${id}/popup.html`);
+    // Verify actual installed-page enforcement without live services or changing the real source context.
+    const policy = await popup.evaluate(async () => {
+      const violations = [];
+      const observe = event => violations.push(event.effectiveDirective);
+      document.addEventListener('securitypolicyviolation', observe);
+      const original = document.baseURI;
+      const base = document.createElement('base');
+      base.href = 'https://blocked.example.invalid/';
+      document.head.append(base);
+      const unchangedBase = document.baseURI === original;
+      const embedded = document.createElement('object');
+      embedded.data = 'data:text/html,synthetic';
+      document.body.append(embedded);
+      const inline = document.createElement('script');
+      inline.textContent = 'globalThis.__syntheticInlineRan = true;';
+      document.head.append(inline);
+      // CSP violation reports are queued; wait briefly before reading their fixed directive names.
+      await new Promise(resolve => setTimeout(resolve, 100));
+      base.remove(); embedded.remove(); inline.remove();
+      document.removeEventListener('securitypolicyviolation', observe);
+      return { violations, unchangedBase, inlineRan: globalThis.__syntheticInlineRan === true };
+    });
+    assert.equal(policy.unchangedBase, true);
+    assert.equal(policy.inlineRan, false);
+    for (const directive of ['base-uri', 'object-src', 'script-src-elem']) assert.ok(policy.violations.includes(directive), `Missing enforced ${directive}`);
     // An extension opened as a test tab has sender.tab; the worker preserves toolbar-style route reads.
     await popup.exposeFunction('fixturePageContext', () => worker.evaluate(async () => {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

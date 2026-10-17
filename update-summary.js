@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Keep the unpublished v2 overview focused on the same major features, not submission hardening.
+    "2.1.9": Object.freeze([
+      "Redesigned settings with task-based tabs for easier navigation.",
+      "Export published Pipelines, Sub-Pipelines, APIs, and Transformers from Integration Packages to a ZIP, with optional readable formatting.",
+    ]),
     // Keep: unpublished v2 candidates summarize the major changes since v1, not individual test-build tweaks (2.1.8).
     "2.1.8": Object.freeze([
       "Redesigned settings with task-based tabs for easier navigation.",

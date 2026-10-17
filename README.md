@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.1.8):** What's New now highlights redesigned settings and published artifact ZIP export since v1, rather than individual test-build tweaks. Existing functionality and safeguards are unchanged. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.1.9):** Adds store-submission preparation, a Chrome 106 API compatibility floor, and an explicit extension-page security policy. What's New still highlights redesigned settings and published artifact ZIP export since v1. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -67,7 +67,7 @@ This extension is not affiliated with or supported by Ellucian.
 
 ## Development Checks
 
-Read [AGENTS.md](AGENTS.md) before making changes. The synthetic settings regression needs Node.js and Playwright with Chromium; it does not use your installed extension or Ellucian account.
+Read [AGENTS.md](AGENTS.md) before making changes. Store preparation is maintained in [CHROMEWEBSTORE.md](CHROMEWEBSTORE.md); copy its public listing section separately from reviewer instructions. The synthetic settings regression needs Node.js and Playwright with Chromium; it does not use your installed extension or Ellucian account.
 
 ```sh
 npm install --no-save --package-lock=false playwright ace-builds
@@ -82,6 +82,7 @@ node tests/tenant-favorites-browser.cjs
 node tests/published-fitting-details.cjs
 node tests/browser-profile-cleanup.cjs
 node tests/update-summary.cjs
+node tests/release-metadata.cjs
 node tests/pipeline-export-core.cjs
 node tests/pipeline-export-session.cjs
 node tests/pipeline-export-formatted.cjs

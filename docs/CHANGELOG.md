@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.1.9 — 2026-10-16 — Submission Preparation and Compatibility
+
+- Adds CHROMEWEBSTORE.md with draft public listing text, permission explanations, privacy/readiness checks, and separately labeled reviewer instructions. Shift+D stays out of public listing copy; GitHub documentation and reviewer notes disclose its temporary filter option. No store/dashboard action is performed.
+- Declares Chrome 106 as the API-derived minimum for original-document export messaging; historical Chrome 106 runtime testing is not claimed. Adds an explicit extension-page policy allowing packaged scripts while blocking embedded objects and base-URL changes. Existing images, styles, page services, and blob downloads retain their behavior; permissions and export eligibility are unchanged.
+- Adds metadata checks and installed-browser enforcement tests for blocked inline scripts, objects, and base-URL changes alongside the real export flow. Keeps the two-item What's New overview about the major v2 features since v1. No new tools/dependencies, remote-debugging setup, authentication access, or pipeline changes.
+
 ## 2.1.8 — 2026-10-16 — v2 Release Overview
 
 - Changes the current What's New message to the big-ticket improvements since v1: redesigned task-tab settings and published Pipeline/Sub-Pipeline/API/Transformer ZIP export with optional readable formatting. Unpublished candidate tweaks stay in this changelog rather than replacing the release overview.

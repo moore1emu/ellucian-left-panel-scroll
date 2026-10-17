@@ -25,7 +25,10 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.1.8 is 2.1.9, while the next v1 maintenance revision after 1.22.8 is 1.22.9. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.1.9 is 2.2.0, while the next v1 maintenance revision after 1.22.8 is 1.22.9. Do not rename historical releases.
+
+- Maintain CHROMEWEBSTORE.md for store preparation, separate public listing copy from reviewer instructions, and keep Shift+D out of the public store description while disclosing it in GitHub/reviewer documentation. Never certify live dashboard/privacy/asset state from a local draft. Keep this preparation file out of release ZIPs. Consult official Chrome guidance selectively; generic skill advice does not override these project rules or authorize tooling installation, permissions, normal-profile debugging, main merges, or publication.
+- Preserve the 2.1.9 explicit extension-page CSP and Chrome 106 API-derived minimum; verify the installed popup/export flow, including blob downloads, before changing them. Historical Chrome 106 runtime compatibility is not proven by current-browser fixtures. No extra permissions are introduced by this hardening.
 
 - Keep the unpublished v2 What's New message focused on the major changes since v1: redesigned task-tab settings and published artifact ZIP export. Preserve version/dismissal guards; document individual candidate tweaks in the changelog instead. Do not advertise unrestricted exports or hidden override behavior in this overview.
 

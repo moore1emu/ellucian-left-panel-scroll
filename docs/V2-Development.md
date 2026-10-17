@@ -1,6 +1,10 @@
 # v2 Development
 
-This is the **2.1.8 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+This is the **2.1.9 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+
+Submission preparation is maintained in [CHROMEWEBSTORE.md](../CHROMEWEBSTORE.md), with public description copy separate from reviewer notes. Shift+D is documented for reviewers/GitHub but excluded from public listing copy. No store fields are changed automatically. The live policy and v2 screenshots still need release-time verification.
+
+The manifest declares Chrome 106 as the API-derived document-messaging floor, not a claim of historical-browser testing. Extension pages explicitly use script-src 'self'; object-src 'none'; base-uri 'none';. This keeps packaged scripts and blocks embedded objects/base-URL changes without changing current styles, images, source-page services, or blob downloads. Permissions, eligibility, consent, source handling, and data schemas are unchanged.
 
 The current What's New overview covers the big-ticket v2 changes since v1: redesigned task-tab settings and published Pipeline/Sub-Pipeline/API/Transformer ZIP export with optional readable formatting. Keep that baseline through unpublished candidates; put minor tweaks in the changelog. Existing version/dismissal guards and export eligibility are unchanged.
 
