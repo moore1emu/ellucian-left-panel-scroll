@@ -98,6 +98,11 @@ function service(provider, flags = {}) {
       assert.equal(plan.changes.length, 1); assert.equal(plan.visibility, 'private'); assert.equal(fake.state.writes.length, 0);
       const result = await git.push(plan, 'SYNTHETIC_TOKEN', fake);
       assert.equal(result.commit, committed); assert.equal(result.count, 1);
+      // Both providers describe changed records while retaining a unique lost-response reconciliation marker.
+      assert.equal(fake.state.message.split('\n')[0], `Integration Navigator: ${flags.update ? 0 : 1} added, ${flags.update ? 1 : 0} updated files`);
+      assert.equal(fake.state.message.includes('DataConnect/'), false, 'File paths belong in the Git diff, not the commit message');
+      assert.equal(fake.state.message.includes('B.js'), false, 'Unchanged records are not listed');
+      assert.match(fake.state.message, /\nExport-ID: [a-f\d-]{36}$/u);
       assert.equal(fake.state.writes.filter(x => x.route.includes('/refs/') || x.route === '/repository/commits').length, 1, 'Lost responses must not replay writes');
       assert.ok(git.commitUrl(destination(provider), result.commit).startsWith(provider === 'github' ? 'https://github.com/owner/repo/commit/' : 'https://git.example.edu/group/subgroup/project/-/commit/'));
     }

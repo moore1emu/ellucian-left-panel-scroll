@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Describe new commit messages without implying old provider history is rewritten.
+    "3.0.4": Object.freeze([
+      "Git commits show concise added and updated file totals without path lists.",
+      "A small Export-ID footer retains safe verification after a lost response.",
+    ]),
     // Keep this placement-only revision distinct from the preceding compatibility release.
     "3.0.3": Object.freeze([
       "Return to Export now sits beside the Git connection action buttons.",

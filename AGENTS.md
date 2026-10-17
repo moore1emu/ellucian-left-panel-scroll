@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- At 3.0.4 the owner clarified commit messages should contain concise added/updated totals only, not package/file/path lists; Git history/diffs provide those details. Count changed physical files, excluding unchanged files. Keep the unique Export-ID footer and exact-message GitLab uncertain-write check; it is random, not a tenant identifier. Do not rewrite existing commits. Next v3 checkpoint is 3.0.5.
+
 - At 3.0.3 the owner moved Return to Export into the connection action row, with its independent status below. Preserve its existing behavior and enabled state; no credential, permission, or source changes. Next v3 checkpoint is 3.0.4. Earlier checkpoints below remain historical.
 
 - At 3.0.2 the owner approved matching auto-sync: package-reported Pipeline/API versions select exact full-version service requests; source JSON may omit/null its version and stays unchanged. Reject explicit malformed/conflicting versions, retain Sub-Pipeline major semantics, and preserve name/type/context/consent/six-slot guards. This supersedes older instructions below requiring every normal source to contain an exact version. Return to Export focuses an existing extension export without reload; no new permissions or export grants. Next v3 checkpoint is 3.0.3. No live push, merge, or store submission is authorized by this code change.

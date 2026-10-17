@@ -1,6 +1,6 @@
 # Git Export — V3 Test Candidate
 
-Version 3.0.3 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.0.4 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
 
 Published versions come from the selected package metadata. Pipeline/API downloads request the exact full version; Sub-Pipelines request its major. Downloaded JSON may omit or null its version, which is preserved unchanged; an explicit conflicting version is rejected. Package-reported versions are not independently certified from missing source fields. Git Connection's Return to Export button focuses an existing export without reloading its selection; if no export is open, start one from Integration Packages settings.
 
@@ -26,6 +26,8 @@ Git API origins are reserved separately from Custom Sites before permission is r
 Tokens use AES-256-GCM with fresh IVs. Password keys use PBKDF2-SHA-256 with a fresh salt and 600,000 iterations. No plaintext fallback, credential sync, credential JSON backup, or publisher recovery exists. Forget is local; revoke the token at its provider when it must stop working elsewhere. Lock/Forget cannot recall a request already sent. See the [Privacy Policy](../PRIVACY.md).
 
 ## Preview and Push
+
+New commit messages summarize only added/updated file counts, excluding unchanged files. Package/file/path lists are omitted; use Git history/diffs for details. Source/Formatted copies and package READMEs are separate files in these counts. A random Export-ID footer (not a tenant identifier) supports uncertain-write verification. Existing commit history is unchanged.
 
 1. Open **Integration Packages**, then **Export → Preview Pipeline Export**.
 2. Select the packages/artifacts and optional Formatted layout just as for ZIP export.

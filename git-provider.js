@@ -186,7 +186,14 @@
     if (await currentHead() !== plan.head) fail('Remote branch changed. Prepare and confirm a new Git preview.');
     if (!plan.changes.length) return { commit: null, count: 0 };
     if (plan.changes.length > MAX_FILES) fail('Too many Git changes.');
-    const marker = 'Integration Navigator export ' + crypto.randomUUID();
+    // Describe only files that changed; unchanged selections must not appear as updates.
+    const added = plan.changes.filter(file => file.action === 'create');
+    const updated = plan.changes.filter(file => file.action === 'update');
+    const lines = [`Integration Navigator: ${added.length} added, ${updated.length} updated files`];
+    // Keep: file/package lists belong in Git's diff, not the owner-requested concise commit summary (3.0.4).
+    // Keep: a unique footer identifies uncertain GitLab writes without replaying a commit (3.0.4).
+    lines.push('', 'Export-ID: ' + crypto.randomUUID());
+    const marker = lines.join('\n');
     let commit;
     if (c.provider === 'github') {
       // New objects do not alter the branch; any later failure can still leave unreferenced uploaded source.

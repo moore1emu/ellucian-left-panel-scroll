@@ -1,5 +1,9 @@
 # Update history
 
+## 3.0.4 — October 17, 2026
+
+- GitHub/GitLab commit subjects show only added/updated file totals, excluding unchanged selections. Per the owner's clarification, omit package/file/path lists and leave details to Git history/diffs. Formatted/source/README files count separately. Retain the random export identifier only in an Export-ID footer for uncertain GitLab write verification without replay. Existing commits are not rewritten; preview/confirmation, source collection, credentials, and add/update-only behavior are unchanged.
+
 ## 3.0.3 — October 17, 2026
 
 - Move Return to Export into the connection action row beside Allow Server Access, Test Connection, and Forget Connection. Move its separate status below that row. Navigation, credential controls, permissions, and export behavior are unchanged.
