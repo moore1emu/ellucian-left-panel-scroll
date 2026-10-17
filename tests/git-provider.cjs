@@ -73,7 +73,7 @@ function service(provider, flags = {}) {
       assert.equal(body.actions[0].action, flags.update ? 'update' : 'create');
       if (flags.update) assert.equal(body.actions[0].last_commit_id, sha('last-file-commit'));
       assert.equal(body.actions[0].file_path, 'DataConnect/Test/Package/A_v1.json');
-      assert.equal(Buffer.from(body.actions[0].content, 'base64').toString(), Buffer.from(files[0].bytes).toString());
+      assert.equal(Buffer.from(body.actions[0].content, 'base64').toString(), flags.expectedText || Buffer.from(files[0].bytes).toString());
       state.head = committed; state.message = body.commit_message;
       if (flags.serverError) return response({ error: 'SYNTHETIC_TOKEN' }, 503);
       if (flags.lost) throw Error('Lost synthetic write response');
@@ -133,10 +133,14 @@ function service(provider, flags = {}) {
     assert.match(large.state.message, /^Integration Navigator: 561 added, 0 updated files/u);
     assert.equal(large.state.writes.filter(x => x.route.includes('/refs/') || x.route === '/repository/commits').length, 1);
   }
-  // Removing the count cap must not bypass the existing pre-upload payload budget.
-  const oversized = service('github');
-  await assert.rejects(git.preview(destination('github'), [{ ...files[0], bytes: new Uint8Array(8 * 1024 * 1024) }], 'SYNTHETIC_TOKEN', oversized), /request limit/);
-  assert.equal(oversized.state.calls.length, 0);
+  // Owner-approved larger requests pass preview and the same single-commit push without splitting uploads.
+  const largeText = 'x'.repeat(9 * 1024 * 1024);
+  for (const provider of ['github', 'gitlab']) {
+    const largeBody = service(provider, { expectedText: largeText, lost: true });
+    const largePlan = await git.preview(destination(provider), [{ ...files[0], bytes: new TextEncoder().encode(largeText) }], 'SYNTHETIC_TOKEN', largeBody);
+    assert.equal((await git.push(largePlan, 'SYNTHETIC_TOKEN', largeBody)).count, 1);
+    assert.equal(largeBody.state.writes.filter(x => x.route.includes('/refs/') || x.route === '/repository/commits').length, 1);
+  }
   await assert.rejects(git.preview(destination('github'), [files[0], files[0]], 'SYNTHETIC_TOKEN', service('github')), /collide/);
   // An original JavaScript UTF-8 BOM must not be silently stripped by the inline tree text conversion.
   const withBom = { ...files[0], bytes: new TextEncoder().encode('\ufeff// Synthetic source\r\n') };

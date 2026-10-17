@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Do not imply the owner removed source collection or provider-enforced limits.
+    "3.0.6": Object.freeze([
+      "Git export no longer applies a separate upload-size cap.",
+      "The one-commit workflow, source safeguards, timeouts, and provider limits remain.",
+    ]),
     // Keep removal of the arbitrary Git file cap distinct from retained byte/source safeguards.
     "3.0.5": Object.freeze([
       "Git export no longer has a separate 500-file cap, including formatted exports.",

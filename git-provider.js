@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  // Bound provider traffic independently of the existing 64 MB local ZIP budget.
-  const MAX_BODY = 8 * 1024 * 1024;
+  // Keep the existing response-memory safeguard independent of the owner-removed upload-size cap.
+  const MAX_RESPONSE_BYTES = 16 * 1024 * 1024;
   const SHA = /^[a-f\d]{40}$/u;
   const encoder = new TextEncoder();
   const fail = message => { throw new Error(message); };
@@ -56,7 +56,6 @@
       if (signal?.aborted) fail('Git operation cancelled.');
       if (path !== '' && (!path.startsWith('/') || path.startsWith('//'))) fail('Invalid provider operation.');
       const payload = body === undefined ? undefined : JSON.stringify(body);
-      if (payload && encoder.encode(payload).length > MAX_BODY) fail('Git request exceeds the 8 MB limit. Use a smaller selection.');
       const abort = new AbortController();
       const stop = () => abort.abort();
       const timeout = setTimeout(stop, 30000);
@@ -81,7 +80,7 @@
           const { done, value } = await reader.read();
           if (done) break;
           size += value.length;
-          if (size > MAX_BODY * 2) { await reader.cancel(); fail('Git response exceeds the supported limit.'); }
+          if (size > MAX_RESPONSE_BYTES) { await reader.cancel(); fail('Git response exceeds the supported limit.'); }
           chunks.push(value);
         }
         const bytes = new Uint8Array(size); let offset = 0;
@@ -147,8 +146,7 @@
       seen.add(path.toLowerCase());
       local.push({ path, bytes: file.bytes.slice(), sha: await blobSha(file.bytes), content: base64(file.bytes) });
     }
-    // Bound the eventual base64 request before any remote source content is uploaded.
-    if (encoder.encode(JSON.stringify(local.map(x => ({ path: x.path, content: x.content })))).length > MAX_BODY - 100000) fail('Git selection exceeds the request limit. Choose fewer files.');
+    // Keep: provider-specific upload limits, not a separate extension byte cap, decide acceptance (3.0.6).
     const remote = await snapshot(connection);
     const foldedRemote = new Map([...remote.paths.keys()].map(path => [path.toLowerCase(), path]));
     const changes = [];
@@ -248,5 +246,5 @@
     if (!SHA.test(sha || '')) fail('Invalid commit.');
     return c.server + '/' + c.repository.split('/').map(part).join('/') + (c.provider === 'github' ? '/commit/' : '/-/commit/') + sha;
   }
-  globalThis.GitProvider = Object.freeze({ config, origin, preview, push, commitUrl, blobSha, MAX_BODY });
+  globalThis.GitProvider = Object.freeze({ config, origin, preview, push, commitUrl, blobSha });
 })();

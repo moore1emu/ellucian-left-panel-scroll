@@ -1,5 +1,9 @@
 # Update history
 
+## 3.0.6 — October 17, 2026
+
+- Remove the owner-rejected separate Git upload-size cap from preview and request serialization, without batching, splitting commits, or changing provider operations. Preserve source-export bounds, the existing 16 MB response-memory bound, timeouts, remote-tree limits, context/consent/conflict checks, and uncertain-write verification. Provider-enforced limits may still reject requests. Synthetic tests send 9 MB raw content (larger base64 payload on GitLab) through preview and the unchanged single-commit path on both providers, including lost-response verification without replay.
+
 ## 3.0.5 — October 17, 2026
 
 - Remove the owner-rejected arbitrary 500-file Git preview/push cap, without replacing it with another Git-specific file-count cap. Retain request/response byte limits, timeouts, existing source-export bounds, remote-tree inventory bounds, and all permission/context/confirmation/conflict safeguards. Derive GitHub post-upload tree allowance from the actual changed paths and ancestors rather than a hardcoded 500-entry allowance. Synthetic tests cover 561 files on both providers, lost responses without replay, and oversized requests rejected before provider access. Provider-specific limits can still reject an export; no automatic partial commits or batching is introduced.
