@@ -1,5 +1,7 @@
 # Privacy Policy
 
+The separate v3.0.0 foundation does not connect to Git providers, accept real Git credentials, store keys/tokens, or upload pipeline files. Its offline settings mockup uses only synthetic in-memory values. Planned Git data flows will require explicit consent and an updated policy before they are enabled. The existing extension behavior described below is inherited from v2.1.9.
+
 The settings popup uses task tabs without saving your selected tab. It reads the active top-level Integration page's existing route/status to show context and disable unavailable source-refresh/export actions. This does not request pipeline contents, contact additional services, inspect unrelated tabs, add tab-URL permissions, or change saved preferences or consent. Backup/restore remains independent of the active page.
 
 Integration Navigator · Updated October 16, 2026 (v2 development checkpoint)

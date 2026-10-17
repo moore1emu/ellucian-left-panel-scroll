@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.1.9):** Adds store-submission preparation, a Chrome 106 API compatibility floor, and an explicit extension-page security policy. What's New still highlights redesigned settings and published artifact ZIP export since v1. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v3 foundation (3.0.0):** Separate development from v2.1.9 for planned GitHub/GitLab export and encrypted saved connections. Git uploads are not enabled. Existing local ZIP/JSON backup behavior is retained. See [v3 Development](docs/V3-Development.md) and the [interactive settings mockup](docs/mockups/git-export-settings.html). This is not the v2 store candidate or a publishable v3 Git build.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -83,6 +83,7 @@ node tests/published-fitting-details.cjs
 node tests/browser-profile-cleanup.cjs
 node tests/update-summary.cjs
 node tests/release-metadata.cjs
+node tests/v3-foundation.cjs
 node tests/pipeline-export-core.cjs
 node tests/pipeline-export-session.cjs
 node tests/pipeline-export-formatted.cjs

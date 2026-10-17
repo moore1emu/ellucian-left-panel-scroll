@@ -2,6 +2,12 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 3.0.0 — 2026-10-17 — Separate Git Export Foundation
+
+- Starts isolated v3 development from v2.1.9 on feature/v3-git-export. Develop and the existing outputs remain the v2 release candidate; this checkpoint does not publish, merge, or replace that build.
+- Adds an interactive, synthetic Export/Git Connection mockup and a staged GitHub/GitLab plan. Encrypted saved credentials, changes preview, and push history are proposals, not implemented repository connections. The preview accepts no real tokens and makes no network/storage requests.
+- Runtime changes are limited to the 3.0.0 version and honest development summary. Existing ZIP export, source safeguards, settings, and favorites remain unchanged. No additional permissions, actual Git credentials, third-party runtime code, repository uploads, or scheduled sync are introduced.
+
 ## 2.1.9 — 2026-10-16 — Submission Preparation and Compatibility
 
 - Adds CHROMEWEBSTORE.md with draft public listing text, permission explanations, privacy/readiness checks, and separately labeled reviewer instructions. Shift+D stays out of public listing copy; GitHub documentation and reviewer notes disclose its temporary filter option. No store/dashboard action is performed.

@@ -1,6 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-16 · Candidate: 2.1.9 · Status: local test candidate, not submitted
+Updated: 2026-10-16 · Candidate: 3.0.0 · Status: v3 foundation only, not submitted
+
+This v3 branch is not ready for store preparation. The public listing below retains v2's existing functionality and does not advertise planned Git uploads. Do not use it to submit v3 until credential handling, upload consent, privacy, assets, and actual functionality are implemented and verified.
 
 This is the maintained preparation document, not proof of the live dashboard state. Copy only the Public Store Listing section into the public description fields. Reviewer Instructions are separate and must not be appended to that description. Publishing, changing distribution, and merging main each require owner authorization. Preserve existing account, pricing, visibility, and unrelated dashboard fields.
 
@@ -111,7 +113,7 @@ Known limitations: source observations can become stale; unvisited environments 
 - [ ] Preserve unlisted distribution, existing artwork unless updated with approval, account settings, price, and unrelated fields.
 - [ ] Record the dashboard-confirmed submitted version, review/publication state, and publication choice; do not call a pending review live.
 
-Canonical code history is [docs/CHANGELOG.md](docs/CHANGELOG.md). This preparation document intentionally does not reconstruct unverified submission history. Candidate 2.1.9 has not been submitted by this work.
+Canonical code history is [docs/CHANGELOG.md](docs/CHANGELOG.md). This preparation document intentionally does not reconstruct unverified submission history. Candidate 3.0.0 is a separate foundation checkpoint and has not been submitted by this work.
 
 ## Official References
 

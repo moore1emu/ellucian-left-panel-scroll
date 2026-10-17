@@ -7,6 +7,12 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Keep: v3 foundation notes must not claim its planned Git connection is already usable (3.0.0).
+    "3.0.0": Object.freeze([
+      "Separate v3 development builds on v2 without changing the v2 release candidate.",
+      "Git export settings are a design preview; repository uploads are not enabled yet.",
+      "Existing local ZIP export and JSON backup remain available.",
+    ]),
     // Keep the unpublished v2 overview focused on the same major features, not submission hardening.
     "2.1.9": Object.freeze([
       "Redesigned settings with task-based tabs for easier navigation.",

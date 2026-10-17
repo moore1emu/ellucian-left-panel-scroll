@@ -10,11 +10,11 @@ const root = path.resolve(__dirname, '..');
 function installStub() {
   // Retain unrelated settings across reloads to catch accidental resets.
   const saved = JSON.parse(localStorage.getItem('syntheticPreferences') || 'null') || {
-    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '2.1.9' }, favorites: { keep: true }, sharedFromEnabled: true,
+    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '3.0.0' }, favorites: { keep: true }, sharedFromEnabled: true,
   };
   window.__messages = [];
   window.__page = 'packages';
-  const runtime = { lastError: undefined, getManifest: () => ({ version: '2.1.9', content_scripts: [{ matches: [] }] }),
+  const runtime = { lastError: undefined, getManifest: () => ({ version: '3.0.0', content_scripts: [{ matches: [] }] }),
     sendMessage: async message => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
   window.chrome = { runtime, storage: { local: {
     get(defaults, callback) { const result = { ...defaults }; for (const key of Object.keys(result)) if (Object.hasOwn(saved, key)) result[key] = saved[key]; if (callback) setTimeout(() => callback(result), 0); return Promise.resolve(result); },
@@ -68,8 +68,9 @@ function installStub() {
 
       // Dismissal failures remain retryable without changing preferences.
       assert.deepEqual(await page.locator('#update-summary li').allTextContents(), [
-        'Redesigned settings with task-based tabs for easier navigation.',
-        'Export published Pipelines, Sub-Pipelines, APIs, and Transformers from Integration Packages to a ZIP, with optional readable formatting.',
+        'Separate v3 development builds on v2 without changing the v2 release candidate.',
+        'Git export settings are a design preview; repository uploads are not enabled yet.',
+        'Existing local ZIP export and JSON backup remain available.',
       ]);
       await page.evaluate(() => { window.__failWrite = true; });
       await page.locator('#dismiss-update-summary').click();

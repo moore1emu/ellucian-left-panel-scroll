@@ -1,6 +1,6 @@
 # User Guide
 
-> Develop's 2.1.9 test candidate adds submission preparation and an explicit security policy for extension pages. Chrome 106 is the declared API compatibility floor; use a current supported browser. What's New still highlights the major improvements since v1. No permissions or export eligibility changed. Reload the same unpacked folder and reopen settings to test. See [v2 Development](V2-Development.md).
+> This is the separate **3.0.0 v3 foundation**, based on v2.1.9. Git uploads and saved credentials are not implemented; see [v3 Development](V3-Development.md) and the [offline settings mockup](mockups/git-export-settings.html). The inherited local ZIP/backup instructions below remain applicable. Continue using the separately maintained v2 build for v2 release testing.
 
 If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
 
