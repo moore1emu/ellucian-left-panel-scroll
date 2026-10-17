@@ -22,9 +22,11 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     const list=document.querySelector('ul');list.innerHTML='';
     const row=document.createElement('li');row.dataset.level='1';row.dataset.nodeid=tenant;
     row.setAttribute('package-element','');row.innerHTML='<div class="MuiTreeItem-content"><span class="MuiTreeItem-label">'+tenant+' Package</span></div>';
-    row.__reactProps$fixture={'package-element':{name:tenant+' Package',pipelines:[{name:tenant+' Pipeline',version:'1.0.0'}]}};
+    row.__reactProps$fixture={'package-element':{name:tenant+' Package',pipelines:[{name:tenant+' Pipeline',version:'1.0.0'}],
+      transformFunctions:[{name:tenant+' Function',version:'v1.0.0',previousVersions:[]},{name:'Draft Only',version:'draft'},{name:'Explicit Draft',version:'v1.0.0',status:'draft'}]}};
     // Designer's real tenant owner is outside sidebar ancestry; Packages still exposes its row state.
-    row.__reactFiber$fixture=page==='designer'?{}:{stateNode:{state:{currentTenant:tenant}}};list.appendChild(row);
+    // Real Packages can expose identity only through its menu/session context; Designer uses its separate manager.
+    row.__reactFiber$fixture=page==='designer'?{}:{stateNode:{state:{menu:[]},context:{tenantId:tenant,getJwt:()=>{throw Error('Identity must not invoke a session callback');}}}};list.appendChild(row);
     // Retain a stale Designer root on Packages to verify route-specific lookup, not just priority.
     const owner={stateNode:{state:{currentTenant:page==='designer'?tenant:'stale-designer-root'}}};
     let manager=owner;for(let depth=0;depth<4;depth++) manager={return:manager};
@@ -36,11 +38,14 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
   </script>`;
 
 (async () => {
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'integration-navigator-tenant-'));
-  const context = await chromium.launchPersistentContext(profile, { headless: true,
-    ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
-    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] });
+  const temporaryRoot = fs.realpathSync(os.tmpdir());
+  const profile = fs.mkdtempSync(path.join(temporaryRoot, 'integration-navigator-tenant-'));
+  let context;
   try {
+    // Scope cleanup around startup as well as all test assertions.
+    context = await chromium.launchPersistentContext(profile, { headless: true,
+      ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
+      args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] });
     // Reject any attempt to contact real services: every response comes from this local fixture.
     const requests = [];
     await context.route('**/*', (request) => {
@@ -68,6 +73,11 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await page.locator('.ellucian-favorite-select').filter({ hasText: 'test-a Package' }).waitFor();
     const read = () => worker.evaluate(() => chrome.storage.local.get('favoritePackagesByTenant'));
     await assertPin('test-a', 'packages');
+    // Direct Packages reload must preserve context-scoped pins without visiting Home.
+    const beforePackagesReload = await read();
+    await page.reload();
+    await page.locator('.ellucian-favorite-select').filter({ hasText: 'test-a Package' }).waitFor();
+    assert.deepEqual(await read(), beforePackagesReload, 'Packages reload preserves tenant lists exactly');
     // Switching tenants with an unchanged vanity-style URL must separate the list and ignore bootstrap identity.
     await page.evaluate(() => switchTenant('test-b'));
     await pin().waitFor();
@@ -102,12 +112,20 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await page.bringToFront();
     const tabId = await worker.evaluate(async () => (await chrome.tabs.query({ active: true, currentWindow: true }))[0]?.id);
     assert.ok(Number.isInteger(tabId), 'The active synthetic tab must have an identifier');
-    await popup.evaluate((id) => { chrome.tabs.query = async () => [{ id }]; const card = document.querySelector('.backup-card'); card.open = true; card.dispatchEvent(new Event('toggle')); }, tabId);
+    // A test tab has sender.tab; proxy only the existing route-status read through the worker like a toolbar popup.
+    await popup.exposeFunction('fixturePageContext', () => worker.evaluate(id => chrome.tabs.sendMessage(id, { type: 'designer-ownership-context' }, { frameId: 0 }), tabId));
+    await popup.evaluate(async (id) => {
+      chrome.tabs.query = async () => [{ id }];
+      const send = chrome.tabs.sendMessage.bind(chrome.tabs);
+      chrome.tabs.sendMessage = (...args) => args[1]?.type === 'designer-ownership-context' ? window.fixturePageContext() : send(...args);
+      await PopupTabs.refreshContext();
+      PopupTabs.select('export');
+    }, tabId);
     try { await popup.locator('#assign-favorites').waitFor(); }
     catch (error) {
       console.log('Synthetic assignment diagnostics:', errors, await popup.evaluate(async () => ({
         status: document.querySelector('#backup-status').textContent,
-        open: document.querySelector('.backup-card').open,
+        open: !document.querySelector('.backup-card').hidden,
         hidden: document.querySelector('#legacy-favorites').hidden,
         settings: await chrome.storage.local.get(FavoritesData.defaults),
       })));
@@ -116,11 +134,11 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await popup.locator('#assign-favorites').click();
     await popup.waitForFunction(() => document.querySelector('#backup-status').textContent.includes('assigned'));
     // Keep portable backup actions together in the final section, with source Refresh unmoved.
-    assert.deepEqual(await popup.locator('main > details > summary').allTextContents(), ['Page Behavior', 'Icon & Favorites', 'Custom Sites', 'Backup & Restore']);
+    assert.deepEqual(await popup.locator('[role="tab"]').allTextContents(), ['Navigation', 'Sharing', 'Appearance', 'Sites', 'Export']);
     assert.equal(await popup.locator('.backup-card #export-shared-from').count(), 1);
     assert.equal(await popup.locator('.backup-card #import-favorites').count(), 1);
     assert.equal(await popup.locator('.page-behavior-card #export-shared-from').count(), 0);
-    assert.deepEqual(await popup.locator('.shared-from-actions button').allTextContents(), ['Refresh']);
+    assert.deepEqual(await popup.locator('.shared-from-actions button').allTextContents(), ['Refresh Sources']);
     const refreshFeedback = await popup.locator('#shared-from-status').textContent();
     const downloadEvent = popup.waitForEvent('download');
     await popup.locator('#export-shared-from').click();
@@ -165,6 +183,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
       chrome.tabs.sendMessage = (...args) => args[1]?.type === 'designer-ownership-refresh' ? window.fixtureRefreshSources() : send(...args);
     });
     // Accept consent through the synthetic settings UI so its switch and status reflect the saved choice.
+    await popup.getByRole('tab', { name: 'Sharing', exact: true }).click();
     await popup.locator('label[for="shared-from-enabled"]').click();
     await popup.locator('#confirm-shared-from').click();
     await popup.waitForFunction(() => !document.querySelector('#refresh-shared-from').disabled);
@@ -172,13 +191,16 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await popup.waitForFunction(() => document.querySelector('#shared-from-cache-status').textContent.startsWith('Cached'));
     await popup.locator('#refresh-shared-from').click();
     await popup.waitForFunction(() => document.querySelector('#shared-from-status').textContent === 'Shared From data refreshed.');
+    // Designer's real MAIN/isolated/worker path stores only published transformer names and leaves favorites alone.
+    const sourceCache = await worker.evaluate(() => chrome.storage.local.get('designerOwnershipCache'));
+    assert.deepEqual(sourceCache.designerOwnershipCache['test-a'].packages[0].transformFunctions, ['test-a Function']);
     assert.equal(await popup.locator('#backup-status').textContent(), importFeedback);
     // Optionally capture synthetic settings previews without putting personal paths in the test.
     if (process.env.INTEGRATION_NAVIGATOR_ARTIFACT_DIR) {
       const previews = path.resolve(process.env.INTEGRATION_NAVIGATOR_ARTIFACT_DIR);
       fs.mkdirSync(previews, {recursive:true});
       await popup.setViewportSize({width:360,height:640});
-      await popup.locator('.page-behavior-card summary').click();
+      await popup.getByRole('tab', { name: 'Export', exact: true }).click();
       // Collapsed behavior and open backups must fit without horizontal overflow or wrapped action labels.
       assert.equal(await popup.evaluate(() => document.body.scrollWidth <= document.body.clientWidth), true);
       for (const colorScheme of ['light','dark']) {
@@ -219,7 +241,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     const count = await page.evaluate(() => __messages.length);
     await page.waitForTimeout(1200);
     assert.equal(await page.evaluate(() => __messages.length), count, 'No idle polling');
-    assert.equal(requests.filter((url) => url.startsWith('https:')).length, 3, 'Only the three explicit fixture navigations make requests');
+    assert.equal(requests.filter((url) => url.startsWith('https:')).length, 4, 'Only explicit fixture navigations and the Packages reload make requests');
     assert.deepEqual(errors, []);
     console.log('PASS: last-section backup actions, independent export/refresh feedback and retry, real popup export/import/refresh, direct Designer reload/cache, tenant recovery/isolation, and zero idle polling/service lookups.');
 
@@ -233,7 +255,12 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
       assert.fail(`Missing ${tenantId}/${pageName} pin: ${JSON.stringify(await read())}`);
     }
   } finally {
-    // Close only this generated profile; never reload or alter the user's installed extension.
-    await context.close();
+    // Close only this generated browser and remove its data without touching installed profiles.
+    try { await context?.close(); }
+    finally {
+      if (path.dirname(profile) !== temporaryRoot || !path.basename(profile).startsWith('integration-navigator-tenant-') ||
+        fs.existsSync(profile) && fs.lstatSync(profile).isSymbolicLink()) throw new Error('Unexpected disposable profile path.');
+      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    }
   }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

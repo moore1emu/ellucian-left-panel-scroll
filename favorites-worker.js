@@ -154,7 +154,8 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         for (const group of importedSources) {
           const checkedAt = Date.parse(group.lastCheckedAt);
           if ((cache[group.environmentId]?.checkedAt || 0) <= checkedAt) cache[group.environmentId] = { environment: group.environment, checkedAt,
-            packages: group.packages.map((entry) => ({ name: entry.packageNameRecorded === false ? null : entry.name, pipelines: entry.pipelines })) };
+            packages: group.packages.map((entry) => ({ name: entry.packageNameRecorded === false ? null : entry.name, pipelines: entry.pipelines,
+              ...(entry.transformFunctions?.length ? { transformFunctions: entry.transformFunctions } : {}) })) };
         }
         if (JSON.stringify(cache).length > 1000000) throw new Error('Shared From backup exceeds the local cache limit.');
         await chrome.storage.local.set({ ...writes, designerOwnershipCache: cache });

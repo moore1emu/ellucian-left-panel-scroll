@@ -11,6 +11,8 @@
   let activeTabId = null;
   let activeScope = null;
   let assignmentRead = 0;
+  // A cancelled or replaced file read must never reopen an older import preview.
+  let backupRead = 0;
 
   // Offer assignment only for a loaded tenant; unverified old lists remain available for recovery.
   async function readLegacyAssignment() {
@@ -38,7 +40,7 @@
       if (!Array.isArray(oldItems) || !oldItems.length || settings[data.ASSIGNED]?.[oldKey]) return;
       document.querySelector('#legacy-summary').textContent = `Old ${activeScope.page === 'designer' ? 'Designer' : 'Packages'} favorites have no tenant ID. Assign ${oldItems.length} package groups to tenant ${activeScope.tenantId} on ${activeScope.site}? The old copy is kept.`;
       document.querySelector('#legacy-favorites').hidden = false;
-      document.querySelector('.backup-card').open = true;
+      // Do not force a task change on startup; assignment remains visible inside Export when opened.
     } catch (_error) {
       // Unsupported tabs need no warning; imports and exports still work from settings.
     }
@@ -58,13 +60,16 @@
   // Read a chosen local file only; reject excessive files before parsing or showing a preview.
   document.querySelector('#import-favorites').addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', async () => {
+    const sequence = ++backupRead;
     pendingBackup = null;
     preview.hidden = true;
     try {
       const file = fileInput.files?.[0];
       if (!file) return;
       if (file.size > 4000000) throw new Error('Choose a backup smaller than 4 MB.');
-      pendingBackup = data.backup(JSON.parse(await file.text()));
+      const contents = await file.text();
+      if (sequence !== backupRead) return;
+      pendingBackup = data.backup(JSON.parse(contents));
       const groups = pendingBackup.favorites;
       const labels = groups.map((group) => `${group.site} · ${group.tenantId} · ${group.page} (${group.packages.length} packages)`);
       document.querySelector('#backup-summary').textContent = `${groups.length} tenant lists, ${pendingBackup.unassignedFavorites.length} retained old lists, ${pendingBackup.environments.length} source environments. ${labels.join('; ')}`;
@@ -73,10 +78,12 @@
       sourceSwitch.disabled = !pendingBackup.environments.length;
       preview.hidden = false;
       status.textContent = 'Review the tenant lists before importing. Older recovery copies will not replace current tenant lists.';
-    } catch (error) { status.textContent = error.message || 'Could not read this backup.'; }
-    finally { fileInput.value = ''; }
+    } catch (error) {
+      // Stale failures cannot replace a newer preview's guidance or its selected file.
+      if (sequence === backupRead) status.textContent = error.message || 'Could not read this backup.';
+    } finally { if (sequence === backupRead) fileInput.value = ''; }
   });
-  document.querySelector('#cancel-backup').addEventListener('click', () => { pendingBackup = null; preview.hidden = true; status.textContent = ''; });
+  document.querySelector('#cancel-backup').addEventListener('click', () => { backupRead += 1; pendingBackup = null; preview.hidden = true; status.textContent = ''; });
   importButton.addEventListener('click', async () => {
     if (!pendingBackup) return;
     const mode = document.querySelector('#backup-mode').value;
@@ -94,9 +101,9 @@
     } catch (error) { status.textContent = error.message || 'Could not import. Please try again.'; }
     finally { importButton.disabled = false; importButton.setAttribute('aria-busy', 'false'); }
   });
-  // Recheck when opening the disclosure after the active page has finished loading.
-  document.querySelector('.backup-card').addEventListener('toggle', () => {
-    if (document.querySelector('.backup-card').open) readLegacyAssignment();
+  // Recheck when opening Export after the active page has finished loading, without polling.
+  document.addEventListener('settings-task-changed', event => {
+    if (event.detail?.task === 'export') readLegacyAssignment();
   });
   readLegacyAssignment();
 })();

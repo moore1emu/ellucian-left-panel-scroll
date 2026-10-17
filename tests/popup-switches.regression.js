@@ -52,9 +52,9 @@ function installChromeStub() {
 }
 
 const SWITCHES = [
-  { id: "remember-width", key: "rememberWidth", label: "Remember Resized Width", status: "package-artifacts-status" },
-  { id: "favorites-enabled", key: "favoritesEnabled", label: "Pinned Packages", status: "package-artifacts-status" },
-  { id: "shared-version-enabled", key: "sharedVersionEnabled", label: "Shared To", status: "shared-from-status" },
+  { id: "remember-width", key: "rememberWidth", label: "Remember Resized Width", status: "navigation-status" },
+  { id: "favorites-enabled", key: "favoritesEnabled", label: "Pinned Packages", status: "navigation-status" },
+  { id: "shared-version-enabled", key: "sharedVersionEnabled", label: "Shared To", status: "shared-to-status" },
   // The new opt-in must preserve the same failed-save/rapid-click guarantees.
   { id: "fitting-details-enabled", key: "fittingDetailsEnabled", label: "View Published Fitting Details", status: "fitting-details-status" },
 ];
@@ -72,6 +72,7 @@ async function openPopup(browser, savedValues) {
   await page.addInitScript(installChromeStub);
   await page.addInitScript((values) => { Object.assign(window.__store, values); }, savedValues);
   await page.goto(`${ORIGIN}/popup.html`);
+  // The Navigation task is visible initially; individual tests select other tasks when needed.
   await page.waitForFunction(() => !document.querySelector("#remember-width").disabled);
   return { page, errors };
 }
@@ -105,6 +106,7 @@ async function expectMatches(page, item, expected, step) {
   try {
     for (const item of SWITCHES) {
       const { page, errors } = await openPopup(browser, { [item.key]: false });
+      if (item.id === 'shared-version-enabled') await page.getByRole('tab', { name: 'Sharing', exact: true }).click();
       // Keep the new label and help compact in the actual 360px settings layout.
       if (item.id === 'fitting-details-enabled') {
         await page.setViewportSize({ width: 360, height: 580 });

@@ -87,6 +87,10 @@
   let favoriteTenantId = '';
   let favoriteTenantUrl = '';
   let favoriteLoadSequence = 0;
+  // Protect optimistic pins from older storage notifications while this visit's writes are pending.
+  const pendingFavoritePackageSaves = new Map();
+  // Reject an older reconciliation read even when its next write batch has already finished.
+  let favoritePackageEditSequence = 0;
   let preferencesLoaded = false;
   const favoriteContextRequests = new Map();
 
@@ -1064,13 +1068,57 @@
   function persistFavoritePatch(patch) {
     const scope = getFavoriteScope();
     if (!favoritesLoaded || !scope || activeFavoritesStorageKey !== FavoritesData.key(scope)) return;
+    const storageKey = FavoritesData.key(scope);
+    const visit = favoriteLoadSequence;
+    let pending = pendingFavoritePackageSaves.get(storageKey);
+    // Track package edits separately; disclosure and height writes cannot rewind pending pins.
+    const packagesChanged = Object.hasOwn(patch, 'packages');
+    if (packagesChanged) {
+      favoritePackageEditSequence += 1;
+      if (!pending || pending.visit !== visit) {
+        pending = { visit, count: 0, failed: false };
+        pendingFavoritePackageSaves.set(storageKey, pending);
+      }
+      pending.count += 1;
+    }
     try {
       chrome.runtime.sendMessage({ type: 'favorites-save', scope, ...patch }, (result) => {
         try {
-          if (chrome.runtime.lastError || result?.ok !== true) {
-            console.warn('Integration Navigator: favorites could not be saved. Reopen settings and retry.');
-            loadFavoritesForCurrentPage();
+          const failed = Boolean(chrome.runtime.lastError) || result?.ok !== true;
+          if (packagesChanged) { pending.count -= 1; pending.failed ||= failed; }
+          // Ignore callbacks belonging to an earlier tenant/page visit, even after returning to its key.
+          if (visit !== favoriteLoadSequence || getFavoriteScopeKey() !== storageKey) {
+            if (packagesChanged && !pending.count && pendingFavoritePackageSaves.get(storageKey) === pending) pendingFavoritePackageSaves.delete(storageKey);
+            return;
           }
+          if (failed) {
+            console.warn('Integration Navigator: favorites could not be saved. Reopen settings and retry.');
+          }
+          // Reconcile only after all queued pin snapshots settle, including an earlier failed write.
+          const outstanding = pendingFavoritePackageSaves.get(storageKey);
+          if (failed && outstanding?.visit === visit) outstanding.failed = true;
+          if (outstanding?.visit === visit && outstanding.count) return;
+          if (packagesChanged && outstanding === pending) pendingFavoritePackageSaves.delete(storageKey);
+          // Failed batches keep the existing locked recovery path; successful saves leave stars usable.
+          if (failed || (packagesChanged && pending.failed)) { loadFavoritesForCurrentPage(); return; }
+          if (!packagesChanged) return;
+          const editSequence = favoritePackageEditSequence;
+          chrome.storage.local.get({ [FAVORITES_BY_HOST_KEY]: {} }, settings => {
+            try {
+              // Consume API failures even for stale callbacks, without disturbing a newer visit.
+              const lastError = chrome.runtime.lastError;
+              // A new edit or destination visit makes this confirmed snapshot too old to apply.
+              if (visit !== favoriteLoadSequence || getFavoriteScopeKey() !== storageKey || editSequence !== favoritePackageEditSequence || pendingFavoritePackageSaves.get(storageKey)?.count) return;
+              // A failed/missing read is not an empty list, and must never replace visible pins.
+              const packages = settings?.[FAVORITES_BY_HOST_KEY]?.[storageKey];
+              if (lastError || !Array.isArray(packages)) {
+                console.warn('Integration Navigator: favorites could not be verified. Refresh this page to retry.');
+                return;
+              }
+              loadFavoriteState(packages);
+              refreshFavoritesUI();
+            } catch (_error) { stopDisconnectedOwnership(); }
+          });
         } catch (_error) { stopDisconnectedOwnership(); }
       });
     } catch (_error) { stopDisconnectedOwnership(); }
@@ -2882,12 +2930,15 @@
     pipelines.slice(0, 10000).forEach((entry) => {
       const pipeline = { name: normalizeText(entry?.name), version: normalizeText(entry?.version), type: getPackageArtifactType(entry?.type) };
       if (!pipeline.type || !pipeline.name || !/^v?\d+\.\d+\.\d+$/u.test(pipeline.version)) return;
-      const identity = `${pipeline.name}\u0000${pipeline.type}`;
+      // Keep: mirror MAIN capture's per-major Sub-Pipelines without changing latest-overall APIs (2.1.2).
+      const major = pipeline.type === 'Sub-Pipeline' ? pipeline.version.replace(/^v/u, '').split('.')[0] : '';
+      const identity = JSON.stringify([pipeline.name, pipeline.type, major]);
       const previous = latest.get(identity);
       // Numeric version ordering handles patch/minor numbers above nine correctly.
       if (!previous || comparePipelineVersionsDescending(pipeline, previous) < 0) latest.set(identity, pipeline);
     });
-    return Array.from(latest.values()).sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }));
+    // Keep same-name published majors together in numeric ascending order.
+    return Array.from(latest.values()).sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }) || comparePipelineVersionsDescending(second, first));
   }
 
   // Restore placeholders and remove only extension-owned records on package or route changes.
@@ -3782,6 +3833,8 @@
           packages: Array.isArray(event.data.packages) ? event.data.packages.slice(0, 10001).map((entry) => ({
             name: normalizeText(entry?.name),
             pipelines: Array.isArray(entry?.pipelines) ? entry.pipelines.slice(0, 10001).map(normalizeText) : null,
+            // Preserve only transformer names, with the same bounded validation as pipeline ownership.
+            ...(entry?.transformFunctions !== undefined ? { transformFunctions: Array.isArray(entry.transformFunctions) ? entry.transformFunctions.slice(0, 10001).map(normalizeText) : null } : {}),
           })) : null }, (result) => {
           // Ignore a late callback after opt-out, navigation, or a replacement request.
           if (ownershipRequest !== requestId) return;
@@ -4018,7 +4071,9 @@
 
     // Synchronize changes made by another tab in the same environment.
     if (changes[FAVORITES_BY_HOST_KEY]) {
-      if (favoritesLoaded) loadFavoriteState(changes[FAVORITES_BY_HOST_KEY].newValue?.[getFavoriteScopeKey()]);
+      const pending = pendingFavoritePackageSaves.get(getFavoriteScopeKey());
+      // Preserve later local clicks until the last queued snapshot has been durably acknowledged.
+      if (favoritesLoaded && !(pending?.visit === favoriteLoadSequence && pending.count)) loadFavoriteState(changes[FAVORITES_BY_HOST_KEY].newValue?.[getFavoriteScopeKey()]);
       refreshFavoritesUI();
     }
 

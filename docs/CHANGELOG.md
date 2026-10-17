@@ -2,6 +2,146 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.1.9 — 2026-10-16 — Submission Preparation and Compatibility
+
+- Adds CHROMEWEBSTORE.md with draft public listing text, permission explanations, privacy/readiness checks, and separately labeled reviewer instructions. Shift+D stays out of public listing copy; GitHub documentation and reviewer notes disclose its temporary filter option. No store/dashboard action is performed.
+- Declares Chrome 106 as the API-derived minimum for original-document export messaging; historical Chrome 106 runtime testing is not claimed. Adds an explicit extension-page policy allowing packaged scripts while blocking embedded objects and base-URL changes. Existing images, styles, page services, and blob downloads retain their behavior; permissions and export eligibility are unchanged.
+- Adds metadata checks and installed-browser enforcement tests for blocked inline scripts, objects, and base-URL changes alongside the real export flow. Keeps the two-item What's New overview about the major v2 features since v1. No new tools/dependencies, remote-debugging setup, authentication access, or pipeline changes.
+
+## 2.1.8 — 2026-10-16 — v2 Release Overview
+
+- Changes the current What's New message to the big-ticket improvements since v1: redesigned task-tab settings and published Pipeline/Sub-Pipeline/API/Transformer ZIP export with optional readable formatting. Unpublished candidate tweaks stay in this changelog rather than replacing the release overview.
+- Keeps version gating, dismissal/reload behavior, favorites, settings, consent, export eligibility, and actual download behavior unchanged. Tests cover upgrades from v1 and the prior v2 candidate, the real popup's two-item overview, and dismissal preservation. Main/store unchanged.
+
+## 2.1.7 — 2026-10-16 — Settings Tab Hover Spacing
+
+- Gives each settings tab enough width for its full label rather than forcing equal widths. Appearance/Sites hover backgrounds no longer crowd neighboring text, including bold selected labels. Font size, popup width, task layout, and saved behavior are unchanged.
+- Adds light/dark browser checks for label containment, hover across every tab, one-line labels, and popup bounds. No permissions, storage, favorites, sources, or export changes; main/store unchanged.
+
+## 2.1.6 — 2026-10-16 — Targeted Reliability Repairs
+
+- Protects rapid same-page favorite edits from older storage notifications while package saves are queued. Reconciles confirmed package state without merging intentionally removed pins or changing tenant/page scope; old-visit callbacks cannot restore another visit's state. This does not recover previously lost pins or introduce multi-tab conflict merging.
+- Failed opening settings reads keep preferences locked with retry guidance instead of applying speculative defaults. Both search selectors now lock during their independent saves, restore the last confirmed value on failure, and show separate failure feedback.
+- Cancelled/replaced backup-file reads cannot revive stale import previews, overwrite a newer status, or clear a newer file selection. Restore still requires explicit confirmation.
+- Normal Pipeline/API JSON must contain a valid exact selected source version. The deliberate Sub-Pipeline null/omitted-version and major-route behavior is unchanged; transformer handling remains separate.
+- Download Again verifies the original bound document/context before reusing the complete local ZIP, with no source rereads. Stale retry/context/selection/format/cancel/refresh results cannot download or replace current output. The visible retry control does not expose a blob URL that modified/middle clicks could bypass; the initial complete ZIP still requests download with one click.
+- Removes obsolete popup disclosure/footer styles and normalizes moved HTML indentation while preserving the approved tab layout, subgroup offsets, saved-data schema, permissions, consent, six-slot scheduling, and existing authorizations. Adds targeted regressions for the review findings. Main/store unchanged; signed-in testing remains required.
+
+## 2.1.5 — 2026-10-16 — Clearer Settings Subgroups
+
+- Indented controls eight pixels beneath General, Integration Packages, Integration Designer, Icon, Favorites, Pipeline Export, and Backup & Restore headings. Headings retain their original alignment; Sharing and Sites stay unindented because they have no subgroup header. Existing export-card boundaries are preserved.
+- Kept the same text size and compact 580px popup. Normal Navigation still fits without scrolling; long notices retain overflow. No new settings, scripts, permissions, saved-data changes, or behavior changes.
+- Extended light/dark popup checks to assert each eight-pixel offset, unchanged Sharing/Sites alignment, no normal Navigation scroll, and no horizontally clipped controls. Save-race and update-summary checks remain applicable. Main/store unchanged; signed-in visual confirmation remains required.
+
+## 2.1.4 — 2026-10-16 — Compact Navigation Layout
+
+- Appearance now labels its first group Icon, with Favorites kept as the separate heading below; control behavior and saved appearance values are unchanged.
+- Removed repetitive Sharing & Sources and Custom Sites headings from their already-labeled task tabs. Kept meaningful Navigation scope groups, Icon/Favorites, and Pipeline Export/Backup & Restore subgroup titles.
+- Removed the repeated footer scope line (Integration Packages & Designer / Test & Production) and slightly reduced Navigation row/group spacing. The normal Navigation view fits without scrolling at the existing 360×580 popup size; setting text remains 13px and descriptions 12px. Version, Report Bug, and affiliation remain visible.
+- Kept the active-panel overflow behavior for update notes, consent, imports, long feedback, or larger text. No clipping or blanket scrollbar hiding. Settings, storage, consent, source refresh, export, favorites, and page-specific availability are unchanged.
+- Added light/dark assertions for no normal Navigation overflow and an immediately visible Pipeline Search control. Existing popup context/consent/keyboard/long-message checks, switch-save recovery, and update-summary rules remain covered. No main merge/store action; signed-in visual confirmation remains required.
+
+## 2.1.3 — 2026-10-16 — Task-Based Settings Tabs
+
+- Replaced stacked settings disclosures with Navigation, Sharing, Appearance, Sites, and Export tabs. Navigation groups General, Integration Packages, and Integration Designer; Sharing keeps Shared To, Shared From, current-Designer cache status, and Refresh Sources together. Existing control IDs, saved values, consent, favorites, cache formats, and export contents are unchanged; no migration.
+- Pipeline Export is grayed out outside Integration Packages; Refresh Sources is grayed out outside Integration Designer. Source-dependent actions also require consent/setup, apart from the existing separately confirmed temporary export override. Visible guidance explains availability. The popup reuses the active top-level page's existing route message for UI context only; no tab-URL permission, new service requests, polling, or saved task selection. Worker/content authorization remains unchanged; JSON backup/restore stays independent.
+- Tabs/footer remain visible within the 580px popup while active content, consent notices, and long errors scroll. Keyboard tab navigation, summary-dismissal focus, backup assignment/import, failed-save recovery, and hidden Shift+D behavior are adapted to tabs without rebuilding controls or retaining advanced consent.
+- Updated synthetic popup, installed exporter/favorites, switch-save, and summary regressions for the real tab layout, context/connection gates, themes, long feedback, consent/cancellation, and independent backups. Signed-in confirmation remains required. No main merge or store update.
+
+## 2.1.2 — 2026-10-16 — Display Every Published Sub-Pipeline Major
+
+- Integration Packages' optional reference table now shows the newest published minor/patch within every Sub-Pipeline major, rather than only the newest major overall. Both early native-response capture and isolated display normalization preserve the independent majors; same-name rows sort numerically by version.
+- APIs deliberately retain latest-overall display. Native Integration rows/links, the left sidebar, export selection, Shared From eligibility, favorites, and cache formats are unchanged. Existing memory bounds, opt-out clearing, and name-only reference tooltips remain; no extra requests, permissions, or storage writes.
+- Added a synthetic browser regression covering unsorted v1/v2/v3 releases, duplicate entries, numeric minor ordering, both JSON/text native responses before filtering, mixed/empty tables, unchanged API/native behavior, opt-out, and zero extra reads/writes. Reload the unpacked extension and refresh Integration Packages to capture its normal metadata again. Signed-in confirmation remains required; main/store unchanged.
+
+## 2.1.1 — 2026-10-16 — Reuse Saved Environment Names
+
+- ZIP filenames and Formatted package READMEs now use the saved Shared From environment name for the exact verified current tenant ID. Missing, blank, oversized, or malformed names retain the tenant-ID fallback; another tenant's snapshot or page-supplied name cannot override it.
+- Removed the export-only tenant-name service lookup. Signed-in read-only inspection confirmed Packages does not export Designer's JR helper; the earlier synthetic fixture incorrectly supplied it. Existing Designer sharing/source helpers remain unchanged. No additional lookup, URL/path guessing, cache migration, or favorite write.
+- Updated native/browser regressions to model Packages without the unavailable helper and verify exact cached name selection, wrong-tenant/malformed-name fallbacks, page-name rejection, and environment-named ZIP downloads. Formatted/raw output, one-click download, context/consent/entry guards, six-request limits, and all-or-nothing behavior are unchanged. Main/store unchanged; signed-in confirmation remains required.
+
+## 2.1.0 — 2026-10-16 — Environment Names and Optional Formatted Export
+
+- Export ZIP filenames include the resolved current tenant name, for example integration-navigator-uncproductions.zip. The existing tenant-details helper runs under the combined six-request budget; missing names fall back to the verified tenant ID, never a guessed domain/path. The display name is bounded metadata, not authorization, and tenant/context checks remain unchanged.
+- Added an unchecked-by-default Formatted option on the export page. Unchecked preserves the previous package/file layout and source serialization. Checked writes Package/Source and Package/Formatted plus one Package/README.md listing only selected names, types, majors, and package-reported published versions/environment. Changing the option invalidates Download Again; no setting or preference is saved.
+- Matched the owner-confirmed auto-sync reference's whitespace-review behavior: expand escaped CR/LF/tab while preserving literal escaped backslash pairs, quotes, and Unicode. Source JSON remains valid and JavaScript response text stays unchanged; Formatted is review-only, not for import or execution. README versions do not imply exact Sub-Pipeline/transformer source-version verification. No audit/user lookups or source execution.
+- Both layouts retain one source read per selected entry, all-or-nothing output, one-click download, six native slots, consent/context/entry guards, and unchanged favorites/cache. Existing 10,000 physical ZIP-file and 64 MB payload limits include generated copies and READMEs; excessive formatted file counts fail before source reads. ZIP paths permit only fixed Source/Formatted children and package README files, with existing containment/collision checks.
+- Added synthetic coverage for raw/Source byte equivalence, readable whitespace/literal escapes, inert README labels, multiple majors/types, environment-name/fallback/context behavior, opt-in/retry invalidation, real browser ZIP downloads, and size/path limits. Signed-in confirmation remains required; no main merge, store update, or auto-sync modification. Version rolls from 2.0.9 to 2.1.0 under the agreed convention.
+
+## 2.0.9 — 2026-10-16 — Package Counts and One-Click ZIP
+
+- Package headings now show selected counts by type beside their existing selected/total count, for example 2 of 2 selected (Pipelines: 1, APIs: 1). Counts update with individual, package, and Select All choices; zero-selected types are omitted. The expanded list stays unchanged, and long summaries can wrap rather than overflow.
+- Download ZIP now builds the complete archive and automatically requests its browser download with one click. Download Again is available afterward for the same prepared ZIP without more source requests; changing selection, refreshing, cancelling, or losing eligibility invalidates that retry link. Browser download preferences and any save prompt still apply.
+- Failed/cancelled/context-invalid exports never start a partial download. Cancellation feedback does not claim that previously completed browser downloads were removed. No new permissions, storage, service endpoints, authentication changes, Git push integration, or favorite/cache migrations.
+- Tests cover package-level counts for every type, omitted zero types, live selection updates, actual browser download events and byte-identical ZIP streams, repeated downloads without source reads, and no download after source failure. Existing major-version selection, six-request limits, consent/context guards, and all-or-nothing assembly remain unchanged. Signed-in confirmation remains required; main/store unchanged.
+
+## 2.0.8 — 2026-10-16 — Export Each Published Major
+
+- Pipeline and Sub-Pipeline export selection now retains the latest published minor/patch within every available major, rather than dropping older majors. Each major has its own checkbox and version row; for example, 1.0.4 and 2.0.5 can both be selected. APIs and transformers retain latest-overall selection.
+- Pipeline/Sub-Pipeline ZIP filenames always include a stable major suffix, such as Name_v1.json and Name_v2.json, so files cannot overwrite one another. Pipeline requests still use their exact selected full version; Sub-Pipeline requests still use their selected numeric major and preserve null/omitted source versions. No source JSON is relabeled.
+- The top preview summary now shows selected Pipeline, Sub-Pipeline, API, and Transformer counts alongside package/file counts. Counts update with individual, package, and Select All changes; each retained major counts separately.
+- Synthetic coverage checks numeric major ordering, newest-within-major deduplication, the existing file cap across majors, independent same-name checkboxes, live type counts, correct native routes, and distinct ZIP entries/content. Existing ownership, consent, six-request, context, cancellation, favorites, and transformer safeguards remain unchanged. Signed-in confirmation remains required; no main merge or store update.
+
+## 2.0.7 — 2026-10-16 — Published Transformer Export
+
+- Shared From now records published transform-function names separately under their Designer package/environment, with no source-code collection or extra lookup. Draft-only names and same-named pipelines cannot authorize transformer exports. Existing caches/backups/favorites stay valid; refresh each source Designer to add transformer observations.
+- Export preview includes eligible published transformers with a Transformer type and independent checkboxes. Download ZIP retrieves their current published JavaScript using the fixed Packages transformFunction/latest route, matching auto-sync. Package metadata supplies the displayed version; JavaScript has no independently verified exact source version. Files use .js beside package pipeline JSON, preserving the native response text without execution or JSON wrapping.
+- The approved reader reuses Packages' existing HTTP client and passes the native authentication configuration untouched, in the MAIN world only. No token/header inspection, direct session-callback invocation, arbitrary URL/method, new permission, permanent override, favorite migration, or source-code storage is introduced. The shared six-request budget, tenant/document/consent checks, cancellation, and all-or-nothing ZIP remain.
+- JSON backup/restore preserves optional transformer-name lists with the same validation, consent, timestamps, and total-cache limits. Tests cover typed ownership/legacy-cache exclusion, malformed source/HTML/status rejection, context changes before GET, JavaScript ZIP text, Designer capture, and backup round trips. One owner-approved read verified a JavaScript response without logging its code or credentials; the integrated signed-in ZIP still needs owner confirmation. Main/store remain unchanged.
+
+## 2.0.6 — 2026-10-15 — Sub-Pipeline Major-Version Downloads
+
+- Fixes successful Sub-Pipeline reads being rejected because the service returns version:null. Sub-Pipelines resolve to the current source within the package-reported major version, allowing compatible updates without republishing parent pipelines. Preview metadata retains the package-reported full version; downloaded JSON is not relabeled with it.
+- Accepts null/omitted source versions for Sub-Pipelines. If a source version is supplied, it must be valid and match the requested major; compatible minor/patch differences are allowed. Normal Pipeline/API exact-version checks, source name/type checks, native authentication, Designer filtering, six-request limits, and all-or-nothing ZIP behavior remain unchanged.
+- Adds null-version installed-browser ZIP coverage and native regressions for compatible updates, wrong major/name/type, malformed versions, unchanged package metadata, and Pipeline/API mismatches. Signed-in inspection confirmed two successful major-route responses with version:null; the repaired download still needs owner confirmation. No auto-sync scripts, favorites, cache format, permissions, main branch, or store state changed.
+
+## 2.0.5 — 2026-10-15 — Export Selection and Session Recovery
+
+- Replaces the export preview's flat Show More list and single-package selector with collapsible packages and package/pipeline checkboxes. All package headings are listed immediately; expanding a package reveals every eligible pipeline. Select All, partial-selection indicators, and live counts make the selection explicit.
+- Only checked records are downloaded. Keeps a successful preview for another selection/download and discards the old Save ZIP link when selection changes. Preview remains metadata-only.
+- Preserves claimed export document grants in memory-only storage.session through ordinary background-worker sleep. Stores only bounded routing/document identifiers, source URL, client/generation identifiers, extension version, and temporary advanced consent—not pipeline contents, credentials, favorites, or a permanent override. Tab close removes its record; extension reload/update/disable and browser restart clear session storage. Original-document, consent, exact-version, and six-request guards remain; unavailable storage fails safely without native work or permanent-storage fallback.
+- Carries the v1.22.7 Packages tenant-context favorites fix and v1.22.8 published-fitting existing-draft fix into v2 with direct-reload, isolation, real-Ace copying, and edit-protection regressions. No favorite reset/migration or new permission is introduced.
+- Adds synthetic checkbox/ZIP selection and cold-worker rehydration/fault checks. Settings regrouping and the optional compatibility warning remain deferred. Signed-in export validation is still required; automated tests use no institution data.
+
+## 2.0.4 — 2026-10-15 — Exporter Message Routing
+
+- Fixes the empty Packages export preview caused by requiring sender.tab on a message route where Chrome omits it. The background worker now authenticates the launched export document and relays only preview, verify, read, and cancel to the original top-level Packages document.
+- A nonce-bound source handshake captures browser-provided tab/document identity before opening export. One-use launch claims bind the created export document; caller-supplied targets, client IDs, and override flags cannot replace the worker's recorded values. The isolated receiver rejects the old direct route. Reloaded/replayed/closed/restarted contexts fail safely without retargeting a replacement document.
+- Cancellation revokes late responses and explicitly cancelled advanced consent. Registering pending previews before storage reads prevents immediate cancellation from starting metadata work afterward; an old response cannot cancel a newer preview.
+- Adds an installed-extension disposable-browser regression covering Experience-to-Packages SPA entry, actual settings/worker/isolated/MAIN messaging, metadata-only default preview, latest Integration/API/Sub-Pipeline ZIPs, supplier exclusion, advanced confirmation/revocation, ticket replay, and source reload. Worker/boundary/native/UI tests use realistic sender envelopes and test rejected routing fields; cleanup checks include the new profile.
+- No new permissions, credential reads, favorite/source-cache changes, settings regrouping, or changes to native readers/six-request limits. The next-opening update summary describes this fix. Signed-in institution export testing is still required; main/store remain unchanged.
+
+## 2.0.3 — 2026-10-15 — Test Workspace Cleanup
+
+- Browser fixtures now create persistent profiles in the system temporary folder and remove their own profiles in finally blocks, including failed launches/assertions/browser shutdowns. Cleanup validates the owned temp path, retries transient Windows file locks, and reports removal failures instead of silently leaving test data behind.
+- Covers tenant-favorites-browser.cjs, published-fitting-details.cjs, and local designer-ownership-worker-browser.cjs, package-capture-worker-browser.cjs, and probe-message-sender.cjs. Adds browser-profile-cleanup.cjs for launch/assertion/close/removal failure regressions. The local source-worker fixture uses the supported synthetic Designer route; assertions remain unchanged.
+- Local cache-appearance.cjs, package-artifacts.cjs, page-behavior.cjs, pipeline-column.cjs, search-sharing-browser.cjs, shared-from.cjs, sharing-controls.cjs, and ui-consistency.cjs save screenshots only to an explicitly configured artifact directory. Local Playwright paths are configurable. Release staging also uses owned system-temp storage with finally cleanup.
+- Removes verified inactive disposable profiles and one synthetic export ZIP; retains historical screenshots and release/review recovery snapshots. Five real-browser profile fixtures and 20 failure scenarios passed. Seven older local UI fixtures still fail against v2; no full legacy-suite pass is claimed.
+- Extension behavior, favorites, source data, permissions, and settings layout are unchanged. The reported empty exporter preview remains unresolved; this maintenance candidate does not fix it. Main/store remain unchanged.
+
+## 2.0.2 — 2026-10-14 — Packages Export Test Candidate
+
+- Both default and temporary advanced exports now start from Integration Packages. Default eligibility requires Shared From consent and exact Designer-recorded package/pipeline names; Shift+D reveals a separately confirmed, unsaved override of that filter only.
+- Preview reads latest package metadata, including APIs/Sub-Pipelines omitted from native runnable lists. Select all eligible packages or one package, then explicitly retrieve latest published JSON and save a package-folder ZIP. No background source downloads or changes to favorites, cache format, permissions, or published artifacts.
+- Native requests share a six-job budget with sharing lookups. Timeout/cancellation retains occupied capacity until the native calls settle. Context, entry, identity, and version guards stop failures without a partial ZIP; Sub-Pipelines without a verifiable exact version fail safely. JSON may be reformatted, and downloaded source can contain confidential embedded values.
+- Synthetic native flow tests cover 120 eligible packages plus an excluded supplier package, all artifact types, opaque authentication configuration, exact filtering, override, tenant switches, version failures, and stalled capacity. Browser checks cover explicit ZIP assembly, selection, pagination, cancellation/late replies, opt-out, both themes, and existing settings/favorites. Signed-in download testing is pending. Main and store remain unchanged; this is a manual-test candidate, not an approved release.
+
+## 2.0.1 — 2026-10-14 — Dedicated Export Preview
+
+- Adds a separate extension export tab, explicitly opened from settings, with Designer metadata preview, counts, Show More, working indicator, Cancel, and Refresh Preview. Preview uses the full loaded manager model rather than search/visible-row caps and does not request source JSON.
+- Requires Shared From consent and recorded exact package/pipeline relationships by default. Adds a separately confirmed, temporary Shift+D advanced preview override and one-use, in-memory launch tickets bound to the original source tab and created extension tab. No saved override or new permissions.
+- Adds a tested, offline six-reader collection runner with before/after context checks, cancellation, formatted JSON, size limits, and all-or-nothing failure handling. Authenticated adapters are unfinished: Download ZIP stays disabled and Integration Packages export is not connected yet.
+- Tests cover 120×120 package/pipeline metadata projection, 120-record collection, bounded requests, sender/route checks, expired/replayed launch tickets, preview pagination, cancellation/late replies, opt-out, both themes, advanced consent, and preference preservation. No live downloads or signed-in account tests claimed. Main, outputs, and store remain unchanged.
+
+## 2.0.0 — 2026-10-14 — Development Checkpoint
+
+- Starts v2 on develop; main and the packaged 1.22.6 release remain unchanged. This is source-only development, not a store-ready release.
+- Regroups settings into Navigation, Integration Packages, Integration Designer, Icon & Favorites, Custom Sites, and Export & Backup. Preserves existing preference keys, source consent, refresh, JSON backups/imports, and favorite records. Save errors stay beside the controls they describe.
+- Adds a small, dismissible What's New card on the next settings opening after a version update. Dismissal remembers only that version; no automatic tabs, polling, or changes to favorites/source data. Failed saves allow retry.
+- Adds offline exporter planning: exact cached package/pipeline ownership by default, latest stable published version per name/type, API/Sub-Pipeline handling, safe folder names, and local uncompressed ZIP generation with unchanged source bytes. Uses no credentials, service requests, or extra permissions.
+- The ZIP download action remains disabled. Authenticated download wiring, preview/confirmation/progress/cancel, final partial-failure behavior, and the advanced temporary override are still pending. Stable semantic versions only and a 64 MB/10,000-file draft limit are explicit development limitations, not a claim of complete export support.
+- Pure exporter/update tests and synthetic light/dark popup checks cover filtering, version selection, 120-package/pipeline metadata, ZIP interoperability, one-line layout, failed dismissal/reload, and preference preservation. No live downloads or signed-in account tests are claimed.
+
 ## 1.22.6 — 2026-10-13
 
 - Removes the blanket grey dimming while **View Published Fitting Details** is enabled, so published fitting text/code is easier to read. Native disabled action styling and all read-only protections remain.

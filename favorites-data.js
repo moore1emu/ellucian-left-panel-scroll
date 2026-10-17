@@ -66,10 +66,14 @@ globalThis.FavoritesData = (() => {
       if (!text(entry.environmentId) || !text(entry.environment) || !Number.isFinite(checkedAt) || checkedAt <= 0 || checkedAt > Date.now() + 60000 || !Array.isArray(entry.packages) || entry.packages.length > 10000) throw new Error('Invalid source snapshot.');
       const packages = entry.packages.map((group) => {
         if (!Array.isArray(group?.pipelines) || (group.packageNameRecorded !== false && !text(group.name))) throw new Error('Invalid source package.');
-        count += group.pipelines.length;
-        if (count > 10000 || group.pipelines.some((name) => !text(name))) throw new Error('Invalid or oversized source names.');
+        // Missing transformer names in older backups are not inferred from pipeline or package names.
+        if (group.transformFunctions !== undefined && !Array.isArray(group.transformFunctions)) throw new Error('Invalid source transformers.');
+        const transforms = group.transformFunctions || [];
+        count += group.pipelines.length + transforms.length;
+        if (count > 10000 || group.pipelines.some((name) => !text(name)) || transforms.some((name) => !text(name))) throw new Error('Invalid or oversized source names.');
         return { name: group.packageNameRecorded === false ? 'Package Not Yet Recorded' : text(group.name),
-          ...(group.packageNameRecorded === false ? { packageNameRecorded: false } : {}), pipelines: [...new Set(group.pipelines.map(text))] };
+          ...(group.packageNameRecorded === false ? { packageNameRecorded: false } : {}), pipelines: [...new Set(group.pipelines.map(text))],
+          ...(transforms.length ? { transformFunctions: [...new Set(transforms.map(text))] } : {}) };
       });
       return { environmentId: text(entry.environmentId), environment: text(entry.environment), lastCheckedAt: new Date(checkedAt).toISOString(), packages };
     });
@@ -121,7 +125,9 @@ globalThis.FavoritesData = (() => {
     });
     const environments = Object.entries(settings.designerOwnershipCache || {}).map(([environmentId, entry]) => ({ environmentId, environment: entry.environment,
       lastCheckedAt: new Date(entry.checkedAt).toISOString(), packages: entry.packages.map((group) => group.name === null
-        ? { name: 'Package Not Yet Recorded', packageNameRecorded: false, pipelines: group.pipelines } : group) }));
+        ? { name: 'Package Not Yet Recorded', packageNameRecorded: false, pipelines: group.pipelines,
+          // Preserve optional observations without inventing package ownership for legacy groups.
+          ...(group.transformFunctions?.length ? { transformFunctions: group.transformFunctions } : {}) } : group) }));
     return { ...backup({ format: 'integration-navigator-backup', schemaVersion: 1, favorites, unassignedFavorites, assignments, environments }), extensionVersion: version, exportedAt: new Date().toISOString() };
   }
   return Object.freeze({ KEY, LEGACY, EXPANDED, HEIGHTS, ASSIGNED, defaults, scope, key, fromKey, legacyKey, items, merge, backup, exportData });
