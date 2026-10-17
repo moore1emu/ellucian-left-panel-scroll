@@ -1,6 +1,6 @@
 # Git Export — V3 Test Candidate
 
-Version 3.0.2 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.0.3 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
 
 Published versions come from the selected package metadata. Pipeline/API downloads request the exact full version; Sub-Pipelines request its major. Downloaded JSON may omit or null its version, which is preserved unchanged; an explicit conflicting version is rejected. Package-reported versions are not independently certified from missing source fields. Git Connection's Return to Export button focuses an existing export without reloading its selection; if no export is open, start one from Integration Packages settings.
 

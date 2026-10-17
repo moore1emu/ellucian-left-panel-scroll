@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Keep this placement-only revision distinct from the preceding compatibility release.
+    "3.0.3": Object.freeze([
+      "Return to Export now sits beside the Git connection action buttons.",
+      "Your export selection and saved connection behavior are unchanged.",
+    ]),
     // Explain the compatibility repair without implying a completed live Git upload.
     "3.0.2": Object.freeze([
       "Published exports use package versions even when downloaded JSON omits its version, matching auto-sync.",

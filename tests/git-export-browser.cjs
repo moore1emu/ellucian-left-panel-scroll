@@ -142,6 +142,8 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await exported.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
       // A popup-opened connection can return to the sole export without changing its document or selection.
       const beforeReturn = exported.url();
+      // Keep Return to Export beside the repository controls, not above the form.
+      assert.equal(await connection.locator('.actions #git-return-export').count(), 1);
       await connection.locator('#git-return-export').click();
       assert.equal(await connection.locator('#git-return-status').innerText(), '');
       assert.equal(exported.url(), beforeReturn);

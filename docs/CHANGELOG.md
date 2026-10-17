@@ -1,5 +1,9 @@
 # Update history
 
+## 3.0.3 — October 17, 2026
+
+- Move Return to Export into the connection action row beside Allow Server Access, Test Connection, and Forget Connection. Move its separate status below that row. Navigation, credential controls, permissions, and export behavior are unchanged.
+
 ## 3.0.2 — October 17, 2026
 
 - Match the owner's confirmed read-only auto-sync reference: Pipeline/API versions come from package metadata and exact full-version requests. Accept missing/null source version fields without injecting them into source JSON; reject supplied conflicting/malformed versions. Sub-Pipeline major routing, type/name/context/consent checks, and six slots remain unchanged. Applies equally to ZIP and Git preparation.
