@@ -2,7 +2,6 @@
   'use strict';
 
   // Bound provider traffic independently of the existing 64 MB local ZIP budget.
-  const MAX_FILES = 500;
   const MAX_BODY = 8 * 1024 * 1024;
   const SHA = /^[a-f\d]{40}$/u;
   const encoder = new TextEncoder();
@@ -138,7 +137,8 @@
   // Compare only generated artifact files inside the chosen folder, preserving everything else.
   async function preview(destination, files, token, options) {
     const connection = client(destination, token, options);
-    if (!Array.isArray(files) || !files.length || files.length > MAX_FILES) fail('Git supports 1–500 generated files per push. Choose a smaller selection if formatted.');
+    // The source collector owns its existing record bounds; Git applies byte limits, not an extra file-count cap.
+    if (!Array.isArray(files) || !files.length) fail('Select at least one file for Git export.');
     const seen = new Set(); const local = [];
     for (const file of files) {
       if (!(file.bytes instanceof Uint8Array) || !/^[^\u0000-\u001f<>:"/\\|?*]+\/(?:(?:(?:Source|Formatted)\/)?[^\u0000-\u001f<>:"/\\|?*]+\.(?:json|js)|README\.md)$/u.test(file.path) || file.path.split('/').some(x => x === '.' || x === '..' || /^(?:\.git|\.github|\.gitlab)$/iu.test(x))) fail('Invalid Git export file.');
@@ -185,7 +185,6 @@
       : (await request('/repository/branches/' + part(c.branch))).commit?.id;
     if (await currentHead() !== plan.head) fail('Remote branch changed. Prepare and confirm a new Git preview.');
     if (!plan.changes.length) return { commit: null, count: 0 };
-    if (plan.changes.length > MAX_FILES) fail('Too many Git changes.');
     // Describe only files that changed; unchanged selections must not appear as updates.
     const added = plan.changes.filter(file => file.action === 'create');
     const updated = plan.changes.filter(file => file.action === 'update');
@@ -205,7 +204,9 @@
         if (!SHA.test(tree.sha || '')) fail('Git tree verification failed.');
         // Read the immutable generated tree and compare every raw blob identity before creating its commit.
         const verified = await request('/git/trees/' + tree.sha + '?recursive=1');
-        if (verified.truncated || !Array.isArray(verified.tree) || verified.tree.length > 50500) fail('Git tree verification failed.');
+        // Allow the actual new files and ancestor folders, rather than retaining the removed 500-file allowance.
+        const maxVerifiedEntries = 50000 + plan.changes.reduce((count, file) => count + file.path.split('/').length, 0);
+        if (verified.truncated || !Array.isArray(verified.tree) || verified.tree.length > maxVerifiedEntries) fail('Git tree verification failed.');
         const identities = new Map(verified.tree.map(entry => [entry.path, entry]));
         if (plan.changes.some(file => identities.get(file.path)?.sha !== file.sha || identities.get(file.path)?.mode !== '100644')) fail('Git blob verification failed.');
         const result = await request('/git/commits', 'POST', { message: marker, tree: tree.sha, parents: [plan.head] });
@@ -247,5 +248,5 @@
     if (!SHA.test(sha || '')) fail('Invalid commit.');
     return c.server + '/' + c.repository.split('/').map(part).join('/') + (c.provider === 'github' ? '/commit/' : '/-/commit/') + sha;
   }
-  globalThis.GitProvider = Object.freeze({ config, origin, preview, push, commitUrl, blobSha, MAX_FILES, MAX_BODY });
+  globalThis.GitProvider = Object.freeze({ config, origin, preview, push, commitUrl, blobSha, MAX_BODY });
 })();

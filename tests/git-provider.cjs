@@ -53,7 +53,7 @@ function service(provider, flags = {}) {
     assert.equal(options.body.includes('SYNTHETIC_TOKEN'), false);
     if (route === '/git/blobs') { const actual = blob(Buffer.from(body.content, 'base64')); state.uploaded.push(actual); return response({ sha: actual }, 201); }
     if (route === '/git/trees') {
-      assert.equal(body.base_tree, tree); assert.equal(body.tree.length, 1); assert.equal(body.tree[0].path, 'DataConnect/Test/Package/A_v1.json');
+      assert.equal(body.base_tree, tree); assert.equal(body.tree.length, flags.expectedFiles || 1); assert.equal(body.tree[0].path, 'DataConnect/Test/Package/A_v1.json');
       assert.equal(body.tree[0].content, flags.expectedText || Buffer.from(files[0].bytes).toString());
       state.newTree = body.tree.map(file => ({ path: file.path, type: 'blob', mode: file.mode, sha: blob(Buffer.from(file.content)) }));
       state.uploaded.push(...state.newTree.map(file => file.sha));
@@ -69,7 +69,7 @@ function service(provider, flags = {}) {
       return response({ object: { sha: committed } });
     }
     if (route === '/repository/commits') {
-      assert.equal(body.branch, 'exports/test'); assert.equal(body.actions.length, 1);
+      assert.equal(body.branch, 'exports/test'); assert.equal(body.actions.length, flags.expectedFiles || 1);
       assert.equal(body.actions[0].action, flags.update ? 'update' : 'create');
       if (flags.update) assert.equal(body.actions[0].last_commit_id, sha('last-file-commit'));
       assert.equal(body.actions[0].file_path, 'DataConnect/Test/Package/A_v1.json');
@@ -123,7 +123,20 @@ function service(provider, flags = {}) {
   const rejected = service('github', { conflict: true }); const plan = await git.preview(destination('github'), files, 'SYNTHETIC_TOKEN', rejected);
   await assert.rejects(git.push(plan, 'SYNTHETIC_TOKEN', rejected), /rejected/); assert.equal(rejected.state.uploaded.length, 1);
   await assert.rejects(git.preview(destination('github'), files, 'SYNTHETIC_TOKEN', service('github', { truncated: true })), /too large/);
-  await assert.rejects(git.preview(destination('github'), Array.from({ length: 501 }, () => files[0]), 'SYNTHETIC_TOKEN', service('github')), /1–500/);
+  // The owner's 561-file use case passes both preview and push, including lost-response reconciliation.
+  const many = [files[0], ...Array.from({ length: 560 }, (_, i) => ({ path: `Package/Source/Artifact${i}.json`, bytes: new TextEncoder().encode('{}') }))];
+  for (const provider of ['github', 'gitlab']) {
+    const large = service(provider, { expectedFiles: 561, lost: true });
+    const largePlan = await git.preview(destination(provider), many, 'SYNTHETIC_TOKEN', large);
+    assert.equal(largePlan.changes.length, 561);
+    assert.equal((await git.push(largePlan, 'SYNTHETIC_TOKEN', large)).count, 561);
+    assert.match(large.state.message, /^Integration Navigator: 561 added, 0 updated files/u);
+    assert.equal(large.state.writes.filter(x => x.route.includes('/refs/') || x.route === '/repository/commits').length, 1);
+  }
+  // Removing the count cap must not bypass the existing pre-upload payload budget.
+  const oversized = service('github');
+  await assert.rejects(git.preview(destination('github'), [{ ...files[0], bytes: new Uint8Array(8 * 1024 * 1024) }], 'SYNTHETIC_TOKEN', oversized), /request limit/);
+  assert.equal(oversized.state.calls.length, 0);
   await assert.rejects(git.preview(destination('github'), [files[0], files[0]], 'SYNTHETIC_TOKEN', service('github')), /collide/);
   // An original JavaScript UTF-8 BOM must not be silently stripped by the inline tree text conversion.
   const withBom = { ...files[0], bytes: new TextEncoder().encode('\ufeff// Synthetic source\r\n') };

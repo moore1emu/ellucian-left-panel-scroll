@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- At 3.0.5 the owner removed the arbitrary separate 500-file Git cap, not the existing byte/timeout/source-inventory safeguards. Do not silently add a new Git file-count threshold or automatic partial commits. GitHub verification allowance derives from actual changed paths/ancestors; retain remote-tree and response-byte bounds. Provider-specific limits remain possible. Next v3 checkpoint is 3.0.6.
+
 - At 3.0.4 the owner clarified commit messages should contain concise added/updated totals only, not package/file/path lists; Git history/diffs provide those details. Count changed physical files, excluding unchanged files. Keep the unique Export-ID footer and exact-message GitLab uncertain-write check; it is random, not a tenant identifier. Do not rewrite existing commits. Next v3 checkpoint is 3.0.5.
 
 - At 3.0.3 the owner moved Return to Export into the connection action row, with its independent status below. Preserve its existing behavior and enabled state; no credential, permission, or source changes. Next v3 checkpoint is 3.0.4. Earlier checkpoints below remain historical.

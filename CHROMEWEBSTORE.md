@@ -1,8 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-17 · Candidate: 3.0.4 · Status: Git compatibility candidate, not submitted
+Updated: 2026-10-17 · Candidate: 3.0.5 · Status: Git compatibility candidate, not submitted
 
-3.0.4 preparation note: Git commit messages now summarize added/updated file counts, without package/file/path lists, and retain a random tracking footer. No new data collection, permissions, or upload destination. No live store changes made.
+3.0.5 preparation note: remove the arbitrary separate 500-file Git cap while retaining existing size, timeout, source, and provider safeguards. No new data collection, permissions, upload destination, or automatic batching. No live store changes made.
 
 This v3 branch is not ready for submission. Connection/storage/provider flows are implemented and synthetic-tested; separate live disposable-repository testing and store privacy-disclosure/asset checks remain required. The public copy below is a v3 draft, not a live listing update. Do not modify the v2 listing from this branch.
 

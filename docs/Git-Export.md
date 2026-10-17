@@ -1,6 +1,6 @@
 # Git Export — V3 Test Candidate
 
-Version 3.0.4 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.0.5 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
 
 Published versions come from the selected package metadata. Pipeline/API downloads request the exact full version; Sub-Pipelines request its major. Downloaded JSON may omit or null its version, which is preserved unchanged; an explicit conflicting version is rejected. Package-reported versions are not independently certified from missing source fields. Git Connection's Return to Export button focuses an existing export without reloading its selection; if no export is open, start one from Integration Packages settings.
 
@@ -39,7 +39,7 @@ Selection/format changes discard the comparison. Source/tenant/consent, connecti
 
 ## Limits and Failure Handling
 
-- The Git candidate supports 1–500 generated files per push and bounded requests of at most 8 MB including base64/metadata. Formatted exports generate multiple files per artifact. Larger selections must be split explicitly; the extension does not create partial commits to work around limits. Native ZIP collection retains its separate 64 MB/10,000-file limits and six request slots.
+- Git has no separate file-count cap. Requests remain bounded to 8 MB including base64/metadata; provider-specific limits may also apply. Formatted exports generate multiple files per artifact. Oversized selections must be split explicitly; the extension does not create partial commits to work around limits. Native source/ZIP collection retains its separate 64 MB/10,000-file limits and six request slots.
 - Tree reads are pinned to a commit, paginated on GitLab, and limited to 50,000 entries. Truncated GitHub trees stop safely. Unexpected folders, links, submodules, executable-file replacements, and ambiguous path collisions are rejected.
 - GitHub builds a commit parented to the compared head and uses a non-forced branch update. Uploaded Git objects may remain if later work fails. A preflight read is not a general server-side compare-and-swap lease.
 - GitLab submits one multi-action commit, using `last_commit_id` for existing files plus a final head check. This is not an atomic whole-branch lease: concurrent unrelated commits may become the parent, while changed target files/creation collisions must be rejected by the provider. There is no silent application-level rebase/retry.

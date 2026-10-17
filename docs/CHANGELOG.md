@@ -1,5 +1,9 @@
 # Update history
 
+## 3.0.5 — October 17, 2026
+
+- Remove the owner-rejected arbitrary 500-file Git preview/push cap, without replacing it with another Git-specific file-count cap. Retain request/response byte limits, timeouts, existing source-export bounds, remote-tree inventory bounds, and all permission/context/confirmation/conflict safeguards. Derive GitHub post-upload tree allowance from the actual changed paths and ancestors rather than a hardcoded 500-entry allowance. Synthetic tests cover 561 files on both providers, lost responses without replay, and oversized requests rejected before provider access. Provider-specific limits can still reject an export; no automatic partial commits or batching is introduced.
+
 ## 3.0.4 — October 17, 2026
 
 - GitHub/GitLab commit subjects show only added/updated file totals, excluding unchanged selections. Per the owner's clarification, omit package/file/path lists and leave details to Git history/diffs. Formatted/source/README files count separately. Retain the random export identifier only in an Export-ID footer for uncertain GitLab write verification without replay. Existing commits are not rewritten; preview/confirmation, source collection, credentials, and add/update-only behavior are unchanged.

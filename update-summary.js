@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Keep removal of the arbitrary Git file cap distinct from retained byte/source safeguards.
+    "3.0.5": Object.freeze([
+      "Git export no longer has a separate 500-file cap, including formatted exports.",
+      "Request-size, timeout, and existing source-export safeguards still apply.",
+    ]),
     // Describe new commit messages without implying old provider history is rewritten.
     "3.0.4": Object.freeze([
       "Git commits show concise added and updated file totals without path lists.",
