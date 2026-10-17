@@ -1,5 +1,9 @@
 # Update history
 
+## 3.0.9 — October 17, 2026
+
+- Show only the selected provider's collapsed token guide, including saved connections. Put both provider links at the top and label token-name/expiration examples explicitly. Switching providers closes the hidden guide. The folder example follows typed or loaded base-folder text without interpreting HTML or changing destination validation. Authentication, stored settings, and Git operations remain unchanged.
+
 ## 3.0.8 — October 17, 2026
 
 - Shorten base-folder help to a single layout example and remove the permanent fresh-token paragraph; keep existing empty-token Save feedback. Replace the long token-permissions paragraph with collapsed, keyboard-operable native GitHub/GitLab setup checklists and provider links. Include scoped GitHub Contents read/write steps and GitLab project-token api/role prerequisites from official documentation. Help uses native Details/Summary without nested interactive summary controls or extra scripts. Keep credential requirements, tenant routing, consent, connection actions, and provider operations unchanged.

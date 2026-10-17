@@ -7,6 +7,10 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Keep provider-specific setup concise and avoid showing irrelevant instructions.
+    "3.0.9": Object.freeze([
+      "Token help follows your selected provider, with consistent links and clear examples.",
+    ]),
     // Keep setup concise; native collapsed examples do not change authentication requirements.
     "3.0.8": Object.freeze([
       "Git setup is shorter, with collapsed GitHub and GitLab token checklists.",

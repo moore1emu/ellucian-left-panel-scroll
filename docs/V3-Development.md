@@ -1,6 +1,6 @@
 # v3 Development — Git Export
 
-Checkpoint: **3.0.8 functional Git test candidate**, not a store release. Approved saved-token options, exact-origin self-hosted GitLab, connection page, and manual preview/confirmed push are implemented with synthetic tests. Published exports now match auto-sync's package-version/full-version request behavior without requiring omitted JSON version fields; explicit conflicts still fail. Live disposable-repository push acceptance remains unverified; see [Git Export](Git-Export.md).
+Checkpoint: **3.0.9 functional Git test candidate**, not a store release. Approved saved-token options, exact-origin self-hosted GitLab, connection page, and manual preview/confirmed push are implemented with synthetic tests. Published exports now match auto-sync's package-version/full-version request behavior without requiring omitted JSON version fields; explicit conflicts still fail. Live disposable-repository push acceptance remains unverified; see [Git Export](Git-Export.md).
 
 ## Branch and Release Boundaries
 

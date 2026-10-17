@@ -90,15 +90,28 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     assert.match(await connection.locator('#git-folder-help').innerText(), /DataConnect\/<Tenant Name>\/<Package>/);
     assert.ok((await connection.locator('#git-folder-help').innerText()).length < 110);
     assert.equal(await connection.locator('#git-folder').getAttribute('aria-describedby'), 'git-folder-help');
+    // Typed folders update only the safe text example, including blank and markup-like input.
+    for (const base of ['IntegrationPackages', '<example>', '']) {
+      await connection.locator('#git-folder').fill(base);
+      assert.equal(await connection.locator('#git-folder-example').innerText(), `${base || '<Base Folder>'}/<Tenant Name>/<Package>`);
+    }
+    await connection.locator('#git-folder').fill('DataConnect');
     assert.equal(await connection.locator('#git-token-help').count(), 0, 'Fresh-token reminder belongs to Save validation, not a permanent paragraph');
     // Help starts collapsed and remains operable by keyboard without submitting the credential form.
     for (const id of ['git-github-help', 'git-gitlab-help']) {
+      const provider = id === 'git-github-help' ? 'github' : 'gitlab';
+      await connection.locator('#git-provider').selectOption(provider);
       const help = connection.locator('#' + id);
+      assert.equal(await help.isVisible(), true);
+      assert.equal(await connection.locator('#git-' + (provider === 'github' ? 'gitlab' : 'github') + '-help').isVisible(), false);
       assert.equal(await help.evaluate(element => element.open), false);
       await help.locator('summary').focus(); await connection.keyboard.press('Enter');
       assert.equal(await help.evaluate(element => element.open), true);
       assert.ok(await help.locator('li').count() >= 5);
       assert.equal(await help.locator('summary a, summary button').count(), 0);
+      assert.equal(await help.locator('p').first().locator('a').count(), 1, 'Both provider links belong at the top');
+      assert.match(await help.innerText(), /Token name: e.g. Integration Navigator Test/);
+      assert.match(await help.innerText(), /Expiration:.*7 days/);
       await help.locator('summary').press('Enter');
       assert.equal(await help.evaluate(element => element.open), false);
     }

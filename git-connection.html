@@ -22,7 +22,7 @@
         <label for="git-repository">Repository</label><input id="git-repository" required placeholder="owner/repository or group/project" autocomplete="off" spellcheck="false" />
         <div class="git-columns"><div><label for="git-branch">Existing Branch</label><input id="git-branch" required value="exports" autocomplete="off" /></div><div><label for="git-folder">Base Export Folder</label><input id="git-folder" required value="DataConnect" autocomplete="off" aria-describedby="git-folder-help" spellcheck="false" /></div></div>
         <!-- Explain automatic tenant routing beside the field rather than relying on an input placeholder. -->
-        <p id="git-folder-help">Adds the tenant and package automatically: <code>DataConnect/&lt;Tenant Name&gt;/&lt;Package&gt;</code>.</p>
+        <p id="git-folder-help">Adds the tenant and package automatically: <code id="git-folder-example">DataConnect/&lt;Tenant Name&gt;/&lt;Package&gt;</code>.</p>
         <label for="git-token">New Access Token</label><input id="git-token" type="password" required autocomplete="off" spellcheck="false" maxlength="8192" />
         <!-- Native disclosures keep provider examples available without filling the setup page with instructions. -->
         <div class="git-token-guides">
@@ -30,8 +30,8 @@
             <summary>GitHub Token Settings</summary>
             <p>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">GitHub's fine-grained token page</a>:</p>
             <ul>
-              <li><strong>Token name:</strong> Integration Navigator Test</li>
-              <li><strong>Expiration:</strong> Short, such as 7 days for testing</li>
+              <li><strong>Token name:</strong> e.g. <code>Integration Navigator Test</code></li>
+              <li><strong>Expiration:</strong> e.g. 7 days for testing; renew before it expires</li>
               <li><strong>Resource owner:</strong> Repository owner</li>
               <li><strong>Repository access:</strong> Only select repositories → choose your repository</li>
               <li><strong>Contents:</strong> Read and write</li>
@@ -39,17 +39,17 @@
             </ul>
             <p>Organization approval may be required. Generate the token and paste it into the field above.</p>
           </details>
-          <details id="git-gitlab-help">
+          <details id="git-gitlab-help" hidden>
             <summary>GitLab Token Instructions</summary>
-            <p>In your project, open <strong>Settings → Access tokens → Add new token</strong>:</p>
+            <p>Follow <a href="https://docs.gitlab.com/user/project/settings/project_access_tokens/" target="_blank" rel="noopener noreferrer">GitLab's project token guide</a>. In your project, open <strong>Settings → Access tokens → Add new token</strong>:</p>
             <ul>
-              <li><strong>Token name:</strong> Integration Navigator Test</li>
-              <li><strong>Expiration:</strong> Short, such as 7 days for testing</li>
+              <li><strong>Token name:</strong> e.g. <code>Integration Navigator Test</code></li>
+              <li><strong>Expiration:</strong> Choose a date, e.g. 7 days from today for testing</li>
               <li><strong>Role:</strong> Developer for an unprotected export branch</li>
               <li><strong>Scope:</strong> <code>api</code>, not <code>write_repository</code> alone</li>
               <li><strong>Finish:</strong> Create the token and paste it into the field above</li>
             </ul>
-            <p>Creating project tokens requires Maintainer/Owner access. GitLab.com requires Premium/Ultimate; organization policies apply. <a href="https://docs.gitlab.com/user/project/settings/project_access_tokens/" target="_blank" rel="noopener noreferrer">GitLab documentation</a></p>
+            <p>Creating project tokens requires Maintainer/Owner access. GitLab.com requires Premium/Ultimate; organization policies apply.</p>
           </details>
         </div>
         <label for="git-storage">Remember Token</label><select id="git-storage"><option value="device">Encrypted on This Device</option><option value="password">Encrypted with Password Unlock</option><option value="session">This Browser Session Only</option></select>

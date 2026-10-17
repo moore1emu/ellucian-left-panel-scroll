@@ -24,6 +24,23 @@
       : mode === 'password' ? 'Encrypted at rest; unlock once per browser session. No password is saved.' : 'Only the encrypted token survives on disk; its session key clears on restart, making the saved token unusable.';
   }
 
+  // Render typed folder text safely; this example never changes the actual destination or validates it.
+  function folderHelp() {
+    $('git-folder-example').textContent = `${$('git-folder').value || '<Base Folder>'}/<Tenant Name>/<Package>`;
+  }
+
+  // Show only the selected provider's native help, including after a saved connection loads.
+  function providerHelp() {
+    const provider = $('git-provider').value;
+    $('git-server-field').hidden = provider !== 'gitlab';
+    for (const name of ['github', 'gitlab']) {
+      const help = $('git-' + name + '-help');
+      help.hidden = provider !== name;
+      // Keep: switching providers starts the newly relevant guide collapsed (3.0.9).
+      if (help.hidden) help.open = false;
+    }
+  }
+
   // Render only our own constructed commit links and plain text metadata; never provider HTML.
   async function history() {
     $('git-history').replaceChildren();
@@ -47,14 +64,16 @@
       for (const key of ['provider', 'server', 'repository', 'branch', 'folder']) $('git-' + key).value = c[key];
       $('git-storage').value = saved.mode; $('git-history-enabled').checked = saved.history;
     }
-    $('git-server-field').hidden = $('git-provider').value !== 'gitlab';
+    providerHelp(); folderHelp();
     $('git-unlock-form').hidden = saved?.mode !== 'password';
     $('git-lock').hidden = saved?.mode !== 'password';
     storageHelp(); enabled(true); await history();
     $('git-status').textContent = saved ? `Saved ${saved.config.provider === 'github' ? 'GitHub' : 'GitLab'} connection: ${saved.config.repository}. Test access before exporting.` : 'No Git connection saved.';
   }
 
-  $('git-provider').addEventListener('change', () => { $('git-server-field').hidden = $('git-provider').value !== 'gitlab'; });
+  $('git-provider').addEventListener('change', providerHelp);
+  // Keep the layout example synchronized without waiting for a connection save.
+  $('git-folder').addEventListener('input', folderHelp);
   $('git-storage').addEventListener('change', storageHelp);
   // Explain the intentional fresh-token requirement when native required-field validation blocks submission.
   $('git-token').addEventListener('invalid', () => {
