@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v3 test candidate (3.0.7):** Manual GitHub/GitLab push with preview/confirmation, encrypted saved connections, and self-hosted GitLab support. Published exports use package-reported versions and versioned requests, matching auto-sync even when source JSON omits its version. Synthetic tests exercise the full workflow; a separately authorized live push is still required. V2 remains independent. See [Git Setup](docs/Git-Export.md), [v3 Development](docs/V3-Development.md), and the earlier [design mockup](docs/mockups/git-export-settings.html). Do not treat this as a published store release.
+> **v3 test candidate (3.0.8):** Manual GitHub/GitLab push with preview/confirmation, encrypted saved connections, and self-hosted GitLab support. Published exports use package-reported versions and versioned requests, matching auto-sync even when source JSON omits its version. Synthetic tests exercise the full workflow; a separately authorized live push is still required. V2 remains independent. See [Git Setup](docs/Git-Export.md), [v3 Development](docs/V3-Development.md), and the earlier [design mockup](docs/mockups/git-export-settings.html). Do not treat this as a published store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 

@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- At 3.0.8 the owner requested concise setup: one short base-folder example, Save-only fresh-token feedback, and collapsed GitHub/GitLab token checklists with provider links. Keep native Details/Summary keyboard behavior and avoid long always-visible explanations or adding tooltip scripts. Authentication, consent, tenant routing, and provider operations remain unchanged. Next checkpoint 3.0.9.
+
 - At 3.0.7 the owner approved Base/TenantName Git folders using the exact verified tenant ID's cached Designer label, not a URL guess or ID fallback. Preserve saved base values until explicitly resaved; no automatic remote cleanup/move. Missing/unsupported or duplicate known labels fail closed; recheck the resolved destination before push. Show Base/Tenant/Package help and final preview; record the actual child in receipts without changing encrypted base config. Fresh-token save rules remain, with explicit empty-token feedback. Commit links/history explain separate browser sign-in for private repositories. Next checkpoint is 3.0.8.
 
 - At 3.0.6 the owner explicitly removed the separate Git upload-size cap and rejected batching/splitting. Do not reintroduce a request-byte threshold or change the one-commit workflow. Existing source-export bounds, 16 MB response-memory bound, 30-second timeout, tree/context/consent/conflict safeguards, and provider-enforced limits remain. This supersedes older guidance below retaining the 8 MB request cap. Next v3 checkpoint is 3.0.7.

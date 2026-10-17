@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Keep setup concise; native collapsed examples do not change authentication requirements.
+    "3.0.8": Object.freeze([
+      "Git setup is shorter, with collapsed GitHub and GitLab token checklists.",
+      "The fresh-token reminder appears only when an empty-token Save is attempted.",
+    ]),
     // Explain tenant routing and intentional credential/browser-login boundaries before a new export.
     "3.0.7": Object.freeze([
       "Git destinations automatically add the verified tenant name beneath your base folder.",

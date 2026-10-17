@@ -11,5 +11,11 @@ button[type="submit"]:not(:disabled) { background: #6d28d9; color: #fff; border-
 [hidden] { display: none !important; }
 p, li { overflow-wrap: anywhere; }
 #git-form p, #git-history { font-size: .9rem; }
+/* Keep optional token instructions compact and retain native keyboard/disclosure indicators. */
+.git-token-guides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+.git-token-guides details { min-width: 0; padding: 10px; border: 1px solid #8b8b95; border-radius: 6px; }
+.git-token-guides summary { cursor: pointer; font-weight: 600; }
+.git-token-guides ul { padding-inline-start: 20px; font-size: .9rem; line-height: 1.5; }
+.git-token-guides li + li { margin-top: 6px; }
 /* Stack the paired fields when the browser window is narrow rather than clipping their labels. */
-@media (max-width: 500px) { .git-columns { grid-template-columns: 1fr; gap: 0; } }
+@media (max-width: 500px) { .git-columns, .git-token-guides { grid-template-columns: 1fr; gap: 0; } .git-token-guides details + details { margin-top: 8px; } }

@@ -1,6 +1,6 @@
 # Git Export — V3 Test Candidate
 
-Version 3.0.7 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.0.8 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
 
 Published versions come from the selected package metadata. Pipeline/API downloads request the exact full version; Sub-Pipelines request its major. Downloaded JSON may omit or null its version, which is preserved unchanged; an explicit conflicting version is rejected. Package-reported versions are not independently certified from missing source fields. Git Connection's Return to Export button focuses an existing export without reloading its selection; if no export is open, start one from Integration Packages settings.
 
@@ -18,6 +18,8 @@ Git API origins are reserved separately from Custom Sites before permission is r
 The tenant name comes only from the Shared From cache entry for the verified current tenant ID, even in advanced export mode. Visit/refresh Designer to populate it; Git export stops if it is missing, unsupported as a folder segment, or matches another known cached tenant name ignoring case. ZIP naming/export remains independent. The final destination is shown in Git preview and checked again before push. Cached observations are not a global uniqueness guarantee. Existing saved folder values are preserved: change `DataConnect/Test` to `DataConnect` explicitly and re-enter the token when saving. No old repository folder is moved or deleted; cleanup is manual. Recent Pushes records the actual resolved folder.
 
 Every save requires re-entering the access token, including changes to the base folder. An empty token shows this requirement rather than silently reusing the stored secret. Viewing a private commit on GitHub/GitLab requires signing in to that provider in the same browser; the extension token authenticates API requests, not website browsing.
+
+GitHub Token Settings and GitLab Token Instructions expand optional setup checklists; both start collapsed. GitHub uses a selected-repository fine-grained token with Contents read/write. The GitLab example uses a project token with api scope and Developer access to an unprotected export branch; creating it requires Maintainer/Owner, and GitLab.com project tokens require Premium/Ultimate. Your organization's restrictions still apply. Token values belong only in the extension field, never support messages.
 
 ## Choose Credential Protection
 

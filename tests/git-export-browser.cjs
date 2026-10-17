@@ -87,8 +87,21 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     await popup.evaluate(() => PopupTabs.select('export'));
     const opened = context.waitForEvent('page'); await popup.locator('#manage-git').click();
     const connection = await opened; await connection.waitForFunction(() => !document.querySelector('#git-fields').disabled);
-    assert.match(await connection.locator('#git-folder-help').innerText(), /automatically use Base Folder \/ Tenant Name \/ Package/);
+    assert.match(await connection.locator('#git-folder-help').innerText(), /DataConnect\/<Tenant Name>\/<Package>/);
+    assert.ok((await connection.locator('#git-folder-help').innerText()).length < 110);
     assert.equal(await connection.locator('#git-folder').getAttribute('aria-describedby'), 'git-folder-help');
+    assert.equal(await connection.locator('#git-token-help').count(), 0, 'Fresh-token reminder belongs to Save validation, not a permanent paragraph');
+    // Help starts collapsed and remains operable by keyboard without submitting the credential form.
+    for (const id of ['git-github-help', 'git-gitlab-help']) {
+      const help = connection.locator('#' + id);
+      assert.equal(await help.evaluate(element => element.open), false);
+      await help.locator('summary').focus(); await connection.keyboard.press('Enter');
+      assert.equal(await help.evaluate(element => element.open), true);
+      assert.ok(await help.locator('li').count() >= 5);
+      assert.equal(await help.locator('summary a, summary button').count(), 0);
+      await help.locator('summary').press('Enter');
+      assert.equal(await help.evaluate(element => element.open), false);
+    }
     await connection.evaluate(() => { chrome.permissions.contains = async () => true; });
     const errors = []; connection.on('pageerror', error => errors.push(error.message));
 
@@ -142,6 +155,12 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
         fs.mkdirSync(process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS, { recursive: true });
         await connection.emulateMedia({ colorScheme: provider === 'github' ? 'light' : 'dark' });
         await connection.screenshot({ path: path.join(process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS, `v3-connection-${provider}.png`), fullPage: true });
+        // Capture optional help in both browser themes without changing its default collapsed state.
+        await connection.locator('#git-github-help').evaluate(element => { element.open = true; });
+        await connection.locator('#git-gitlab-help').evaluate(element => { element.open = true; });
+        await connection.screenshot({ path: path.join(process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS, `v3-token-help-${provider}.png`), fullPage: true });
+        await connection.locator('#git-github-help').evaluate(element => { element.open = false; });
+        await connection.locator('#git-gitlab-help').evaluate(element => { element.open = false; });
       }
 
       // Open export with the original Packages document active and its real worker-bound grant intact.

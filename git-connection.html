@@ -12,7 +12,7 @@
   <header><img src="icons/icon48.png" width="40" height="40" alt="" /><div><h1>Git Connection</h1><p>Export &amp; Connections · V3 Test Build</p></div></header>
   <section>
     <h2>Connect a Repository</h2>
-    <p>Use an existing repository, branch, and base export folder. Each export adds the current tenant name automatically. This connection is shared by export tabs in this browser profile.</p>
+    <p>Connect an existing repository and branch.</p>
     <!-- Set up only one explicit destination; changing it requires a fresh token and cancels old comparisons. -->
     <form id="git-form">
       <fieldset id="git-fields" disabled>
@@ -22,11 +22,36 @@
         <label for="git-repository">Repository</label><input id="git-repository" required placeholder="owner/repository or group/project" autocomplete="off" spellcheck="false" />
         <div class="git-columns"><div><label for="git-branch">Existing Branch</label><input id="git-branch" required value="exports" autocomplete="off" /></div><div><label for="git-folder">Base Export Folder</label><input id="git-folder" required value="DataConnect" autocomplete="off" aria-describedby="git-folder-help" spellcheck="false" /></div></div>
         <!-- Explain automatic tenant routing beside the field rather than relying on an input placeholder. -->
-        <p id="git-folder-help">Enter a base such as DataConnect, not DataConnect/Test. Exports automatically use Base Folder / Tenant Name / Package, for example DataConnect/ExampleTenant/ExamplePackage. The tenant name comes from saved Designer sources for the current tenant ID; review the full destination in Git preview. Existing saved folders and repository files are not moved or deleted.</p>
-        <label for="git-token">New Access Token</label><input id="git-token" type="password" required autocomplete="off" spellcheck="false" maxlength="8192" aria-describedby="git-token-help" />
-        <p id="git-token-help">Every change requires you to re-enter the access token before saving. The saved token is never filled back into this field.</p>
-        <p>Use an expiring, narrowly scoped token. GitHub: selected repository, Contents read/write. GitLab: a project access token with API access and a role allowed to commit; repository-only scope is insufficient for these REST APIs. Your organization may require approval.</p>
-        <p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">GitHub Token Settings</a> · <a href="https://docs.gitlab.com/user/project/settings/project_access_tokens/" target="_blank" rel="noopener noreferrer">GitLab Token Instructions</a></p>
+        <p id="git-folder-help">Adds the tenant and package automatically: <code>DataConnect/&lt;Tenant Name&gt;/&lt;Package&gt;</code>.</p>
+        <label for="git-token">New Access Token</label><input id="git-token" type="password" required autocomplete="off" spellcheck="false" maxlength="8192" />
+        <!-- Native disclosures keep provider examples available without filling the setup page with instructions. -->
+        <div class="git-token-guides">
+          <details id="git-github-help">
+            <summary>GitHub Token Settings</summary>
+            <p>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">GitHub's fine-grained token page</a>:</p>
+            <ul>
+              <li><strong>Token name:</strong> Integration Navigator Test</li>
+              <li><strong>Expiration:</strong> Short, such as 7 days for testing</li>
+              <li><strong>Resource owner:</strong> Repository owner</li>
+              <li><strong>Repository access:</strong> Only select repositories → choose your repository</li>
+              <li><strong>Contents:</strong> Read and write</li>
+              <li><strong>Other permissions:</strong> Leave unchanged; Metadata read is automatic</li>
+            </ul>
+            <p>Organization approval may be required. Generate the token and paste it into the field above.</p>
+          </details>
+          <details id="git-gitlab-help">
+            <summary>GitLab Token Instructions</summary>
+            <p>In your project, open <strong>Settings → Access tokens → Add new token</strong>:</p>
+            <ul>
+              <li><strong>Token name:</strong> Integration Navigator Test</li>
+              <li><strong>Expiration:</strong> Short, such as 7 days for testing</li>
+              <li><strong>Role:</strong> Developer for an unprotected export branch</li>
+              <li><strong>Scope:</strong> <code>api</code>, not <code>write_repository</code> alone</li>
+              <li><strong>Finish:</strong> Create the token and paste it into the field above</li>
+            </ul>
+            <p>Creating project tokens requires Maintainer/Owner access. GitLab.com requires Premium/Ultimate; organization policies apply. <a href="https://docs.gitlab.com/user/project/settings/project_access_tokens/" target="_blank" rel="noopener noreferrer">GitLab documentation</a></p>
+          </details>
+        </div>
         <label for="git-storage">Remember Token</label><select id="git-storage"><option value="device">Encrypted on This Device</option><option value="password">Encrypted with Password Unlock</option><option value="session">This Browser Session Only</option></select>
         <p id="git-storage-help">Automatic reuse after restart. This is not an OS vault and does not protect a compromised browser profile.</p>
         <div id="git-password-fields" hidden><label for="git-password">Unlock Password (12+ Characters)</label><input id="git-password" type="password" autocomplete="new-password" /><label for="git-password-confirm">Confirm Unlock Password</label><input id="git-password-confirm" type="password" autocomplete="new-password" /><p>Unlock once per browser session or lock manually. No idle-lock timer. A lost password cannot be recovered; reconnect with a new token.</p></div>

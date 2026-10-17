@@ -1,5 +1,9 @@
 # Update history
 
+## 3.0.8 — October 17, 2026
+
+- Shorten base-folder help to a single layout example and remove the permanent fresh-token paragraph; keep existing empty-token Save feedback. Replace the long token-permissions paragraph with collapsed, keyboard-operable native GitHub/GitLab setup checklists and provider links. Include scoped GitHub Contents read/write steps and GitLab project-token api/role prerequisites from official documentation. Help uses native Details/Summary without nested interactive summary controls or extra scripts. Keep credential requirements, tenant routing, consent, connection actions, and provider operations unchanged.
+
 ## 3.0.7 — October 17, 2026
 
 - Treat the saved Git folder as a base and append the saved Designer environment name for the exact verified current tenant ID. Do not guess URL names, fall back to another tenant, sanitize conflicting names into one folder, or change saved base folders automatically. Missing/unsupported names and case-insensitive duplicate names among known cached tenants stop preparation. Recheck the resolved destination before push; renamed/ambiguous/missing labels require another preview. Existing remote files are not moved/deleted; unrelated data and one-commit/no-batching behavior remain unchanged.
