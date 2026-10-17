@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Git Connection · Integration Navigator</title>
+  <link rel="stylesheet" href="pipeline-export.css" />
+  <link rel="stylesheet" href="git-connection.css" />
+</head>
+<body>
+<main>
+  <header><img src="icons/icon48.png" width="40" height="40" alt="" /><div><h1>Git Connection</h1><p>Export &amp; Connections · V3 Test Build</p></div></header>
+  <section>
+    <h2>Connect a Repository</h2>
+    <p>Use an existing repository, branch, and dedicated export folder. This connection is shared by export tabs in this browser profile.</p>
+    <!-- Set up only one explicit destination; changing it requires a fresh token and cancels old comparisons. -->
+    <form id="git-form">
+      <fieldset id="git-fields" disabled>
+        <label for="git-provider">Provider</label>
+        <select id="git-provider"><option value="github">GitHub</option><option value="gitlab">GitLab (Cloud or Self-Hosted)</option></select>
+        <div id="git-server-field" hidden><label for="git-server">GitLab Server</label><input id="git-server" type="url" value="https://gitlab.com" autocomplete="off" /><p>HTTPS domain only; subpath and custom-port installations are not supported.</p></div>
+        <label for="git-repository">Repository</label><input id="git-repository" required placeholder="owner/repository or group/project" autocomplete="off" spellcheck="false" />
+        <div class="git-columns"><div><label for="git-branch">Existing Branch</label><input id="git-branch" required value="exports" autocomplete="off" /></div><div><label for="git-folder">Export Folder</label><input id="git-folder" required value="DataConnect" autocomplete="off" /></div></div>
+        <label for="git-token">New Access Token</label><input id="git-token" type="password" required autocomplete="off" spellcheck="false" maxlength="8192" />
+        <p>Use an expiring, narrowly scoped token. GitHub: selected repository, Contents read/write. GitLab: a project access token with API access and a role allowed to commit; repository-only scope is insufficient for these REST APIs. Your organization may require approval.</p>
+        <p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">GitHub Token Settings</a> · <a href="https://docs.gitlab.com/user/project/settings/project_access_tokens/" target="_blank" rel="noopener noreferrer">GitLab Token Instructions</a></p>
+        <label for="git-storage">Remember Token</label><select id="git-storage"><option value="device">Encrypted on This Device</option><option value="password">Encrypted with Password Unlock</option><option value="session">This Browser Session Only</option></select>
+        <p id="git-storage-help">Automatic reuse after restart. This is not an OS vault and does not protect a compromised browser profile.</p>
+        <div id="git-password-fields" hidden><label for="git-password">Unlock Password (12+ Characters)</label><input id="git-password" type="password" autocomplete="new-password" /><label for="git-password-confirm">Confirm Unlock Password</label><input id="git-password-confirm" type="password" autocomplete="new-password" /><p>Unlock once per browser session or lock manually. No idle-lock timer. A lost password cannot be recovered; reconnect with a new token.</p></div>
+        <label><input id="git-history-enabled" type="checkbox" checked /> Keep the Last 20 Successful Push Receipts</label>
+        <label class="notice"><input id="git-consent" type="checkbox" required /> I allow selected export files to be uploaded to this repository after preview and confirmation. Source may contain embedded secrets. Commits may trigger CI/CD; saved-token encryption does not encrypt repository contents.</label>
+        <button type="submit">Save Connection</button>
+      </fieldset>
+    </form>
+    <!-- Saving reserves the exact server before a separate gesture can grant it network access. -->
+    <p id="git-status" role="status" aria-live="polite">Loading connection…</p>
+    <div class="actions"><button id="git-allow" type="button" disabled>Allow Server Access</button><button id="git-test" type="button" disabled>Test Connection</button><button id="git-forget" type="button" disabled>Forget Connection</button><button id="git-lock" type="button" hidden>Lock</button></div>
+    <form id="git-unlock-form" hidden><label for="git-unlock-password">Unlock Saved Connection</label><input id="git-unlock-password" type="password" autocomplete="current-password" /><button type="submit">Unlock</button></form>
+    <p>Forget removes this saved credential locally; revoke the token at your provider to invalidate it elsewhere. Browser access permissions and remote commits are not removed. Session-only credentials must be re-entered after browser/extension restart.</p>
+  </section>
+  <section><h2>Recent Pushes</h2><p>No tokens, headers, source contents, or raw service errors are recorded.</p><ul id="git-history"></ul><button id="git-clear-history" type="button">Clear Local History</button><p>Clearing this list does not erase Git history or provider audit records.</p></section>
+</main>
+<script src="git-provider.js"></script><script src="git-vault.js"></script><script src="git-connection.js"></script>
+</body>
+</html>

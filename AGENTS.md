@@ -2,10 +2,14 @@
 
 ## Scope and Approval
 
+- At 3.0.1, the owner approved implementing both encrypted-device and password-unlock options plus self-hosted GitLab. Preserve manual preview/second confirmation, add/update-only semantics, and documented GitLab limits. The 3.0.0 foundation-only statements below are historical; current behavior is in docs/Git-Export.md. No live push, main/develop merge, or store submission is authorized by implementation approval. Next v3 checkpoint is 3.0.2.
+- Secrets stay in extension-origin IndexedDB/trusted-context session keys, never content/MAIN, generic runtime messages, local/sync backups, logs, or exported files. Preserve revision/transaction checks and crypto failures without plaintext fallback. Reserve API hosts through the serialized trusted connection-page worker before permissions so Custom Sites cannot inject scripts there; preserve legitimate interrupted Experience grant recovery.
+
 - Make surgical changes within the owner's request. Preserve deliberate behavior and useful comments; ask before broader refactoring, architecture changes, or consequential behavior changes.
-- Use `develop` for test builds. Owner-authorized review branches may feed into develop. Keep main unchanged until the owner confirms the intended release works and explicitly authorizes merging. Testing, store submission, store approval, and GitHub merging are separate steps.
-- Codex and Claude both use `develop` by default. Refresh the remote head before editing and pushing; preserve other agents' commits and uncommitted work. Coordinate overlapping changes and never force-push over another agent's work. Use a separate agent branch only when the owner explicitly requests it.
-- Develop now carries v2 work; main remains the confirmed v1 release. For owner-requested v1 fixes, branch from main and bring the approved fix into develop too. Do not release incomplete v2 code as a v1 update.
+- This is the owner's separate v3 workspace: use `feature/v3-git-export` for v3 commits and a draft PR targeting develop only for comparison. Keep develop/v2 sources and active v2 outputs unchanged; do not merge v3 until explicitly authorized. The baseline is v2.1.9 commit 56aed733e90d1fc4f53f48f96d0275b6247f6ca4.
+- Use `develop` only for separately requested v2 test builds, not this v3 workspace. Owner-authorized review branches may feed into develop. Keep main unchanged until the owner confirms the intended release works and explicitly authorizes merging. Testing, store submission, store approval, and GitHub merging are separate steps.
+- Codex and Claude both use `feature/v3-git-export` for this owner-authorized separate v3 work; develop remains v2. Refresh the remote head before editing and pushing; preserve other agents' commits and uncommitted work. Coordinate overlapping changes and never force-push over another agent's work. Use a separate agent branch only when the owner explicitly requests it.
+- Develop carries v2 toward publication; this branch carries isolated v3 work and main remains the confirmed v1 release. For owner-requested v1 fixes, branch from main and bring the approved fix into develop too. Do not release incomplete v2 code as a v1 update.
 - Use draft pull requests to track unconfirmed development. Preserve individual version commits when an approved merge is performed. Do not enable auto-merge or publish/upload a store update without authorization.
 
 ## Comments and Execution Worlds
@@ -25,10 +29,13 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.1.9 is 2.2.0, while the next v1 maintenance revision after 1.22.8 is 1.22.9. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v3 checkpoint after 3.0.0 is 3.0.1; the next v2 candidate after 2.1.9 remains 2.2.0, while the next v1 maintenance revision after 1.22.8 is 1.22.9. Do not rename historical releases.
 
 - Maintain CHROMEWEBSTORE.md for store preparation, separate public listing copy from reviewer instructions, and keep Shift+D out of the public store description while disclosing it in GitHub/reviewer documentation. Never certify live dashboard/privacy/asset state from a local draft. Keep this preparation file out of release ZIPs. Consult official Chrome guidance selectively; generic skill advice does not override these project rules or authorize tooling installation, permissions, normal-profile debugging, main merges, or publication.
 - Preserve the 2.1.9 explicit extension-page CSP and Chrome 106 API-derived minimum; verify the installed popup/export flow, including blob downloads, before changing them. Historical Chrome 106 runtime compatibility is not proven by current-browser fixtures. No extra permissions are introduced by this hardening.
+
+- V3 Git work is specified in docs/V3-Development.md. At 3.0.0 it is a foundation/mockup only: no real Git credentials, provider host grants, remote writes, crypto storage, copied third-party runtime code, or scheduling. Review final credential protection and conflict semantics before enabling functional Git uploads; preserve existing native source authentication and six slots. Keep credentials out of page worlds, source grants, JSON backups, history, logs, and source content. Any adapted third-party code needs a pinned revision and retained notices.
+- Keep v3 candidate artifacts under the separate v3 workspace; do not run the v2 packager or replace its outputs. A source checkpoint is not a store-ready Git build. The full inherited ZIP/local backup behavior must keep passing synthetic tests.
 
 - Keep the unpublished v2 What's New message focused on the major changes since v1: redesigned task-tab settings and published artifact ZIP export. Preserve version/dismissal guards; document individual candidate tweaks in the changelog instead. Do not advertise unrestricted exports or hidden override behavior in this overview.
 

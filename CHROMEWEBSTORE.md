@@ -1,6 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-16 · Candidate: 2.1.9 · Status: local test candidate, not submitted
+Updated: 2026-10-17 · Candidate: 3.0.1 · Status: synthetic-tested Git candidate, not submitted
+
+This v3 branch is not ready for submission. Connection/storage/provider flows are implemented and synthetic-tested; separate live disposable-repository testing and store privacy-disclosure/asset checks remain required. The public copy below is a v3 draft, not a live listing update. Do not modify the v2 listing from this branch.
 
 This is the maintained preparation document, not proof of the live dashboard state. Copy only the Public Store Listing section into the public description fields. Reviewer Instructions are separate and must not be appended to that description. Publishing, changing distribution, and merging main each require owner authorization. Preserve existing account, pricing, visibility, and unrelated dashboard fields.
 
@@ -21,6 +23,8 @@ Integration Navigator improves navigation and published-content review in Elluci
 Find packages and pipelines with configurable search controls. Resize the package sidebar, scroll it independently, and pin frequently used packages and pipelines. Choose a Star, Circle, or Bear favorite icon and customize its color or match it to your toolbar icon.
 
 The redesigned settings use Navigation, Sharing, Appearance, Sites, and Export tabs, with page-specific actions available where they work.
+
+Optional manual Git export connects an existing GitHub or GitLab repository, including supported HTTPS self-hosted GitLab servers. Save an encrypted provider token on this device or use password unlock, allow the exact server, and review destination visibility and added/updated files before separately confirming Push to Git. Nothing is deleted or automatically synchronized. ZIP download and JSON backup remain independent. Review sources for embedded secrets; public repositories expose files and commits may trigger CI/CD. See the privacy policy for credential storage, local receipt history, and provider data flows.
 
 Shared To shows sharing destinations in Integration Designer and highlights published/shared version differences. Optional Shared From identifies likely sources in Integration Packages using information saved when you visit Designer in each source environment. Shared From requires a local-data opt-in; its saved observations may be incomplete or stale. Refresh sources from Designer when needed.
 
@@ -111,7 +115,7 @@ Known limitations: source observations can become stale; unvisited environments 
 - [ ] Preserve unlisted distribution, existing artwork unless updated with approval, account settings, price, and unrelated fields.
 - [ ] Record the dashboard-confirmed submitted version, review/publication state, and publication choice; do not call a pending review live.
 
-Canonical code history is [docs/CHANGELOG.md](docs/CHANGELOG.md). This preparation document intentionally does not reconstruct unverified submission history. Candidate 2.1.9 has not been submitted by this work.
+Canonical code history is [docs/CHANGELOG.md](docs/CHANGELOG.md). This preparation document intentionally does not reconstruct unverified submission history. Candidate 3.0.0 is a separate foundation checkpoint and has not been submitted by this work.
 
 ## Official References
 

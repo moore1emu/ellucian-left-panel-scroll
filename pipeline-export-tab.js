@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  // Source code is requested only after the user's explicit Download ZIP action.
+  // Source code requires an explicit ZIP or Git preparation action; Git uploading needs a second confirmation.
   const DOWNLOADS_READY = true;
   const status = document.querySelector('#export-status');
   const counts = document.querySelector('#export-counts');
@@ -23,6 +23,24 @@
   let objectUrl = null;
   let zipContext = null;
   let retry = null;
+  // Git comparisons and source buffers exist only in this export document, never in messages/backups.
+  const gitPrepare = document.querySelector('#git-prepare');
+  const gitComparison = document.querySelector('#git-comparison');
+  const gitConfirm = document.querySelector('#git-confirm');
+  const gitPush = document.querySelector('#git-push');
+  const gitResult = document.querySelector('#git-result');
+  let gitPlan = null;
+  let gitWriting = false;
+
+  // Any selection/layout/source change invalidates confirmation and drops all prepared Git payloads.
+  function discardGit() {
+    gitPlan = null;
+    if (!gitComparison) return;
+    gitComparison.hidden = true;
+    gitConfirm.checked = false;
+    gitPush.disabled = true;
+    document.querySelector('#git-changes').replaceChildren();
+  }
 
   // Keep the blob URL off the visible control so modified clicks cannot bypass source-context verification.
   save.setAttribute('role', 'button');
@@ -41,6 +59,7 @@
 
   // A changed selection or new download must not leave a Save link pointing to an older archive.
   function discardZip() {
+    discardGit();
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     objectUrl = null;
     zipContext = null;
@@ -61,6 +80,7 @@
     packages.replaceChildren();
     counts.textContent = '';
     download.disabled = true;
+    if (gitPrepare) gitPrepare.disabled = true;
   }
 
   // Checkbox choices only narrow the authorized plan; hidden/collapsed rows never remove eligible records.
@@ -96,8 +116,110 @@
     for (const entry of selectedEntries()) byType[entry.type] += 1;
     counts.textContent = `${selectedPackages} of ${groups.size} packages · ${selected.size} of ${plan.entries.length} files selected (Pipelines: ${byType.pipeline}, Sub-Pipelines: ${byType['sub-pipeline']}, APIs: ${byType.api}, Transformers: ${byType.transformer}) · ${plan.skipped} unrecorded records in inspected packages skipped`;
     download.disabled = !DOWNLOADS_READY || !selected.size || Boolean(controller);
-    if (changed) status.textContent = selected.size ? 'Selection updated. Select Download ZIP to retrieve checked records.' : 'No files selected. Check a package or file to download.';
+    if (gitPrepare) gitPrepare.disabled = !selected.size || Boolean(controller) || !globalThis.GitProvider || !globalThis.GitVault;
+    if (changed) status.textContent = selected.size ? 'Selection updated. Choose Download ZIP or Preview Git Changes to retrieve checked records.' : 'No files selected. Check a package or file to export.';
   }
+
+  // Verify both the original native source context and the still-unlocked saved Git destination.
+  async function verifyGit(snapshot, connection, signal) {
+    if (signal.aborted) throw new Error('Git operation cancelled.');
+    const source = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'verify', context: snapshot.context });
+    if (!source?.ok || (await GitVault.info())?.revision !== connection.revision) throw new Error('Source or connection changed. Prepare a new Git preview.');
+    const origin = connection.config.provider === 'github' ? 'https://api.github.com' : connection.config.server;
+    if (!await chrome.permissions.contains({ origins: [origin + '/*'] })) throw new Error('Git server permission is missing. Open Manage Connection.');
+    // Rechecking unlock before every request makes Lock/Forget stop unsent requests in other tabs too.
+    await GitVault.token(connection.revision);
+    if (signal.aborted) throw new Error('Git operation cancelled.');
+  }
+
+  // Display only application-owned messages; no provider response body or credential can appear here.
+  function gitFailure(error) {
+    const known = new Set(['Git operation cancelled.', 'Source or connection changed. Prepare a new Git preview.', 'Git server permission is missing. Open Manage Connection.', 'Connection changed. Prepare a new preview.', 'Connection is locked or unavailable. Open Manage Connection.',
+      'Git authentication failed. Reconnect with a valid token.', 'Git access was denied or rate limited. Check permissions and branch protection.', 'Git repository, branch, or file was not found.', 'Git changed or rejected this commit. Refresh Git preview.', 'Git rejected this change. Check branch protection and refresh preview.', 'Git rate limit reached. Wait before preparing another preview.', 'Git could not be reached. Check the server and connection.',
+      'Git supports 1–500 generated files per push. Choose a smaller selection if formatted.', 'Git selection exceeds the request limit. Choose fewer files.', 'Repository tree is too large to compare safely.', 'Git repository visibility could not be verified.', 'Git destination has a file or link where a folder is needed.', 'Git destination collides with a folder, executable, link, or submodule.', 'Git file changed. Refresh Git preview.', 'Remote branch changed. Prepare and confirm a new Git preview.',
+      'Git branch was not advanced by this export, but uploaded Git objects may remain. Prepare a fresh preview before retrying.', 'Git result is uncertain. Check the remote branch/history before any new push.']);
+    return known.has(error?.message) ? error.message : 'Git export stopped. Check the connection and source page, then prepare a new comparison. Do not retry an uncertain write without checking remote history.';
+  }
+
+  // Collect exactly the current selected files locally, then perform read-only remote comparisons.
+  gitPrepare?.addEventListener('click', async () => {
+    if (!selected.size || controller || !plan) return;
+    const snapshot = { ...plan, entries: selectedEntries(), formatted: formatted.checked };
+    const current = ++generation;
+    discardZip();
+    controller = new AbortController();
+    const signal = controller.signal;
+    download.disabled = true; gitPrepare.disabled = true; refresh.disabled = true; selection.disabled = true;
+    progress.hidden = false; progress.max = snapshot.entries.length; progress.value = 0;
+    gitResult.textContent = 'Preparing selected files locally. No source files uploaded.';
+    try {
+      const connection = await GitVault.info();
+      if (!connection) throw new Error('Git server permission is missing. Open Manage Connection.');
+      const check = () => verifyGit(snapshot, connection, signal);
+      await check();
+      const files = await PipelineExportSession.collectFiles(snapshot.entries, {
+        verify: check, signal, formatted: snapshot.formatted, environment: snapshot.environment,
+        read: async entry => {
+          const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'read', context: snapshot.context, entry });
+          if (!result?.ok) throw new Error('Published source unavailable.');
+          return result.data;
+        },
+        onProgress: ({ completed }) => { if (current === generation) { progress.value = completed; gitResult.textContent = `Preparing ${completed} of ${snapshot.entries.length} locally…`; } },
+      });
+      const comparison = await GitProvider.preview(connection.config, files, await GitVault.token(connection.revision), { check, signal });
+      await check();
+      if (current !== generation) return;
+      gitPlan = { comparison, connection, snapshot, created: Date.now() };
+      const c = comparison.config;
+      document.querySelector('#git-destination').textContent = `${c.server} · ${c.repository} · Branch: ${c.branch} · Folder: ${c.folder} · Visibility: ${comparison.visibility}`;
+      document.querySelector('#git-remote-head').textContent = `Compared commit: ${comparison.head}. ${comparison.total - comparison.changes.length} unchanged; ${comparison.changes.length} additions/updates. No deletions.`;
+      for (const file of comparison.changes) {
+        const row = document.createElement('li'); row.textContent = `${file.action === 'create' ? 'Add' : 'Update'} · ${file.path} · ${file.bytes.length} bytes`;
+        document.querySelector('#git-changes').append(row);
+      }
+      gitComparison.hidden = false;
+      gitResult.textContent = comparison.changes.length ? 'Review and confirm below. Nothing has been uploaded. Keep this tab open until push completes.' : 'Everything selected already matches Git. No commit is needed.';
+    } catch (error) {
+      if (current === generation) { discardGit(); gitResult.textContent = gitFailure(error); }
+    } finally {
+      controller = null; refresh.disabled = false; selection.disabled = !plan; progress.hidden = true;
+      if (plan && current === generation) updateSelection();
+    }
+  });
+
+  // A second explicit action confirms a single immutable comparison; never silently rebuild and push it.
+  gitConfirm?.addEventListener('change', () => { gitPush.disabled = !gitConfirm.checked || !gitPlan?.comparison.changes.length || Boolean(controller); });
+  gitPush?.addEventListener('click', async () => {
+    if (!gitPlan || !gitConfirm.checked || controller || !gitPlan.comparison.changes.length) return;
+    const job = gitPlan;
+    gitPlan = null;
+    controller = new AbortController();
+    const signal = controller.signal;
+    gitWriting = true;
+    gitPush.disabled = true; gitPrepare.disabled = true; download.disabled = true; refresh.disabled = true; selection.disabled = true;
+    gitResult.textContent = 'Pushing confirmed changes. Keep this tab open; closing or cancelling cannot undo requests already sent.';
+    try {
+      if (Date.now() - job.created > 10 * 60 * 1000) throw new Error('Source or connection changed. Prepare a new Git preview.');
+      const check = () => verifyGit(job.snapshot, job.connection, signal);
+      await check();
+      const result = await GitProvider.push(job.comparison, await GitVault.token(job.connection.revision), { check, signal });
+      gitResult.replaceChildren(document.createTextNode(`${result.count} files committed. `));
+      if (result.commit) {
+        const link = document.createElement('a'); link.href = GitProvider.commitUrl(job.connection.config, result.commit);
+        link.textContent = 'View Commit'; link.target = '_blank'; link.rel = 'noopener noreferrer'; gitResult.append(link);
+        try { await GitVault.receipt(job.connection.revision, result); }
+        catch { gitResult.append(document.createTextNode(' Commit succeeded, but its local receipt could not be saved.')); }
+      }
+    } catch (error) { gitResult.textContent = gitFailure(error); }
+    finally {
+      gitWriting = false; controller = null; discardGit(); refresh.disabled = false; selection.disabled = !plan;
+      if (plan) updateSelection();
+    }
+  });
+  document.querySelector('#git-dismiss')?.addEventListener('click', () => { if (!controller) { discardGit(); gitResult.textContent = 'Git preview discarded. No files uploaded.'; } });
+  document.querySelector('#git-manage')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('git-connection.html') }).catch(() => { gitResult.textContent = 'Could not open connection settings.'; });
+  });
 
   // Create all rows of an expanded package once; no Show More cap can hide records within it.
   function expandGroup(group) {
@@ -183,7 +305,7 @@
       document.querySelector('#export-mode').textContent = launch.overrideConfirmed ? 'Temporary advanced mode: all accessible content. No additional permissions are granted.' : 'Designer-recorded content only. Saved source observations may be stale.';
       renderPackages();
       download.disabled = !DOWNLOADS_READY || !plan.entries.length;
-      status.textContent = plan.entries.length ? 'Preview ready. Select Download ZIP to retrieve these published records.' : 'No eligible published files found. Refresh Shared From in the source Designer first.';
+      status.textContent = plan.entries.length ? 'Preview ready. Choose Download ZIP or Preview Git Changes to retrieve these published records.' : 'No eligible published files found. Refresh Shared From in the source Designer first.';
     } catch (error) {
       if (current === generation) {
         // Display only our fixed validation messages, never arbitrary native service exceptions.
@@ -291,7 +413,7 @@
     discard();
     progress.hidden = true;
     refresh.disabled = Boolean(controller);
-    status.textContent = 'Cancelled. Existing browser downloads are unchanged.';
+    status.textContent = gitWriting ? 'Git cancellation requested. An already-sent request may have committed; check remote history before another push.' : 'Cancelled. Existing browser downloads are unchanged.';
   });
   selectAll.addEventListener('change', () => {
     plan.entries.forEach((entry, index) => { if (selectAll.checked) selected.add(index); else selected.delete(index); });

@@ -114,6 +114,14 @@ async function run() {
   assert.equal(summary.notesFor(saved, "2.1.9").length, 2);
   assert.match(summary.notesFor(saved, "2.1.9")[0], /Redesigned settings/);
   assert.match(summary.notesFor(saved, "2.1.9")[1], /Export published Pipelines/);
+  // A v3 prototype advertises only completed local behavior, not planned repository uploads.
+  await summary.recordUpdate({ reason: "update", previousVersion: "2.1.9" }, storage, "3.0.0");
+  assert.equal(summary.notesFor(saved, "3.0.0").length, 3);
+  assert.match(summary.notesFor(saved, "3.0.0")[1], /not enabled yet/);
+  // The functional candidate gets its own notes without rewriting the foundation's historical claim.
+  await summary.recordUpdate({ reason: "update", previousVersion: "3.0.0" }, storage, "3.0.1");
+  assert.equal(summary.notesFor(saved, "3.0.1").length, 3);
+  assert.match(summary.notesFor(saved, "3.0.1")[0], /GitHub or GitLab/);
   assert.equal(saved.sharedFromEnabled, true);
   assert.deepEqual(saved.favorites, { demo: true });
   console.log("PASS update-summary version gating and unrelated-data preservation");

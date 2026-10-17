@@ -7,6 +7,18 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Describe the first functional Git candidate without implying store publication or a live acceptance test.
+    "3.0.1": Object.freeze([
+      "Manually export selected files to GitHub or GitLab after reviewing and confirming changes.",
+      "Save an encrypted connection with automatic reuse or password unlock; self-hosted GitLab is supported.",
+      "ZIP exports and JSON backups remain independent. V3 is a test candidate, not a store release.",
+    ]),
+    // Keep: v3 foundation notes must not claim its planned Git connection is already usable (3.0.0).
+    "3.0.0": Object.freeze([
+      "Separate v3 development builds on v2 without changing the v2 release candidate.",
+      "Git export settings are a design preview; repository uploads are not enabled yet.",
+      "Existing local ZIP export and JSON backup remain available.",
+    ]),
     // Keep the unpublished v2 overview focused on the same major features, not submission hardening.
     "2.1.9": Object.freeze([
       "Redesigned settings with task-based tabs for easier navigation.",

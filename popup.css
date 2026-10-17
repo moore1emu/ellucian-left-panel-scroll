@@ -474,3 +474,6 @@ footer { border-top: 1px solid var(--border); padding-top: 8px; }
 /* Preserve the export block's original outer edge while placing its controls below its own heading. */
 .pipeline-export-section { margin-left: -8px; padding-left: 18px; }
 .pipeline-export-section h2 { margin-left: -8px; }
+/* Keep the new Git subgroup aligned with the existing heading/control indentation. */
+.git-connection-section { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px; }
+.git-connection-section h2 { margin-left: -8px; }

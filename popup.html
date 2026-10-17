@@ -247,7 +247,7 @@
         </section>
         <!-- Keep: backups remain in the final task tab, independent of page-specific source/export availability (2.1.3). -->
         <section id="panel-export" class="settings-card settings-panel backup-card" role="tabpanel" aria-labelledby="tab-export" hidden>
-          <!-- Open only metadata preview; source reads require Download ZIP in the separate export tab. -->
+          <!-- Open metadata only; source reads require ZIP or Git preparation in the separate export tab. -->
           <div class="pipeline-export-section" id="pipeline-export-section">
             <h2>Pipeline Export</h2>
             <p class="card-description">Export published pipelines and transformers.</p>
@@ -260,8 +260,14 @@
             </div>
           </div>
           <p id="pipeline-export-availability" class="card-description">Open Integration Packages to export pipelines.</p>
+          <!-- Git credentials live only in the dedicated extension tab, never in this popup or page scripts. -->
+          <div class="git-connection-section">
+            <h2 id="git-connection-title">Git Connection</h2>
+            <p class="card-description">Set up GitHub or GitLab exports.</p>
+            <button id="manage-git" type="button">Manage Connection</button>
+          </div>
           <!-- JSON backups remain independent of ZIP pipeline downloads. -->
-          <h2>Backup &amp; Restore</h2>
+          <h2 id="backup-title">Backup &amp; Restore</h2>
           <p class="card-description">Back up favorites and saved sources.</p>
           <button id="export-shared-from" type="button" aria-label="Export Favorites and Shared From JSON" title="Back up tenant favorites and saved Designer sources">Export Backup JSON</button>
           <button id="import-favorites" type="button">Import Backup JSON</button>
@@ -312,5 +318,6 @@
     <script src="update-summary.js"></script>
     <script src="update-summary-popup.js"></script>
     <script src="pipeline-export-popup.js"></script>
+    <script src="git-popup.js"></script>
   </body>
 </html>

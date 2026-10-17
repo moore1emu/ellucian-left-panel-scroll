@@ -1,6 +1,20 @@
 # Update history
 
+## 3.0.1 — October 17, 2026
+
+- Implement the approved manual GitHub/GitLab connection and add/update-only push workflow, including exact-origin self-hosted GitLab permission, existing branch/folder validation, metadata comparison, explicit upload confirmation, no-op skipping, and bounded commit receipts. No scheduling, deletions, force-push, repository creation, or remote restore.
+- Add encrypted device-key and password-unlock storage, plus session-only mode, in extension-origin IndexedDB/trusted memory. Use AES-256-GCM, destination-bound authentication data, fresh IV/salt, PBKDF2-SHA-256 at 600,000 iterations, durable revision checks, manual/session locks, and local Forget. No plaintext credential fallback, content-script access, token logging, or backup export.
+- Reuse the guarded six-slot source collector for generated files before ZIP assembly. Git previews keep files local; confirmed pushes reuse exact prepared bytes. Selection, format, context/consent, connection, permission, unlock, and remote changes invalidate/stop stale work. ZIP/JSON backups stay independent.
+- Reserve Git API hosts separately before permission requests so Custom Sites never recovers them for content-script injection, while genuine interrupted Experience grants still recover. Preserve all v2 sources/active outputs and main/develop branches.
+- Add synthetic provider, vault, permission, and installed-browser regressions for both APIs, formatting, encryption, key/save races, lock/unlock/restart/forget, corruption, confirmation, conflicts, uncertain responses without replay, limits, path collisions, and unchanged favorites. Live disposable-repository acceptance is unverified and needs separate owner permission. No real provider credentials or institutional source were used. See Git-Export.md for limits and GitLab's non-atomic whole-branch concurrency caveat.
+
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
+
+## 3.0.0 — 2026-10-17 — Separate Git Export Foundation
+
+- Starts isolated v3 development from v2.1.9 on feature/v3-git-export. Develop and the existing outputs remain the v2 release candidate; this checkpoint does not publish, merge, or replace that build.
+- Adds an interactive, synthetic Export/Git Connection mockup and a staged GitHub/GitLab plan. Encrypted saved credentials, changes preview, and push history are proposals, not implemented repository connections. The preview accepts no real tokens and makes no network/storage requests.
+- Runtime changes are limited to the 3.0.0 version and honest development summary. Existing ZIP export, source safeguards, settings, and favorites remain unchanged. No additional permissions, actual Git credentials, third-party runtime code, repository uploads, or scheduled sync are introduced.
 
 ## 2.1.9 — 2026-10-16 — Submission Preparation and Compatibility
 

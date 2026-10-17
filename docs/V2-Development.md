@@ -1,5 +1,7 @@
 # v2 Development
 
+> Historical inherited v2 notes. This branch is now the separate v3 foundation; see [V3-Development.md](V3-Development.md). The v2 candidate remains on develop. Do not treat the inherited candidate status below as the current v3 release status.
+
 This is the **2.1.9 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
 
 Submission preparation is maintained in [CHROMEWEBSTORE.md](../CHROMEWEBSTORE.md), with public description copy separate from reviewer notes. Shift+D is documented for reviewers/GitHub but excluded from public listing copy. No store fields are changed automatically. The live policy and v2 screenshots still need release-time verification.
