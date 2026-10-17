@@ -10,11 +10,11 @@ const root = path.resolve(__dirname, '..');
 function installStub() {
   // Retain unrelated settings across reloads to catch accidental resets.
   const saved = JSON.parse(localStorage.getItem('syntheticPreferences') || 'null') || {
-    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '3.0.0' }, favorites: { keep: true }, sharedFromEnabled: true,
+    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '3.0.1' }, favorites: { keep: true }, sharedFromEnabled: true,
   };
   window.__messages = [];
   window.__page = 'packages';
-  const runtime = { lastError: undefined, getManifest: () => ({ version: '3.0.0', content_scripts: [{ matches: [] }] }),
+  const runtime = { lastError: undefined, getManifest: () => ({ version: '3.0.1', content_scripts: [{ matches: [] }] }),
     sendMessage: async message => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
   window.chrome = { runtime, storage: { local: {
     get(defaults, callback) { const result = { ...defaults }; for (const key of Object.keys(result)) if (Object.hasOwn(saved, key)) result[key] = saved[key]; if (callback) setTimeout(() => callback(result), 0); return Promise.resolve(result); },
@@ -64,13 +64,13 @@ function installStub() {
       assert.equal(await page.locator('.favorite-appearance-controls > .setting-title').textContent(), 'Favorites');
       // Task names do not repeat as headings; retain only distinct subgroup titles.
       assert.equal(await page.locator('#panel-sharing > h2, #panel-sites > h2').count(), 0);
-      assert.deepEqual(await page.locator('#panel-export h2').allTextContents(), ['Pipeline Export', 'Backup & Restore']);
+      assert.deepEqual(await page.locator('#panel-export h2').allTextContents(), ['Pipeline Export', 'Git Connection', 'Backup & Restore']);
 
       // Dismissal failures remain retryable without changing preferences.
       assert.deepEqual(await page.locator('#update-summary li').allTextContents(), [
-        'Separate v3 development builds on v2 without changing the v2 release candidate.',
-        'Git export settings are a design preview; repository uploads are not enabled yet.',
-        'Existing local ZIP export and JSON backup remain available.',
+        'Manually export selected files to GitHub or GitLab after reviewing and confirming changes.',
+        'Save an encrypted connection with automatic reuse or password unlock; self-hosted GitLab is supported.',
+        'ZIP exports and JSON backups remain independent. V3 is a test candidate, not a store release.',
       ]);
       await page.evaluate(() => { window.__failWrite = true; });
       await page.locator('#dismiss-update-summary').click();
@@ -121,7 +121,8 @@ function installStub() {
         ['Appearance', '#panel-appearance > h2', '.icon-appearance-controls'],
         ['Appearance', '.favorite-appearance-controls > .setting-title', '.favorite-match-control'],
         ['Export', '.pipeline-export-section h2', '.pipeline-export-section > .card-description'],
-        ['Export', '.backup-card > h2', '#export-shared-from'],
+        ['Export', '#git-connection-title', '#manage-git'],
+        ['Export', '#backup-title', '#export-shared-from'],
       ];
       for (const [name, heading, control] of pairs) {
         await task(name);

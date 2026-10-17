@@ -2,6 +2,8 @@
 
 // Load the same validation and drawing rules used by the settings preview.
 importScripts("icon-appearance.js", "custom-sites.js", "favorites-data.js", "favorites-worker.js", "update-summary.js", "pipeline-export-worker.js");
+// Reserve Git API permissions separately; this worker never receives Git credentials or source payloads.
+importScripts("git-provider.js", "git-permissions-worker.js");
 let pendingIconUpdate = Promise.resolve();
 
 // Serialize site changes so a removal cannot race an earlier registration request.

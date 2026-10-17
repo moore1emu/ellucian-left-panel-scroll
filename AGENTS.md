@@ -2,6 +2,9 @@
 
 ## Scope and Approval
 
+- At 3.0.1, the owner approved implementing both encrypted-device and password-unlock options plus self-hosted GitLab. Preserve manual preview/second confirmation, add/update-only semantics, and documented GitLab limits. The 3.0.0 foundation-only statements below are historical; current behavior is in docs/Git-Export.md. No live push, main/develop merge, or store submission is authorized by implementation approval. Next v3 checkpoint is 3.0.2.
+- Secrets stay in extension-origin IndexedDB/trusted-context session keys, never content/MAIN, generic runtime messages, local/sync backups, logs, or exported files. Preserve revision/transaction checks and crypto failures without plaintext fallback. Reserve API hosts through the serialized trusted connection-page worker before permissions so Custom Sites cannot inject scripts there; preserve legitimate interrupted Experience grant recovery.
+
 - Make surgical changes within the owner's request. Preserve deliberate behavior and useful comments; ask before broader refactoring, architecture changes, or consequential behavior changes.
 - This is the owner's separate v3 workspace: use `feature/v3-git-export` for v3 commits and a draft PR targeting develop only for comparison. Keep develop/v2 sources and active v2 outputs unchanged; do not merge v3 until explicitly authorized. The baseline is v2.1.9 commit 56aed733e90d1fc4f53f48f96d0275b6247f6ca4.
 - Use `develop` only for separately requested v2 test builds, not this v3 workspace. Owner-authorized review branches may feed into develop. Keep main unchanged until the owner confirms the intended release works and explicitly authorizes merging. Testing, store submission, store approval, and GitHub merging are separate steps.

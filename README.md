@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v3 foundation (3.0.0):** Separate development from v2.1.9 for planned GitHub/GitLab export and encrypted saved connections. Git uploads are not enabled. Existing local ZIP/JSON backup behavior is retained. See [v3 Development](docs/V3-Development.md) and the [interactive settings mockup](docs/mockups/git-export-settings.html). This is not the v2 store candidate or a publishable v3 Git build.
+> **v3 test candidate (3.0.1):** Manual GitHub/GitLab push with preview/confirmation, encrypted saved connections, and self-hosted GitLab support. Synthetic tests exercise the full workflow; a separately authorized live test is still required. V2 remains independent. See [Git Setup](docs/Git-Export.md), [v3 Development](docs/V3-Development.md), and the earlier [design mockup](docs/mockups/git-export-settings.html). Do not treat this as a published store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -84,6 +84,10 @@ node tests/browser-profile-cleanup.cjs
 node tests/update-summary.cjs
 node tests/release-metadata.cjs
 node tests/v3-foundation.cjs
+node tests/git-provider.cjs
+node tests/git-permissions.cjs
+node tests/git-vault-browser.cjs
+node tests/git-export-browser.cjs
 node tests/pipeline-export-core.cjs
 node tests/pipeline-export-session.cjs
 node tests/pipeline-export-formatted.cjs

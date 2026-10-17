@@ -1,6 +1,6 @@
 # v3 Development — Git Export
 
-Checkpoint: **3.0.0 foundation and design preview**, not a store release or working Git integration.
+Checkpoint: **3.0.1 functional Git test candidate**, not a store release. Approved saved-token options, exact-origin self-hosted GitLab, connection page, and manual preview/confirmed push are implemented with synthetic tests. Live disposable-repository acceptance remains unverified; see [Git Export](Git-Export.md).
 
 ## Branch and Release Boundaries
 
@@ -47,12 +47,18 @@ Candidates for selective adaptation: provider request/commit operations, bounded
 
 ## Completion Gates
 
-- [ ] Confirm connection/settings layout and credential protection trade-off with the owner.
-- [ ] Review the smallest third-party subset and preserve required notices if copying it.
-- [ ] Implement/test file preparation and provider interfaces with synthetic services.
-- [ ] Test credential key races, malformed state, encryption failure, lock/forget/restart, origin isolation, and no token leakage.
-- [ ] Test remote conflicts, protected branches, unrelated paths, limits, no-op exports, errors/timeouts, and confirmation/cancel boundaries.
-- [ ] Update privacy and submission preparation before real upload capability is enabled.
+The October 17 owner decision approves encrypted device reuse and password unlock, plus self-hosted GitLab. At 3.0.1, original project code implements provider operations; no third-party source was copied. Connection consent/privacy/submission drafts describe the data flow. Both APIs and the installed-extension workflow are exercised against synthetic services, not a claim of real provider acceptance. Remaining release gates are a separately approved live disposable-repository push, independent review/owner confirmation, live store-policy/asset checks, and explicit merge/publication authority.
+
+Password unlock lasts one browser session or until manual Lock, with no idle timer. Session keys use trusted-context storage.session, not source grants. Device keys are non-extractable IndexedDB keys, not OS-vault protection. One connection is saved per browser profile. GitLab checks each changed file's last commit plus a final branch read; it does not claim an atomic whole-branch lease. See Git-Export.md and PRIVACY.md for precise behavior.
+
+Future source ideas are deliberately not in this candidate: Forms, EIP, API Designer, Schema Designer, and API Registry/Catalog. Auto-sync may guide each separately after freshness confirmation/read-only review. Ethos application metadata/usernames is a much later security review; API keys must be excluded. Do not infer new API access or implement those sources from this roadmap alone.
+
+- [x] Confirm layout and both encrypted credential choices with the owner.
+- [x] Review third-party candidates; use original project code instead of copying modules.
+- [x] Implement/test file preparation and both provider interfaces with synthetic services.
+- [x] Test crypto/key/save races, corrupt ciphertext, lock/forget/restart, origin isolation, and no plaintext persistence.
+- [x] Test conflicts/provider rejection, unrelated paths, limits, no-op exports, lost/server-error responses, and confirmation/cancel boundaries against synthetic services. Live acceptance is separate.
+- [x] Update local privacy and submission drafts before enabling the candidate; live store settings remain unchanged.
 - [ ] Obtain separate permission for a live push to a disposable test repository, then verify exact files and branch history.
 - [ ] Package v3 only in its separate candidate location. Do not replace the v2 release output or submit/merge without explicit approval.
 

@@ -29,7 +29,7 @@
   }
 
   // Optional review files share the existing bounded, all-or-nothing collection and require no new requests.
-  async function collect(entries, { read, verify, signal, onProgress = () => {}, formatted = false, environment = '' }) {
+  async function collectFiles(entries, { read, verify, signal, onProgress = () => {}, formatted = false, environment = '' }) {
     // Count physical generated files before requesting source code, retaining the existing archive file cap.
     if (formatted && entries.length * 2 + new Set(entries.map(entry => entry.packageName)).size > PipelineExportCore.MAX_FILES) throw new Error('Too many export files.');
     const files = new Array(entries.length);
@@ -104,9 +104,14 @@
       }
     }
     check();
-    return PipelineExportCore.makeZip(output);
+    return output;
+  }
+
+  // Keep ZIP byte construction unchanged while Git can reuse the same verified generated files.
+  async function collect(entries, options) {
+    return PipelineExportCore.makeZip(await collectFiles(entries, options));
   }
 
   // Keep the runner free of storage, live network calls, and authentication handling.
-  globalThis.PipelineExportSession = Object.freeze({ collect });
+  globalThis.PipelineExportSession = Object.freeze({ collect, collectFiles });
 })();

@@ -21,16 +21,29 @@
           <legend>Select Packages &amp; Files</legend>
           <label class="select-all"><input id="select-all" type="checkbox" /> Select All</label>
           <p><label><input id="include-formatted" type="checkbox" /> Formatted — include Source, readable Formatted copies, and a package README</label></p>
-          <p class="selection-help">Expand a package to choose pipelines or transformers. Only checked items are downloaded.</p>
+          <p class="selection-help">Expand a package to choose pipelines or transformers. Only checked items are prepared for ZIP or Git export.</p>
           <div id="export-packages"></div>
         </fieldset>
         <div class="actions"><button id="refresh-preview" type="button">Refresh Preview</button><button id="download-zip" type="button" disabled>Download ZIP</button><button id="cancel-export" type="button">Cancel</button><a id="save-zip" hidden>Download Again</a></div>
+        <!-- Git preview reads sources locally and remote metadata; uploading requires a second explicit confirmation. -->
+        <div class="actions"><button id="git-prepare" type="button" disabled>Preview Git Changes</button><button id="git-manage" type="button">Manage Git Connection</button></div>
+        <div id="git-comparison" hidden>
+          <h2>Confirm Git Push</h2><p id="git-destination"></p><p id="git-remote-head"></p>
+          <p class="notice">Selected files will leave this browser. Review them for embedded secrets. Public repositories expose the files; internal repositories may expose them to your organization. Commits can trigger CI/CD. Remote files are never deleted.</p>
+          <ul id="git-changes"></ul>
+          <p>GitHub uses a non-forced branch update. GitLab uses file-level conflict guards and a final branch check, not an atomic whole-branch lease; concurrent unrelated commits may become its parent.</p>
+          <label><input id="git-confirm" type="checkbox" /> I reviewed this destination, visibility, and file list and allow this upload.</label>
+          <div class="actions"><button id="git-push" type="button" disabled>Push to Git</button><button id="git-dismiss" type="button">Discard Git Preview</button></div>
+        </div>
+        <p id="git-result" role="status" aria-live="polite"></p>
         <p class="notice">Test build: exported code may contain confidential values. Keep downloaded files private.</p>
         <p>Opening this tab does not refresh Shared From, change favorites, or grant site access. Closing it discards temporary export state.</p>
       </section>
     </main>
     <script src="pipeline-export-core.js"></script>
     <script src="pipeline-export-session.js"></script>
+    <script src="git-provider.js"></script>
+    <script src="git-vault.js"></script>
     <script src="pipeline-export-tab.js"></script>
   </body>
 </html>

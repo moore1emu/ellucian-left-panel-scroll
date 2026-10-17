@@ -1,0 +1,15 @@
+/* Keep full-tab setup readable in either browser theme without changing the compact popup. */
+main { max-width: 860px; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+label { display: block; margin: 12px 0 6px; }
+input:not([type="checkbox"]), select { box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #8b8b95; border-radius: 6px; background: Canvas; color: CanvasText; font: inherit; }
+input[type="checkbox"] { width: auto; }
+.git-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+button { margin: 6px 0; }
+section + section { margin-top: 20px; }
+button[type="submit"]:not(:disabled) { background: #6d28d9; color: #fff; border-color: #6d28d9; }
+[hidden] { display: none !important; }
+p, li { overflow-wrap: anywhere; }
+#git-form p, #git-history { font-size: .9rem; }
+/* Stack the paired fields when the browser window is narrow rather than clipping their labels. */
+@media (max-width: 500px) { .git-columns { grid-template-columns: 1fr; gap: 0; } }
