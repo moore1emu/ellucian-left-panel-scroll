@@ -1,5 +1,13 @@
 # Update history
 
+## 3.1.3 — October 18, 2026
+
+- Keep IntegrationPackages absent from ordinary generated defaults and visible existing configuration until temporary Shift+D confirmation. Explain in that prompt that the hidden configuration entry is being added; Save Locations persists explicit path edits, not the reveal. Preserve existing hidden Packages paths during ordinary edits/resets without deleting them or showing them. A confirmed Packages export carries only its existing UI confirmation into the targeted Connections view; revealing configuration alone grants no source/service access.
+
+- Group Provider, Repository and Existing Branch in a compact responsive row; retain native labels and stack at narrow widths. Remove the Legacy Base Folder control and shorten default-path help. Preserve existing encrypted configuration without an automatic rewrite or fresh-token change.
+- Move Advanced Export Locations to Connections, independently of credential saves. Export keeps the indented destination tree and an Edit Locations button that opens Connections with Advanced expanded. Suggest only the original/sole export's non-secret tenant name/ID; no source contents, credentials or new grants are transferred. Reject untrusted save senders and retain serialized stale-edit rejection.
+- Saving paths updates open export trees and invalidates old Git comparisons without changing package selection or reading source code. Keep tenant/source/native/six-slot, provider, consent and add/update-only behavior unchanged. No real provider upload, remote migration, merge or store update.
+
 ## 3.1.2 — October 18, 2026
 
 - Bring repository locations into the real export page with an indented, metadata-only selected-file tree; shared ancestors appear once, without branch lines. Preview optional Source/Formatted folders and state-separated READMEs before source downloads.

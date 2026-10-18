@@ -87,16 +87,24 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     await popup.evaluate(() => PopupTabs.select('export'));
     const opened = context.waitForEvent('page'); await popup.locator('#manage-git').click();
     const connection = await opened; await connection.waitForFunction(() => !document.querySelector('#git-fields').disabled);
-    await connection.locator('#git-legacy-folder').evaluate(element=>{element.open=true;});
-    assert.match(await connection.locator('#git-folder-help').innerText(), /DataConnect\/<Tenant Name>\/<Package>/);
-    assert.ok((await connection.locator('#git-folder-help').innerText()).length < 110);
-    assert.equal(await connection.locator('#git-folder').getAttribute('aria-describedby'), 'git-folder-help');
-    // Typed folders update only the safe text example, including blank and markup-like input.
-    for (const base of ['IntegrationPackages', '<example>', '']) {
-      await connection.locator('#git-folder').fill(base);
-      assert.equal(await connection.locator('#git-folder-example').innerText(), `${base || '<Base Folder>'}/<Tenant Name>/<Package>`);
+    assert.equal(await connection.locator('#git-folder, #git-legacy-folder').count(),0);
+    assert.equal(await connection.locator('#location-advanced').isVisible(),true);
+    await connection.waitForFunction(()=>!document.getElementById('location-fields').disabled);
+    assert.equal((await connection.locator('#location-json').inputValue()).includes('IntegrationPackages'),false);
+    // The top-level Advanced link navigates to and expands the single Connections editor by keyboard.
+    await connection.locator('#git-open-locations').focus();
+    await connection.keyboard.press('Enter');
+    assert.equal(await connection.locator('#location-advanced').evaluate(element=>element.open),true);
+    assert.ok(connection.url().endsWith('#location-advanced'));
+    // Desktop identity controls share a compact row; mobile stacks without hiding labels or adding overflow.
+    for(const width of [390,1280]) {
+      await connection.setViewportSize({width,height:900});
+      assert.equal(await connection.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+      if(width===1280) {
+        const boxes=await Promise.all(['git-provider','git-repository','git-branch'].map(id=>connection.locator('#'+id).boundingBox()));
+        assert.ok(boxes.every(box=>Math.abs(box.y-boxes[0].y)<2));
+      }
     }
-    await connection.locator('#git-folder').fill('DataConnect');
     assert.equal(await connection.locator('#git-token-help').count(), 0, 'Fresh-token reminder belongs to Save validation, not a permanent paragraph');
     // Help starts collapsed and remains operable by keyboard without submitting the credential form.
     for (const id of ['git-github-help', 'git-gitlab-help']) {
@@ -185,13 +193,31 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       const exported = await exporting; exported.on('pageerror', error => errors.push(error.message));
       await exported.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
       // Saving a readable alias changes this tenant only, without re-entering or changing the saved token.
-      await exported.locator('#location-advanced').evaluate(element=>{element.open=true;});
-      const locations=JSON.parse(await exported.locator('#location-json').inputValue());
+      const readsBeforeLocations=await source.evaluate(()=>stats.sources);
+      const locationOpening=context.waitForEvent('page');
+      await exported.locator('#location-edit').click();
+      const locationPage=await locationOpening;
+      await locationPage.waitForFunction(()=>!document.getElementById('location-fields').disabled);
+      assert.equal(await locationPage.locator('#location-advanced').evaluate(element=>element.open),true);
+      assert.equal(await exported.locator('#location-json').count(),0);
+      const connectionBeforePaths=await locationPage.evaluate(()=>GitVault.info());
+      const locations=JSON.parse(await locationPage.locator('#location-json').inputValue());
       const tenantKey=Object.keys(locations.tenants).find(key=>key.endsWith('11111111-2222-4333-8444-555555555555'));
       locations.tenants[tenantKey].IntegrationPackages='Test/IntegrationPackages';
-      await exported.locator('#location-json').fill(JSON.stringify(locations,null,2));
-      await exported.locator('#location-save').click();
-      await exported.locator('#location-status').filter({hasText:'Locations saved.'}).waitFor();
+      await locationPage.locator('#location-json').fill(JSON.stringify(locations,null,2));
+      await locationPage.locator('#location-save').click();
+      await locationPage.locator('#location-status').filter({hasText:'Locations saved.'}).waitFor();
+      assert.deepEqual(await locationPage.evaluate(()=>GitVault.info()),connectionBeforePaths);
+      await exported.waitForFunction(()=>document.getElementById('location-tree').textContent.startsWith('Test/'));
+      // Invalid JSON preserves the last saved paths and leaves the independent connection credential untouched.
+      const acceptedLocations=await worker.evaluate(()=>chrome.storage.local.get('gitTenantLocations'));
+      await locationPage.locator('#location-json').fill('{broken');
+      await locationPage.locator('#location-save').click();
+      await locationPage.locator('#location-status').filter({hasText:'Invalid JSON.'}).waitFor();
+      assert.deepEqual(await worker.evaluate(()=>chrome.storage.local.get('gitTenantLocations')),acceptedLocations);
+      assert.deepEqual(await locationPage.evaluate(()=>GitVault.info()),connectionBeforePaths);
+      await locationPage.close();
+      assert.equal(await source.evaluate(()=>stats.sources),readsBeforeLocations,'Location setup reads no source definitions');
       assert.match(await exported.locator('#location-tree').innerText(),/^Test\/\n  IntegrationPackages\//);
       assert.doesNotMatch(await exported.locator('#location-tree').innerText(),/[├└│]/);
       // A popup-opened connection can return to the sole export without changing its document or selection.
@@ -267,13 +293,18 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       const prodExport = await prodOpening;
       await prodExport.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
       // Override the other synthetic environment independently; no source-cache name is needed.
-      await prodExport.locator('#location-advanced').evaluate(element=>{element.open=true;});
-      const prodLocations=JSON.parse(await prodExport.locator('#location-json').inputValue());
+      const prodLocationOpening=context.waitForEvent('page');
+      await prodExport.locator('#location-edit').click();
+      const prodLocationPage=await prodLocationOpening;
+      await prodLocationPage.waitForFunction(()=>!document.getElementById('location-fields').disabled);
+      const prodLocations=JSON.parse(await prodLocationPage.locator('#location-json').inputValue());
       const prodKey=Object.keys(prodLocations.tenants).find(key=>key.endsWith('aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'));
       prodLocations.tenants[prodKey].IntegrationPackages='Production/IntegrationPackages';
-      await prodExport.locator('#location-json').fill(JSON.stringify(prodLocations));
-      await prodExport.locator('#location-save').click();
-      await prodExport.locator('#location-status').filter({hasText:'Locations saved.'}).waitFor();
+      await prodLocationPage.locator('#location-json').fill(JSON.stringify(prodLocations));
+      await prodLocationPage.locator('#location-save').click();
+      await prodLocationPage.locator('#location-status').filter({hasText:'Locations saved.'}).waitFor();
+      await prodExport.waitForFunction(()=>document.getElementById('location-tree').textContent.startsWith('Production/'));
+      await prodLocationPage.close();
       await prodExport.evaluate(() => { chrome.permissions.contains = async () => true; });
       const beforeProd = writes.length;
       await prodExport.locator('#git-prepare').click(); await prodExport.locator('#git-comparison').waitFor({ state: 'visible' });
@@ -283,6 +314,31 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await prodExport.close();
       await source.evaluate(() => { owner.context.tenantId = '11111111-2222-4333-8444-555555555555'; owner.state.currentTenant = '11111111-2222-4333-8444-555555555555'; window.__PRELOADED_STATE__.tenant = '11111111-2222-4333-8444-555555555555'; });
     }
+    // Reopening Connections without a confirmed export hides old Packages entries but preserves them on save.
+    await connection.reload();
+    await connection.waitForFunction(()=>!document.getElementById('location-fields').disabled);
+    assert.equal((await connection.locator('#location-json').inputValue()).includes('IntegrationPackages'),false);
+    const hiddenBefore=await worker.evaluate(()=>chrome.storage.local.get('gitTenantLocations'));
+    const ordinaryLocations=JSON.parse(await connection.locator('#location-json').inputValue());
+    const ordinaryKey=Object.keys(ordinaryLocations.tenants)[0];
+    ordinaryLocations.tenants[ordinaryKey].IntegrationDesigner='Custom/IntegrationDesigner';
+    await connection.locator('#location-json').fill(JSON.stringify(ordinaryLocations));
+    await connection.locator('#location-save').click();
+    await connection.locator('#location-status').filter({hasText:'Locations saved.'}).waitFor();
+    const hiddenAfter=await worker.evaluate(()=>chrome.storage.local.get('gitTenantLocations'));
+    for(const [key,mapping] of Object.entries(hiddenBefore.gitTenantLocations.tenants)) assert.equal(hiddenAfter.gitTenantLocations.tenants[key].IntegrationPackages,mapping.IntegrationPackages);
+    assert.equal((await connection.locator('#location-json').inputValue()).includes('IntegrationPackages'),false);
+    // Cancel keeps the entry hidden; confirmed Shift+D explicitly explains the config addition, not native access.
+    await connection.locator('h1').click();
+    connection.once('dialog',dialog=>dialog.dismiss());
+    await connection.keyboard.press('Shift+D');
+    assert.equal((await connection.locator('#location-json').inputValue()).includes('IntegrationPackages'),false);
+    connection.once('dialog',dialog=>{assert.match(dialog.message(),/Add IntegrationPackages.*configuration/);dialog.accept();});
+    await connection.keyboard.press('Shift+D');
+    assert.equal((await connection.locator('#location-json').inputValue()).includes('IntegrationPackages'),true);
+    await connection.reload();
+    await connection.waitForFunction(()=>!document.getElementById('location-fields').disabled);
+    assert.equal((await connection.locator('#location-json').inputValue()).includes('IntegrationPackages'),false,'Reveal is temporary, not a saved permission');
     assert.deepEqual(errors, []);
     assert.ok(calls.length > 0); assert.deepEqual((await worker.evaluate(() => chrome.storage.local.get('syntheticFavorites'))).syntheticFavorites, { keep: true });
     // Saved encrypted settings survive opt-out, but the vault refuses token use from a stale open tab.

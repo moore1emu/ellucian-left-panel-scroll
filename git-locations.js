@@ -31,23 +31,49 @@
   }
 
   // A missing preference uses names from the already verified source snapshot, with ID fallback.
-  function defaults(tenantId, environment) {
+  function defaults(tenantId, environment, includePackages = false) {
     if (!identity.test(tenantId)) throw new Error('Verified tenant identity is unavailable. Reopen export.');
     const name = typeof environment==='string' && environment.trim() ? environment.trim() : tenantId;
-    return {[`${name===tenantId ? 'Tenant' : name}: ${tenantId}`]:Object.fromEntries(Object.values(sources).map(source=>[source,path(`${name}/${source}`)]))};
+    // Keep hidden Packages out of generated configuration until a temporary Shift+D confirmation.
+    return {[`${name===tenantId ? 'Tenant' : name}: ${tenantId}`]:Object.fromEntries(Object.entries(sources).filter(([kind])=>includePackages || kind!=='packages').map(([,source])=>[source,path(`${name}/${source}`)]))};
   }
 
   // Resolve only the requested ID; identical destination folders across tenants are an explicit owner choice.
   function destination(config, tenantId, environment, kind, value) {
     if (!identity.test(tenantId) || !Object.hasOwn(sources,kind)) throw new Error('Verified tenant identity is unavailable. Reopen export.');
     const mapping = Object.entries(validate(value).tenants).find(([key])=>key.match(label)[1].toLowerCase()===tenantId.toLowerCase())?.[1];
-    const folder = mapping?.[sources[kind]] ?? Object.values(defaults(tenantId,environment))[0][sources[kind]];
+    const folder = mapping?.[sources[kind]] ?? Object.values(defaults(tenantId,environment,kind==='packages'))[0][sources[kind]];
     return GitProvider.config({...config,folder:path(folder)});
   }
 
   // Read failures remain failures: never silently fall back to defaults after a storage error.
   async function read() {
     return validate((await chrome.storage.local.get({[KEY]:{tenants:{}}}))[KEY]);
+  }
+
+  // Hide existing Packages overrides without deleting them or exposing them in an ordinary editor session.
+  function visible(value, includePackages) {
+    const result=JSON.parse(JSON.stringify(validate(value)));
+    if (!includePackages) for (const [key,mapping] of Object.entries(result.tenants)) {
+      delete mapping.IntegrationPackages;
+      if (!Object.keys(mapping).length) delete result.tenants[key];
+    }
+    return result;
+  }
+
+  // Save ordinary edits without erasing hidden paths, even when the readable prefix was renamed or removed.
+  function mergeVisible(value, previous, includePackages) {
+    const result=validate(value);
+    if (includePackages) return result;
+    if (Object.values(result.tenants).some(mapping=>Object.hasOwn(mapping,'IntegrationPackages'))) fail();
+    for (const [key,mapping] of Object.entries(validate(previous).tenants)) {
+      if (!Object.hasOwn(mapping,'IntegrationPackages')) continue;
+      const id=key.match(label)[1].toLowerCase();
+      const target=Object.keys(result.tenants).find(key=>key.match(label)[1].toLowerCase()===id) || key;
+      result.tenants[target] ||= {};
+      result.tenants[target].IntegrationPackages=mapping.IntegrationPackages;
+    }
+    return validate(result);
   }
 
   // Merge shared ancestors into an indented text tree, with no branch lines or repeated parent paths.
@@ -70,5 +96,5 @@
     append(root,0);
     return lines.join('\n');
   }
-  globalThis.GitLocations = Object.freeze({KEY,sources,validate,defaults,destination,read,tree});
+  globalThis.GitLocations = Object.freeze({KEY,sources,validate,defaults,destination,read,visible,mergeVisible,tree});
 })();

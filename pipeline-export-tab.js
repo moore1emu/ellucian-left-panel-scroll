@@ -33,11 +33,8 @@
   let gitWriting = false;
   let gitPreparing = false;
   let locationValue = null;
-  let locationBusy = false;
-  let locationDirty = false;
   let locationStale = false;
   const layout = document.querySelector('#export-layout');
-  const locationEditor = document.querySelector('#location-json');
   const locationStatus = document.querySelector('#location-status');
 
   // Build metadata-only destinations before any source download, using indentation instead of branch lines.
@@ -53,55 +50,24 @@
     } catch { document.querySelector('#location-tree').textContent = 'Set a safe folder for this tenant in Advanced.'; }
   }
 
-  // Only a successful local read enables editing; a broken preference must not silently redirect exports.
+  // Read saved routing for the preview; all editing now belongs to the Connections page.
   async function loadLocations() {
     if (!layout || !plan?.sourceKind) return;
     locationValue = await GitLocations.read();
     locationStale = false;
-    const editorValue = structuredClone(locationValue);
-    const id = plan.context.tenantId.toLowerCase();
-    if (!Object.keys(editorValue.tenants).some(key=>key.slice(-36).toLowerCase()===id)) {
-      try { Object.assign(editorValue.tenants,GitLocations.defaults(plan.context.tenantId,plan.environment)); }
-      catch {
-        editorValue.tenants[`${plan.environment}: ${plan.context.tenantId}`]={IntegrationDesigner:'',IntegrationPackages:'',APIDesigner:''};
-        locationStatus.textContent='Tenant name needs a safe folder alias. Enter paths before saving.';
-      }
-    }
-    locationEditor.value = JSON.stringify(editorValue,null,2);
-    locationDirty = false;
     renderDestination();
   }
 
-  // Keep path preferences separate from credential saves; reject edits made against a newer mapping.
-  async function saveLocations(reset = false) {
-    if (!plan || controller || locationBusy || !locationValue) return;
-    locationBusy = true;
-    locationEditor.disabled = true;
-    refresh.disabled = true;
-    document.querySelector('#location-save').disabled = true;
-    document.querySelector('#location-reset').disabled = true;
-    try {
-      const next = reset ? structuredClone(locationValue) : GitLocations.validate(JSON.parse(locationEditor.value));
-      if (reset) for (const key of Object.keys(next.tenants)) if (key.slice(-36).toLowerCase()===plan.context.tenantId.toLowerCase()) delete next.tenants[key];
-      if (JSON.stringify(await GitLocations.read())!==JSON.stringify(locationValue)) throw Error('locations-changed');
-      const saved = await chrome.runtime.sendMessage({type:'git-save-locations',expected:locationValue,value:next});
-      if (!saved?.ok) throw Error('locations-changed');
-      discardGit();
-      await loadLocations();
-      locationStatus.textContent = 'Locations saved. Prepare a new Git comparison. Existing files are unchanged.';
-    } catch (error) {
-      locationStatus.textContent = error instanceof SyntaxError ? 'Invalid JSON. Check commas and quotation marks.' : error.message==='locations-changed' ? 'Locations changed in another tab. Refresh preview before saving.' : 'Could not save locations. Use unique Name: Tenant ID keys and safe relative folders.';
-    } finally {
-      locationBusy = false;
-      locationEditor.disabled = false;
-      refresh.disabled = Boolean(controller);
-      document.querySelector('#location-save').disabled = false;
-      document.querySelector('#location-reset').disabled = false;
-    }
-  }
-  locationEditor?.addEventListener('input',()=>{ locationDirty=true; locationStatus.textContent='Unsaved locations. Save to update the destination.'; discardGit(); });
-  document.querySelector('#location-save')?.addEventListener('click',()=>saveLocations());
-  document.querySelector('#location-reset')?.addEventListener('click',()=>saveLocations(true));
+  // Expose only this export's non-secret identity to an explicitly targeted trusted Connections tab.
+  chrome.runtime.onMessage?.addListener((message,sender,respond)=>{
+    if (message?.type!=='git-location-context' || sender.id!==chrome.runtime.id || sender.url?.split('#')[0]!==chrome.runtime.getURL('git-connection.html') || sender.frameId!==0) return;
+    (async()=>{
+      const current=await chrome.tabs.getCurrent();
+      if (current?.id!==message.exportTabId) return;
+      respond(plan ? {tenantId:plan.context.tenantId,environment:plan.environment,packagesConfirmed:launch?.sourceKind==='packages' && launch.overrideConfirmed===true} : null);
+    })().catch(()=>{});
+    return true;
+  });
 
   // Any selection/layout/source change invalidates confirmation and drops all prepared Git payloads.
   function discardGit() {
@@ -245,7 +211,7 @@
   // Collect exactly the current selected files locally, then perform read-only remote comparisons.
   gitPrepare?.addEventListener('click', async () => {
     if (!selected.size || controller || !plan) return;
-    if (locationDirty || locationBusy || locationStale) { gitResult.textContent=locationStale ? 'Locations changed. Refresh preview before preparing Git changes.' : 'Save locations before preparing Git changes.'; return; }
+    if (locationStale) { gitResult.textContent='Locations changed. Refresh preview before preparing Git changes.'; return; }
     const snapshot = { ...plan, entries: selectedEntries(), formatted: formatted.checked };
     const current = ++generation;
     discardZip();
@@ -328,13 +294,15 @@
     }
   });
   document.querySelector('#git-dismiss')?.addEventListener('click', () => { if (!controller) { discardGit(); gitResult.textContent = 'Git preview discarded. No files uploaded.'; } });
-  document.querySelector('#git-manage')?.addEventListener('click', async () => {
+  async function openConnection(advanced = false) {
     try {
       // Bind return navigation to this export, even when another export is also open.
       const current = await chrome.tabs.getCurrent();
-      await chrome.tabs.create({ url: chrome.runtime.getURL('git-connection.html'), openerTabId: current.id });
+      await chrome.tabs.create({ url: chrome.runtime.getURL('git-connection.html')+(advanced ? '#location-advanced' : ''), openerTabId: current.id });
     } catch { gitResult.textContent = 'Could not open connection settings.'; }
-  });
+  }
+  document.querySelector('#git-manage')?.addEventListener('click',()=>openConnection());
+  document.querySelector('#location-edit')?.addEventListener('click',()=>openConnection(true));
 
   // Create all rows of an expanded package once; no Show More cap can hide records within it.
   function expandGroup(group) {
@@ -549,14 +517,16 @@
   formatted.addEventListener('change', () => updateSelection(true));
   refresh.addEventListener('click', preview);
   // A default export loses eligibility immediately when the user withdraws Shared From consent.
-  chrome.storage.onChanged.addListener((changes, area) => {
+  chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area==='local' && globalThis.GitLocations && changes[GitLocations.KEY]) {
       // Cancel prepared work immediately; do not erase unsaved text or silently update its destination.
       if (gitPreparing || gitWriting) controller?.abort();
       discardGit();
       locationStale = true;
       if (gitWriting) gitResult.textContent='Locations changed. An already-sent Git write may have committed; check remote history.';
-      if (locationStatus) locationStatus.textContent='Locations changed. Refresh preview before another Git comparison.';
+      // Reload only routing metadata; preserve package selections and do not restart source collection.
+      try { await loadLocations(); if(locationStatus) locationStatus.textContent='Locations updated. Prepare a new Git comparison.'; }
+      catch { if(locationStatus) locationStatus.textContent='Could not read locations. Refresh preview to retry.'; }
     }
     if (area !== 'local' || launch?.overrideConfirmed || launch?.sourceKind && launch.sourceKind !== 'packages') return;
     const known = changes.designerOwnershipCache ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue) : null;

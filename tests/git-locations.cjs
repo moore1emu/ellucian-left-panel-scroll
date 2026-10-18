@@ -19,6 +19,15 @@ assert.equal(locations.destination(config,id,'SaaSTest','designer',value).folder
 assert.equal(locations.destination(config,other,'Production','designer',value).folder,'Production/IntegrationDesigner');
 assert.equal(locations.destination(config,other,'Production Test','api-designer',value).folder,'Production Test/APIDesigner');
 assert.equal(config.folder,'Legacy');
+// Ordinary defaults and existing config views never advertise the hidden Packages source.
+assert.equal(JSON.stringify(locations.defaults(id,'SaaSTest')).includes('IntegrationPackages'),false);
+assert.equal(JSON.stringify(locations.visible(value,false)).includes('IntegrationPackages'),false);
+assert.equal(JSON.stringify(locations.visible(value,true)).includes('IntegrationPackages'),true);
+const ordinary={tenants:{['Renamed: '+id]:{IntegrationDesigner:'New/IntegrationDesigner'}}};
+const merged=locations.mergeVisible(ordinary,value,false);
+assert.equal(merged.tenants['Renamed: '+id].IntegrationPackages,'Existing/IntegrationPackages');
+assert.equal(locations.mergeVisible({tenants:{}},value,false).tenants['SaaSTest: '+id].IntegrationPackages,'Existing/IntegrationPackages');
+assert.throws(()=>locations.mergeVisible(value,value,false));
 // Names never select identity; renamed readable prefixes and uppercase UUIDs still match the same ID.
 const renamed={tenants:{['Different: '+id.toUpperCase()]:value.tenants['SaaSTest: '+id]}};
 assert.equal(locations.destination(config,id,'New Name','packages',renamed).folder,'Existing/IntegrationPackages');

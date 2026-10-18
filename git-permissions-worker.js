@@ -5,7 +5,7 @@
   // Serialize per-tenant folder saves in the trusted worker, rejecting stale whole-document edits.
   let locationsPending = Promise.resolve();
   chrome.runtime.onMessage.addListener((message,sender,respond)=>{
-    if (message?.type!=='git-save-locations' || sender.id!==chrome.runtime.id || sender.url?.split('#')[0]!==chrome.runtime.getURL('pipeline-export.html') || sender.frameId!==0) return;
+    if (message?.type!=='git-save-locations' || sender.id!==chrome.runtime.id || sender.url?.split('#')[0]!==chrome.runtime.getURL('git-connection.html') || sender.frameId!==0) return;
     locationsPending=locationsPending.catch(()=>{}).then(async()=>{
       await FeatureTools.requireExport();
       const expected=GitLocations.validate(message.expected);
@@ -19,7 +19,7 @@
 
   // Serialize non-secret server reservations before any browser permission is requested.
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
-    if (message?.type !== 'git-reserve-server' || sender.id !== chrome.runtime.id || sender.url !== chrome.runtime.getURL('git-connection.html') || sender.frameId !== 0) return;
+    if (message?.type !== 'git-reserve-server' || sender.id !== chrome.runtime.id || sender.url?.split('#')[0] !== chrome.runtime.getURL('git-connection.html') || sender.frameId !== 0) return;
     pending = pending.catch(() => {}).then(async () => {
       if (globalThis.FeatureTools) await FeatureTools.requireExport();
       const c = GitProvider.config(message.config);

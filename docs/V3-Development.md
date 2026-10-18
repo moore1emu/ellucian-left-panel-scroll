@@ -1,6 +1,6 @@
 # v3 Development — Git Export
 
-Checkpoint: **3.1.2 functional Git test candidate**, not a store release. Tenant-name default locations, per-ID Advanced JSON paths and indented destination preview are now implemented for manual testing. Saved-token protection, native source guards and manual preview/confirmed push remain. Existing repository content is not moved or deleted; see [Git Export](Git-Export.md). Earlier ID-first/deferred-location statements below are historical. Live disposable-repository acceptance remains a separate check.
+Checkpoint: **3.1.3 functional Git test candidate**, not a store release. Connections groups its identity fields and holds Advanced JSON location setup; Export keeps the indented destination preview and Edit Locations navigation. The legacy base control is removed without rewriting saved credentials. Native source guards and manual preview/confirmed push remain. Existing repository content is not moved or deleted; see [Git Export](Git-Export.md). Earlier placement/ID-first/deferred-location statements below are historical. Live disposable-repository acceptance remains a separate check.
 
 ## Branch and Release Boundaries
 

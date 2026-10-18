@@ -36,7 +36,7 @@ const reserve = (provider, from = sender) => new Promise(resolve => {
   saved.customSites.push('https://git.example.edu');
   assert.equal((await reserve('gitlab')).ok, false, 'An Experience site cannot also be reserved as a Git server');
   // Two concurrent whole-document saves cannot both replace the same prior preference snapshot.
-  const locationSender={...sender,url:'chrome-extension://fixture/pipeline-export.html#one-use-ticket'};
+  const locationSender={...sender,url:'chrome-extension://fixture/git-connection.html#locations'};
   const id='11111111-2222-4333-8444-555555555555';
   const saveLocations=(folder,from=locationSender)=>new Promise(resolve=>{
     const message={type:'git-save-locations',expected:{tenants:{}},value:{tenants:{['Test: '+id]:{IntegrationDesigner:folder}}}};
@@ -45,6 +45,6 @@ const reserve = (provider, from = sender) => new Promise(resolve => {
   const racing=await Promise.all([saveLocations('Test/Designer'),saveLocations('Other/Designer')]);
   assert.equal(racing.filter(result=>result.ok).length,1);
   assert.equal(saved.gitTenantLocations.tenants['Test: '+id].IntegrationDesigner,'Test/Designer');
-  for(const from of [{...locationSender,url:'https://experience.test/'},{...locationSender,frameId:1},{...locationSender,id:'other'}]) assert.equal(await saveLocations('Blocked',from),null);
+  for(const from of [{...locationSender,url:'https://experience.test/'},{...locationSender,url:'chrome-extension://fixture/pipeline-export.html#ticket'},{...locationSender,frameId:1},{...locationSender,id:'other'}]) assert.equal(await saveLocations('Blocked',from),null);
   console.log('PASS Git permissions: serialized reservations, exact trusted sender, no Git content-script injection, interrupted Experience grant recovery, and unchanged favorites');
 })().catch(error => { console.error(error); process.exitCode = 1; });

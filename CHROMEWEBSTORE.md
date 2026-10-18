@@ -1,6 +1,10 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-18 · Candidate: 3.1.2 · Status: Git layout test candidate, not submitted
+Updated: 2026-10-18 · Candidate: 3.1.3 · Status: Git layout test candidate, not submitted
+
+Reviewer clarification for 3.1.3: ordinary generated and visible existing location config omits the hidden Packages source. Shift+D confirmation explains revealing/adding its configuration entry, without granting access. Existing hidden paths are preserved during ordinary saves. Keep this explanation in reviewer/GitHub guidance, not the public listing description.
+
+3.1.3 preparation note: compact responsive connection fields, removed Legacy Base Folder control and concise default-path help. Advanced Export Locations now lives on Connections; Export's Edit Locations opens that section and its destination tree updates after a save. Credential handling, permissions and provider/source consent are unchanged. Refresh both page screenshots before submission. Earlier placement notes below are historical; no live store changes authorized.
 
 3.1.2 preparation note: destination preview now shows an indented folder hierarchy; Git defaults use tenant names and IntegrationDesigner/IntegrationPackages/APIDesigner folders. Advanced stores explicit non-secret per-tenant-ID location preferences with readable name/ID keys. No credentials are changed by location saves; existing remote files are not moved/deleted. Refresh export/connection screenshots before submission. This supersedes the older deferred-location and ID-first statements below; no live store update is authorized.
 

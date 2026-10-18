@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Keep location setup in Connections and the destination preview in Export.
+    "3.1.3": Object.freeze([
+      "Git connection fields are grouped into a compact form without the legacy folder control.",
+      "Edit Advanced Export Locations on Connections; Export shows the destination tree.",
+    ]),
     // Folder preferences are separate from credentials and never move existing repository files.
     "3.1.2": Object.freeze([
       "Preview destinations as an indented folder tree before downloading source files.",

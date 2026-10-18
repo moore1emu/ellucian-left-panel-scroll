@@ -12,6 +12,8 @@
   const mode = document.querySelector('#export-version-mode');
   let reveal = 0;
   let opening = false;
+  // Explain the hidden source and config entry together, without persisting or broadening native access.
+  const packagesNotice='Add IntegrationPackages to export and Advanced configuration, including all accessible published packages and Ellucian content? Save Locations to keep path changes. This temporary choice does not grant service access.';
 
   // Grey out only Pipeline Export on the wrong page; JSON backup/restore remains usable everywhere.
   function updateAvailability() {
@@ -35,7 +37,7 @@
   source.addEventListener('change', () => {
     override.checked = false;
     if (source.value === 'packages') {
-      override.checked = window.confirm('Include all accessible published packages, including Ellucian content? This temporary choice does not grant service access.');
+      override.checked = window.confirm(packagesNotice);
       if (!override.checked) source.value = 'designer';
     }
     updateAvailability();
@@ -54,7 +56,7 @@
     if (globalThis.FeatureTools && !FeatureTools.state.export) return;
     PopupTabs.select('export');
     // One shortcut confirms/reveals all Packages; keep explicit consent rather than silently broadening access.
-    if (window.confirm('Include all accessible published packages, including Ellucian content? This temporary choice does not grant service access.')) {
+    if (window.confirm(packagesNotice)) {
       reveal = 1;
       document.querySelector('#export-packages-option').hidden = false;
       document.querySelector('#export-packages-option').disabled = false;

@@ -25,11 +25,6 @@
       : mode === 'password' ? 'Encrypted at rest; unlock once per browser session. No password is saved.' : 'Only the encrypted token survives on disk; its session key clears on restart, making the saved token unusable.';
   }
 
-  // Render typed folder text safely; this example never changes the actual destination or validates it.
-  function folderHelp() {
-    $('git-folder-example').textContent = `${$('git-folder').value || '<Base Folder>'}/<Tenant Name>/<Package>`;
-  }
-
   // Show only the selected provider's native help, including after a saved connection loads.
   function providerHelp() {
     const provider = $('git-provider').value;
@@ -62,10 +57,10 @@
     saved = await GitVault.info();
     if (saved) {
       const c = GitProvider.config(saved.config);
-      for (const key of ['provider', 'server', 'repository', 'branch', 'folder']) $('git-' + key).value = c[key];
+      for (const key of ['provider', 'server', 'repository', 'branch']) $('git-' + key).value = c[key];
       $('git-storage').value = saved.mode; $('git-history-enabled').checked = saved.history;
     }
-    providerHelp(); folderHelp();
+    providerHelp();
     $('git-unlock-form').hidden = saved?.mode !== 'password';
     $('git-lock').hidden = saved?.mode !== 'password';
     storageHelp(); enabled(true); await history();
@@ -73,8 +68,6 @@
   }
 
   $('git-provider').addEventListener('change', providerHelp);
-  // Keep the layout example synchronized without waiting for a connection save.
-  $('git-folder').addEventListener('input', folderHelp);
   $('git-storage').addEventListener('change', storageHelp);
   // Explain the intentional fresh-token requirement when native required-field validation blocks submission.
   $('git-token').addEventListener('invalid', () => {
@@ -89,7 +82,8 @@
     event.preventDefault(); if (busy) return;
     enabled(false);
     try {
-      const c = GitProvider.config(Object.fromEntries(['provider', 'server', 'repository', 'branch', 'folder'].map(key => [key, $('git-' + key).value])));
+      // Retain the stored internal field for credential compatibility; no legacy folder control is exposed.
+      const c = GitProvider.config({...Object.fromEntries(['provider','server','repository','branch'].map(key=>[key,$('git-'+key).value])),folder:saved?.config.folder || 'Exports'});
       if (!$('git-consent').checked) throw new Error('consent');
       if ($('git-storage').value === 'password' && $('git-password').value !== $('git-password-confirm').value) throw new Error('password-mismatch');
       const origin = apiOrigin(c);

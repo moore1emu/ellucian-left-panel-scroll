@@ -16,15 +16,14 @@
     <!-- Set up only one explicit destination; changing it requires a fresh token and cancels old comparisons. -->
     <form id="git-form">
       <fieldset id="git-fields" disabled>
-        <label for="git-provider">Provider</label>
-        <select id="git-provider"><option value="github">GitHub</option><option value="gitlab">GitLab (Cloud or Self-Hosted)</option></select>
+        <!-- Keep related fields together in reading order; narrow windows stack the same native controls. -->
+        <div class="git-connection-grid">
+          <div><label for="git-provider">Provider</label><select id="git-provider"><option value="github">GitHub</option><option value="gitlab">GitLab (Cloud or Self-Hosted)</option></select></div>
+          <div><label for="git-repository">Repository</label><input id="git-repository" required placeholder="owner/repository or group/project" autocomplete="off" spellcheck="false" /></div>
+          <div><label for="git-branch">Existing Branch</label><input id="git-branch" required value="exports" autocomplete="off" /></div>
+        </div>
         <div id="git-server-field" hidden><label for="git-server">GitLab Server</label><input id="git-server" type="url" value="https://gitlab.com" autocomplete="off" /><p>HTTPS domain only; subpath and custom-port installations are not supported.</p></div>
-        <label for="git-repository">Repository</label><input id="git-repository" required placeholder="owner/repository or group/project" autocomplete="off" spellcheck="false" />
-        <label for="git-branch">Existing Branch</label><input id="git-branch" required value="exports" autocomplete="off" />
-        <p>Default: Tenant Name / IntegrationDesigner, IntegrationPackages, or APIDesigner. Customize paths in the export page's Advanced section.</p>
-        <details id="git-legacy-folder"><summary>Legacy Base Folder</summary><label for="git-folder">Legacy Base Export Folder</label><input id="git-folder" required value="DataConnect" autocomplete="off" aria-describedby="git-folder-help" spellcheck="false" /><p>Retained for older exports only; current exports use their tenant locations.</p>
-        <!-- Explain automatic tenant routing beside the field rather than relying on an input placeholder. -->
-        <p id="git-folder-help">Legacy path: <code id="git-folder-example">DataConnect/&lt;Tenant Name&gt;/&lt;Package&gt;</code>.</p></details>
+        <p>Default folders use the tenant name. <a id="git-open-locations" href="#location-advanced">Advanced Export Locations</a></p>
         <label for="git-token">New Access Token</label><input id="git-token" type="password" required autocomplete="off" spellcheck="false" maxlength="8192" />
         <!-- Native disclosures keep provider examples available without filling the setup page with instructions. -->
         <div class="git-token-guides">
@@ -70,8 +69,21 @@
     <form id="git-unlock-form" hidden><label for="git-unlock-password">Unlock Saved Connection</label><input id="git-unlock-password" type="password" autocomplete="current-password" /><button type="submit">Unlock</button></form>
     <p>Forget removes this saved credential locally; revoke the token at your provider to invalidate it elsewhere. Browser access permissions and remote commits are not removed. Session-only credentials must be re-entered after browser/extension restart.</p>
   </section>
+  <!-- Location preferences are independent of encrypted connection edits and never need a provider token. -->
+  <section aria-labelledby="location-heading"><h2 id="location-heading">Export Locations</h2>
+    <p>Use tenant-name defaults or customize paths by environment.</p>
+    <details id="location-advanced"><summary>Advanced · Export Locations</summary>
+      <p>Keys show Name: Tenant ID; matching uses only the ID.</p>
+      <fieldset id="location-fields" disabled>
+        <label for="location-json">Tenant Locations (JSON)</label><textarea id="location-json" spellcheck="false" rows="14" aria-describedby="location-help location-status"></textarea>
+        <p id="location-help">Unlisted tenants use defaults. Shared destinations may overwrite matching files. Existing files are not moved or deleted.</p>
+        <div class="actions"><button id="location-save" type="button">Save Locations</button><button id="location-reset" type="button" hidden>Use Defaults for This Tenant</button><button id="location-reload" type="button">Reload Saved Locations</button></div>
+      </fieldset>
+      <p id="location-status" role="status"></p>
+    </details>
+  </section>
   <section><h2>Recent Pushes</h2><p>No tokens, headers, source contents, or raw service errors are recorded.</p><p>Private repositories require you to sign in to GitHub or GitLab in this browser to view the commit.</p><ul id="git-history"></ul><button id="git-clear-history" type="button">Clear Local History</button><p>Clearing this list does not erase Git history or provider audit records.</p></section>
 </main>
-<script src="feature-tools.js"></script><script src="git-provider.js"></script><script src="git-vault.js"></script><script src="git-return-export.js"></script><script src="git-connection.js"></script>
+<script src="feature-tools.js"></script><script src="git-provider.js"></script><script src="git-locations.js"></script><script src="git-vault.js"></script><script src="git-return-export.js"></script><script src="git-location-settings.js"></script><script src="git-connection.js"></script>
 </body>
 </html>
