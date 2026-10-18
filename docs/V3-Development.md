@@ -1,6 +1,6 @@
 # v3 Development — Git Export
 
-Checkpoint: **3.1.1 functional Git test candidate**, not a store release. Approved saved-token options, exact-origin self-hosted GitLab, connection page, and manual preview/confirmed push are implemented with synthetic tests. Published exports now match auto-sync's package-version/full-version request behavior without requiring omitted JSON version fields; explicit conflicts still fail. Live disposable-repository push acceptance remains unverified; see [Git Export](Git-Export.md).
+Checkpoint: **3.1.2 functional Git test candidate**, not a store release. Tenant-name default locations, per-ID Advanced JSON paths and indented destination preview are now implemented for manual testing. Saved-token protection, native source guards and manual preview/confirmed push remain. Existing repository content is not moved or deleted; see [Git Export](Git-Export.md). Earlier ID-first/deferred-location statements below are historical. Live disposable-repository acceptance remains a separate check.
 
 ## Branch and Release Boundaries
 

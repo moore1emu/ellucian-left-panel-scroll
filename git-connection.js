@@ -27,7 +27,7 @@
 
   // Render typed folder text safely; this example never changes the actual destination or validates it.
   function folderHelp() {
-    $('git-folder-example').textContent = `<Tenant ID>/${$('git-folder').value || '<Base Folder>'}/Designer or Packages/<Package>`;
+    $('git-folder-example').textContent = `${$('git-folder').value || '<Base Folder>'}/<Tenant Name>/<Package>`;
   }
 
   // Show only the selected provider's native help, including after a saved connection loads.

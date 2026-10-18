@@ -32,3 +32,11 @@ button:disabled { opacity: .5; cursor: default; } progress { width: 100%; } .not
 #git-changes { max-height: 28rem; overflow: auto; padding-left: 24px; overflow-wrap: anywhere; }
 #git-result, #git-destination, #git-remote-head { overflow-wrap: anywhere; }
 #git-push:not(:disabled) { background: #6d28d9; color: #fff; border-color: #6d28d9; }
+/* Keep path editing beside its live destination, stacking naturally on smaller screens. */
+#export-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; margin:20px 0; }
+.location-card { min-width:0; padding:18px; background:light-dark(#f8f7fc,#20242d); }
+.location-card p { font-size:13px; overflow-wrap:anywhere; }
+.location-card summary { cursor:pointer; font-weight:600; }
+#location-json { display:block; width:100%; box-sizing:border-box; margin-top:8px; padding:10px; resize:vertical; color:inherit; background:light-dark(#fff,#17191d); border:1px solid #85818f; border-radius:7px; font:12px/1.6 Consolas,monospace; }
+.destination-tree { font:12px/1.7 Consolas,monospace; white-space:pre; overflow:auto; max-height:360px; padding:12px; border-radius:8px; background:light-dark(#fff,#17191d); }
+@media(max-width:760px) { #export-layout { grid-template-columns:1fr; } }

@@ -84,6 +84,8 @@ If you email support, the publisher receives the information you choose to inclu
 
 ## Your controls
 
+Optional Advanced export locations store tenant display names, tenant IDs and explicitly selected Git folder paths locally. Readable name/ID labels match only by ID. These settings are separate from encrypted credentials and favorites/source JSON backups; they contain no provider tokens or source contents. A metadata-only indented destination preview makes no additional service requests. New Git destinations default to tenant-name folders; custom destinations may intentionally share a folder and overwrite matching files only after a reviewed, confirmed Git push. Existing remote files are not automatically moved or deleted.
+
 You can disable search, hide favorites, and turn off Shared To or Shared From in the extension settings. Hiding favorites does not delete them; use their favorite icons to remove individual favorites. Turning Shared From off stops collection and clears its additional local cache. Removing a custom site revokes its optional domain access and stops future loading there; refresh any open page to clear previously injected controls. Site-specific favorites and widths are retained locally for reuse if you add the site again. Removing the extension removes its local extension storage through the browser. Closing or reloading the page clears its in-memory data, but not saved preferences or an enabled Shared From cache.
 
 ## Updates and contact

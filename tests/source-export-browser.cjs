@@ -60,6 +60,14 @@ window.webpackChunkdata_connect_designer=[];window.webpackChunkdata_connect_desi
       exported.on('pageerror',e=>errors.push(e.message));
       await exported.waitForFunction(()=>document.querySelector('#export-status').textContent.startsWith('Preview ready'));
       assert.equal(await source.evaluate(()=>fixtureStats.reads),0,'Preview must not read definitions');
+      // Ready Experience names label the actual default path; only indentation separates folder levels.
+      assert.match(await exported.locator('#location-tree').innerText(),new RegExp('^Example Test/\\n  '+(kind==='designer'?'IntegrationDesigner':'APIDesigner')+'/'));
+      assert.doesNotMatch(await exported.locator('#location-tree').innerText(),/[├└│]/);
+      assert.match(await exported.locator('#location-tenant').innerText(),/^Example Test: 11111111/);
+      for(const width of [390,1280]) {
+        await exported.setViewportSize({width,height:900});
+        assert.equal(await exported.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'Location cards must not widen mobile layouts');
+      }
       assert.match(await exported.locator('#export-counts').innerText(),kind==='designer'?/3 of 3/:/2 of 2/);
       if(kind==='designer'){
         await exported.locator('details.export-package').first().locator('summary').click();

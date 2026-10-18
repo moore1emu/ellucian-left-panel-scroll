@@ -1,6 +1,28 @@
 # Git Export — V3 Test Candidate
 
-Version 3.1.1 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.1.2 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+
+## Repository Locations
+
+The export page shows selected files as an indented destination tree using metadata only. New Git destinations default to `<Tenant Name>/IntegrationDesigner`, `<Tenant Name>/IntegrationPackages`, or `<Tenant Name>/APIDesigner`. Designer/API state folders and optional Source/Formatted output remain beneath those roots. ZIP layout is unchanged by Git folder preferences.
+
+Open **Advanced · Export Locations** to edit and save JSON. Keys show `Name: Tenant ID`; only the trailing ID selects the environment. For example:
+
+```json
+{
+  "tenants": {
+    "ExampleTest: 11111111-2222-4333-8444-555555555555": {
+      "IntegrationDesigner": "Test/IntegrationDesigner",
+      "IntegrationPackages": "ExistingFolder/IntegrationPackages",
+      "APIDesigner": "Test/APIDesigner"
+    }
+  }
+}
+```
+
+Missing tenant/source overrides use the verified preview name, with tenant-ID fallback when no name is available. Paths must be safe relative folders; duplicate IDs, traversal and Git-internal directories are rejected. Names with unsupported path characters need a literal safe alias. Different tenants may intentionally target the same folder: matching files can be overwritten after explicit preview/push confirmation. Existing folders/files are never moved or deleted. **Use Defaults for This Tenant** removes only that tenant's overrides.
+
+Location saves need no new provider token because they are separate local preferences, not credential/connection edits. Every connection edit still requires a fresh token. Concurrent stale location edits are rejected; changing locations invalidates prepared comparisons. Review the final folder and every changed path before uploading. Older ID-first/base-folder instructions below describe historical candidates; the saved legacy base is retained only for older flows.
 
 Published Data Connect versions come from the selected package metadata. Pipeline/API downloads request the exact full version; Sub-Pipelines request its major. Downloaded JSON may omit or null its version, which is preserved unchanged; an explicit conflicting version is rejected. Package-reported versions are not independently certified from missing source fields. Git Connection's Return to Export button focuses an existing export without reloading its selection; if no export is open, start one from the source page's settings.
 
@@ -8,20 +30,20 @@ Published Data Connect versions come from the selected package metadata. Pipelin
 
 1. In settings, open **Export → Manage Connection**. This opens a full extension-owned browser tab, not a provider login popup.
 2. Choose GitHub or GitLab. For self-hosted GitLab enter its HTTPS server origin. DNS domains are supported; custom ports and installations under a URL subpath are not supported in this candidate.
-3. Enter an existing repository (`owner/repository` or `group/subgroup/project`), an existing branch, and a **Base Export Folder** such as `DataConnect`. New Data Connect exports use `<Tenant ID>/DataConnect/Designer` or `<Tenant ID>/DataConnect/Packages`; API Designer uses `<Tenant ID>/APIDesigner`. Empty repositories/branches cannot be created here.
+3. Enter an existing repository (`owner/repository` or `group/subgroup/project`) and existing branch. Configure tenant locations on the export page; the collapsed Legacy Base Folder is retained for older flows only. Empty repositories/branches cannot be created here.
 4. Create an expiring, least-privilege provider token. GitHub fine-grained tokens need Contents read/write for the selected repository. GitLab's multi-file REST API needs API access and a role allowed to commit; a repository-only token scope is not enough. Organization approval and protected-branch rules still apply. Never reuse an Ellucian session token.
 5. Select encrypted device storage, encrypted password unlock, or session only. Accept the separate upload notice and **Save Connection**. A changed destination requires a freshly entered token; saved tokens never appear back in the form.
 6. Select **Allow Server Access**, then **Test Connection**. Testing reads only repository metadata; it does not prove write access to a protected branch or upload a test file.
 
 Git API origins are reserved separately from Custom Sites before permission is requested. Granting Git access does not inject Experience scripts into the server. At most 20 origins can be reserved. Forgetting a connection leaves these safety reservations and browser permissions intact; revoke permission in browser extension details if needed. There is one saved connection per browser profile in this first candidate.
 
-Routing uses the verified tenant UUID, not a friendly name or URL guess. Friendly names remain display/download metadata. Review the final folder in Git preview before confirming. Existing saved folder values are preserved: change `DataConnect/Test` to `DataConnect` explicitly if desired and re-enter the token when saving. No old repository folder is moved or deleted; cleanup is manual. Recent Pushes records the actual resolved folder.
+Routing selects overrides by verified tenant UUID, never by the readable key prefix or a URL guess. Defaults use the ready source snapshot's tenant name. Review the final folder in Git preview before confirming. Existing saved connection values are preserved. No old repository folder is moved or deleted; cleanup is manual. Recent Pushes records the actual resolved folder.
 
 Every save requires re-entering the access token, including changes to the base folder. An empty token shows this requirement rather than silently reusing the stored secret. Viewing a private commit on GitHub/GitLab requires signing in to that provider in the same browser; the extension token authenticates API requests, not website browsing.
 
 GitHub Token Settings and GitLab Token Instructions expand optional setup checklists; both start collapsed. GitHub uses a selected-repository fine-grained token with Contents read/write. The GitLab example uses a project token with api scope and Developer access to an unprotected export branch; creating it requires Maintainer/Owner, and GitLab.com project tokens require Premium/Ultimate. Your organization's restrictions still apply. Token values belong only in the extension field, never support messages.
 
-## Current Source Workflow (3.1.1)
+## Current Source Workflow (3.1.2)
 
 Enable Export Tools in General first. Navigation Tools may stay off; export uses native lists/identity without adding favorites, search or sharing columns. Disabling Export keeps encrypted connections but blocks new source/provider requests and clears transient previews. It cannot recall requests already sent. Backup/restore stays usable with either group off.
 
@@ -29,7 +51,7 @@ Open Settings → Export on the source page. Integration Designer offers Drafts,
 
 One Shift+D outside inputs confirms and reveals Integration Packages for all accessible published content. Packages, Designer and API Designer exports do not require Shared From setup. This does not bypass service permissions.
 
-Git routing now uses Tenant ID / DataConnect / Designer or Packages, or Tenant ID / APIDesigner. The saved Data Connect folder can replace DataConnect; API Designer has its own fixed tool folder. Draft and Published files are separated beneath new-source destinations. Existing repository folders are not moved or deleted. Advanced location JSON remains a design proposal, not a setting in this build.
+Git routing uses the tenant-name defaults or the matching tenant ID's Advanced overrides described above. Draft and Published files are separated beneath new-source destinations. Existing repository folders are not moved or deleted.
 
 New-source READMEs include source state and any Shared To observations already available from this page session. A timestamp marks cached destinations; absent observations stay unknown. No extra sharing or person-record lookups are made for export.
 

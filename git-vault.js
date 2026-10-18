@@ -156,6 +156,14 @@
 
   // Persist only successful, bounded receipt metadata; no source files or raw service errors enter history.
   async function receipt(revision, result) {
+    // Resolve new per-tenant paths before opening IndexedDB; never keep a transaction alive across storage awaits.
+    let routed = null;
+    if (result.route && globalThis.GitLocations) {
+      const saved = await info();
+      if (!saved || saved.revision!==revision) return;
+      routed = GitLocations.destination(saved.config,result.route.tenantId,result.route.environment,result.route.kind,await GitLocations.read()).folder;
+      if (routed!==result.folder) return;
+    }
     return transaction('readwrite', (store, done) => {
       store.get('connection').onsuccess = event => {
         if (event.target.result?.revision !== revision || !event.target.result.history) return done();
@@ -169,7 +177,7 @@
           const tenantChild = /^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/iu.test(tenant) &&
             [savedConfig.folder + '/Designer',savedConfig.folder + '/Packages','APIDesigner'].includes(source);
           // Keep legacy receipt validation while permitting only the three fixed tenant-first source destinations.
-          if (!tenantChild && !config.folder.startsWith(savedConfig.folder + '/')) return done();
+          if (routed!==config.folder && !tenantChild && !config.folder.startsWith(savedConfig.folder + '/')) return done();
         }
         store.get('history').onsuccess = previous => {
           const entry = { time: Date.now(), config, commit: result.commit, count: result.count };

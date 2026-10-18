@@ -31,6 +31,77 @@
   const gitResult = document.querySelector('#git-result');
   let gitPlan = null;
   let gitWriting = false;
+  let gitPreparing = false;
+  let locationValue = null;
+  let locationBusy = false;
+  let locationDirty = false;
+  let locationStale = false;
+  const layout = document.querySelector('#export-layout');
+  const locationEditor = document.querySelector('#location-json');
+  const locationStatus = document.querySelector('#location-status');
+
+  // Build metadata-only destinations before any source download, using indentation instead of branch lines.
+  function renderDestination() {
+    if (!layout || !plan?.sourceKind || !locationValue) return;
+    layout.hidden = false;
+    document.querySelector('#location-tenant').textContent = `${plan.environment===plan.context.tenantId ? 'Tenant ID' : plan.environment}: ${plan.context.tenantId}`;
+    try {
+      const dummy = {provider:'github',repository:'preview/preview',branch:'preview',folder:'Preview'};
+      const folder = GitLocations.destination(dummy,plan.context.tenantId,plan.environment,plan.sourceKind,locationValue).folder;
+      const files = PipelineExportSession.paths(selectedEntries(),formatted.checked).map(path=>folder+'/'+path);
+      document.querySelector('#location-tree').textContent = files.length ? GitLocations.tree(files) : 'No files selected.';
+    } catch { document.querySelector('#location-tree').textContent = 'Set a safe folder for this tenant in Advanced.'; }
+  }
+
+  // Only a successful local read enables editing; a broken preference must not silently redirect exports.
+  async function loadLocations() {
+    if (!layout || !plan?.sourceKind) return;
+    locationValue = await GitLocations.read();
+    locationStale = false;
+    const editorValue = structuredClone(locationValue);
+    const id = plan.context.tenantId.toLowerCase();
+    if (!Object.keys(editorValue.tenants).some(key=>key.slice(-36).toLowerCase()===id)) {
+      try { Object.assign(editorValue.tenants,GitLocations.defaults(plan.context.tenantId,plan.environment)); }
+      catch {
+        editorValue.tenants[`${plan.environment}: ${plan.context.tenantId}`]={IntegrationDesigner:'',IntegrationPackages:'',APIDesigner:''};
+        locationStatus.textContent='Tenant name needs a safe folder alias. Enter paths before saving.';
+      }
+    }
+    locationEditor.value = JSON.stringify(editorValue,null,2);
+    locationDirty = false;
+    renderDestination();
+  }
+
+  // Keep path preferences separate from credential saves; reject edits made against a newer mapping.
+  async function saveLocations(reset = false) {
+    if (!plan || controller || locationBusy || !locationValue) return;
+    locationBusy = true;
+    locationEditor.disabled = true;
+    refresh.disabled = true;
+    document.querySelector('#location-save').disabled = true;
+    document.querySelector('#location-reset').disabled = true;
+    try {
+      const next = reset ? structuredClone(locationValue) : GitLocations.validate(JSON.parse(locationEditor.value));
+      if (reset) for (const key of Object.keys(next.tenants)) if (key.slice(-36).toLowerCase()===plan.context.tenantId.toLowerCase()) delete next.tenants[key];
+      if (JSON.stringify(await GitLocations.read())!==JSON.stringify(locationValue)) throw Error('locations-changed');
+      const saved = await chrome.runtime.sendMessage({type:'git-save-locations',expected:locationValue,value:next});
+      if (!saved?.ok) throw Error('locations-changed');
+      discardGit();
+      await loadLocations();
+      locationStatus.textContent = 'Locations saved. Prepare a new Git comparison. Existing files are unchanged.';
+    } catch (error) {
+      locationStatus.textContent = error instanceof SyntaxError ? 'Invalid JSON. Check commas and quotation marks.' : error.message==='locations-changed' ? 'Locations changed in another tab. Refresh preview before saving.' : 'Could not save locations. Use unique Name: Tenant ID keys and safe relative folders.';
+    } finally {
+      locationBusy = false;
+      locationEditor.disabled = false;
+      refresh.disabled = Boolean(controller);
+      document.querySelector('#location-save').disabled = false;
+      document.querySelector('#location-reset').disabled = false;
+    }
+  }
+  locationEditor?.addEventListener('input',()=>{ locationDirty=true; locationStatus.textContent='Unsaved locations. Save to update the destination.'; discardGit(); });
+  document.querySelector('#location-save')?.addEventListener('click',()=>saveLocations());
+  document.querySelector('#location-reset')?.addEventListener('click',()=>saveLocations(true));
 
   // Any selection/layout/source change invalidates confirmation and drops all prepared Git payloads.
   function discardGit() {
@@ -81,6 +152,7 @@
     counts.textContent = '';
     download.disabled = true;
     if (gitPrepare) gitPrepare.disabled = true;
+    if (layout) layout.hidden = true;
   }
 
   // Checkbox choices only narrow the authorized plan; hidden/collapsed rows never remove eligible records.
@@ -120,6 +192,7 @@
     download.disabled = !DOWNLOADS_READY || !selected.size || Boolean(controller);
     if (gitPrepare) gitPrepare.disabled = !selected.size || Boolean(controller) || !globalThis.GitProvider || !globalThis.GitVault;
     if (changed) status.textContent = selected.size ? 'Selection updated. Choose Download ZIP or Preview Git Changes to retrieve checked records.' : 'No files selected. Check a package or file to export.';
+    renderDestination();
   }
 
   // Verify both the original native source context and the still-unlocked saved Git destination.
@@ -131,13 +204,16 @@
     if (!await chrome.permissions.contains({ origins: [origin + '/*'] })) throw new Error('Git server permission is missing. Open Manage Connection.');
     // Rechecking unlock before every request makes Lock/Forget stop unsent requests in other tabs too.
     await GitVault.token(connection.revision);
+    // A location edit in another tab invalidates the reviewed destination before any unsent request.
+    if (snapshot.gitFolder && (await gitDestination(snapshot,connection)).folder!==snapshot.gitFolder) throw new Error('Tenant destination changed. Prepare and confirm a new Git preview.');
     if (signal.aborted) throw new Error('Git operation cancelled.');
   }
 
   // Resolve the current tenant's folder once per preparation and again before the confirmed push.
   async function gitDestination(snapshot, connection) {
     // Tenant-first source destinations no longer depend on saved source labels or favorites.
-    const saved = snapshot.sourceKind ? {} : await chrome.storage.local.get({ designerOwnershipCache: {} });
+    if (snapshot.sourceKind) return GitLocations.destination(connection.config,snapshot.context.tenantId,snapshot.environment,snapshot.sourceKind,await GitLocations.read());
+    const saved = await chrome.storage.local.get({ designerOwnershipCache: {} });
     return GitProvider.tenantDestination(connection.config, snapshot.context.tenantId, saved.designerOwnershipCache, snapshot.sourceKind);
   }
 
@@ -158,6 +234,7 @@
     };
     // These failures occur during local preparation, before any Git preview or upload.
     if (Object.hasOwn(sourceReasons, error?.sourceReason)) return `${sourceReasons[error.sourceReason]} No files were uploaded to Git. Refresh preview or reopen export from settings.`;
+    if (error?.message==='Invalid export locations. Use unique Name: Tenant ID keys and safe relative folders.') return 'Check this tenant\'s paths in Advanced Export Locations.';
     const known = new Set(['Tenant name is unavailable. Refresh sources in Designer, then reopen export.', 'The saved tenant name cannot be used as a Git folder. Check the Designer environment name.', 'Multiple saved tenants have the same name. Resolve the environment names before Git export.', 'Tenant destination changed. Prepare and confirm a new Git preview.', 'Git operation cancelled.', 'Source or connection changed. Prepare a new Git preview.', 'Git server permission is missing. Open Manage Connection.', 'Connection changed. Prepare a new preview.', 'Connection is locked or unavailable. Open Manage Connection.',
       'Git authentication failed. Reconnect with a valid token.', 'Git access was denied or rate limited. Check permissions and branch protection.', 'Git repository, branch, or file was not found.', 'Git changed or rejected this commit. Refresh Git preview.', 'Git rejected this change. Check branch protection and refresh preview.', 'Git rate limit reached. Wait before preparing another preview.', 'Git could not be reached. Check the server and connection.',
       'Select at least one file for Git export.', 'Repository tree is too large to compare safely.', 'Git repository visibility could not be verified.', 'Git destination has a file or link where a folder is needed.', 'Git destination collides with a folder, executable, link, or submodule.', 'Git file changed. Refresh Git preview.', 'Remote branch changed. Prepare and confirm a new Git preview.',
@@ -168,9 +245,11 @@
   // Collect exactly the current selected files locally, then perform read-only remote comparisons.
   gitPrepare?.addEventListener('click', async () => {
     if (!selected.size || controller || !plan) return;
+    if (locationDirty || locationBusy || locationStale) { gitResult.textContent=locationStale ? 'Locations changed. Refresh preview before preparing Git changes.' : 'Save locations before preparing Git changes.'; return; }
     const snapshot = { ...plan, entries: selectedEntries(), formatted: formatted.checked };
     const current = ++generation;
     discardZip();
+    gitPreparing = true;
     controller = new AbortController();
     const signal = controller.signal;
     download.disabled = true; gitPrepare.disabled = true; refresh.disabled = true; selection.disabled = true;
@@ -181,6 +260,7 @@
       if (!connection) throw new Error('Git server permission is missing. Open Manage Connection.');
       // Treat the saved connection folder as a base; never reuse Test's fixed target for another tenant.
       const destination = await gitDestination(snapshot, connection);
+      snapshot.gitFolder = destination.folder;
       const check = () => verifyGit(snapshot, connection, signal);
       await check();
       const files = await PipelineExportSession.collectFiles(snapshot.entries, {
@@ -209,7 +289,7 @@
     } catch (error) {
       if (current === generation) { discardGit(); gitResult.textContent = gitFailure(error); }
     } finally {
-      controller = null; refresh.disabled = false; selection.disabled = !plan; progress.hidden = true;
+      gitPreparing = false; controller = null; refresh.disabled = false; selection.disabled = !plan; progress.hidden = true;
       if (plan && current === generation) updateSelection();
     }
   });
@@ -238,7 +318,7 @@
         link.textContent = 'View Commit on ' + (job.comparison.config.provider === 'github' ? 'GitHub' : 'GitLab'); link.target = '_blank'; link.rel = 'noopener noreferrer'; gitResult.append(link);
         // Browser website authentication is separate from the extension's saved API credential.
         if (job.comparison.visibility !== 'public') gitResult.append(document.createTextNode(' Private repositories require you to sign in to GitHub or GitLab in this browser to view the commit.'));
-        try { await GitVault.receipt(job.connection.revision, { ...result, folder: job.comparison.config.folder }); }
+        try { await GitVault.receipt(job.connection.revision, { ...result, folder: job.comparison.config.folder, route:job.snapshot.sourceKind ? {tenantId:job.snapshot.context.tenantId,environment:job.snapshot.environment,kind:job.snapshot.sourceKind} : null }); }
         catch { gitResult.append(document.createTextNode(' Commit succeeded, but its local receipt could not be saved.')); }
       }
     } catch (error) { gitResult.textContent = gitFailure(error); }
@@ -345,6 +425,9 @@
       plan = { ...result.plan, context: result.context, environment: result.environment || result.context.tenantId, sourceKind:result.sourceKind };
       document.querySelector('#export-mode').textContent = launch.sourceKind === 'api-designer' ? 'API Designer · Published definitions, each major version.' : launch.sourceKind === 'designer' ? 'Integration Designer · ' + launch.exportMode + '. Drafts and published files are kept separate.' : launch.overrideConfirmed ? 'Temporary advanced mode: all accessible content. No additional permissions are granted.' : 'Designer-recorded content only. Saved source observations may be stale.';
       renderPackages();
+      // Source preview remains usable for ZIP if optional Git-location settings cannot be read.
+      try { await loadLocations(); }
+      catch { locationValue=null; if (layout) layout.hidden=false; if (locationStatus) locationStatus.textContent='Could not read export locations. Refresh preview to retry.'; }
       download.disabled = !DOWNLOADS_READY || !plan.entries.length;
       // Draft/API exports must not direct users to an unrelated Shared From setup step.
       status.textContent = plan.entries.length ? 'Preview ready. Choose Download ZIP or Preview Git Changes to retrieve these definitions.' :
@@ -467,6 +550,14 @@
   refresh.addEventListener('click', preview);
   // A default export loses eligibility immediately when the user withdraws Shared From consent.
   chrome.storage.onChanged.addListener((changes, area) => {
+    if (area==='local' && globalThis.GitLocations && changes[GitLocations.KEY]) {
+      // Cancel prepared work immediately; do not erase unsaved text or silently update its destination.
+      if (gitPreparing || gitWriting) controller?.abort();
+      discardGit();
+      locationStale = true;
+      if (gitWriting) gitResult.textContent='Locations changed. An already-sent Git write may have committed; check remote history.';
+      if (locationStatus) locationStatus.textContent='Locations changed. Refresh preview before another Git comparison.';
+    }
     if (area !== 'local' || launch?.overrideConfirmed || launch?.sourceKind && launch.sourceKind !== 'packages') return;
     const known = changes.designerOwnershipCache ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue) : null;
     const knownTransforms = known ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue, 'transformer') : null;

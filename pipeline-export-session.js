@@ -128,5 +128,21 @@
   }
 
   // Keep the runner free of storage, live network calls, and authentication handling.
-  globalThis.PipelineExportSession = Object.freeze({ collect, collectFiles });
+  // Describe the same physical layout using metadata only; destination previews never retrieve source code.
+  function paths(entries, formatted) {
+    const output = [];
+    const readmes = new Set();
+    const withReadme = formatted || entries.some(entry=>entry.state);
+    for (const entry of entries) {
+      const path = PipelineExportCore.filePath(entry);
+      const separator = path.indexOf('/');
+      const prefix = entry.state ? (entry.state === 'draft' ? 'Draft/' : 'Published/') : '';
+      if (formatted) {
+        for (const folder of ['Source','Formatted']) output.push(prefix+path.slice(0,separator+1)+folder+'/'+path.slice(separator+1));
+      } else output.push(prefix+path);
+      if (withReadme) readmes.add(prefix+PipelineExportCore.folderName(entry.packageName)+'/README.md');
+    }
+    return [...output,...readmes];
+  }
+  globalThis.PipelineExportSession = Object.freeze({ collect, collectFiles, paths });
 })();

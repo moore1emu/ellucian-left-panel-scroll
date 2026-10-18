@@ -1,6 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-18 · Candidate: 3.1.1 · Status: Git compatibility candidate, not submitted
+Updated: 2026-10-18 · Candidate: 3.1.2 · Status: Git layout test candidate, not submitted
+
+3.1.2 preparation note: destination preview now shows an indented folder hierarchy; Git defaults use tenant names and IntegrationDesigner/IntegrationPackages/APIDesigner folders. Advanced stores explicit non-secret per-tenant-ID location preferences with readable name/ID keys. No credentials are changed by location saves; existing remote files are not moved/deleted. Refresh export/connection screenshots before submission. This supersedes the older deferred-location and ID-first statements below; no live store update is authorized.
 
 3.1.1 preparation note: add Designer drafts/published and API Designer published definition exports, with verified tenant-ID-first Git paths and state separation. Navigation and Export Tools are independently enabled. Packages is separately revealed and confirmed for accessible published content without source-cache setup. Existing native authentication and six slots remain; no new permissions, SQL execution, automatic uploads, or remote moves. Refresh export/connection screenshots and review expanded definition-data disclosures before any v3 submission. Forms/EIP/Schema exporters and advanced location JSON are not in this build. No store changes made.
 

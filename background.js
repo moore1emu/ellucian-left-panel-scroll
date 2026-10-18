@@ -5,7 +5,7 @@ importScripts("feature-tools.js", "icon-appearance.js", "custom-sites.js", "favo
 // Preserve an existing v3 user's export workflow without enabling it on a new installation.
 chrome.runtime.onInstalled.addListener(details => FeatureTools.migrate(details).catch(() => console.warn('[Integration Navigator] FEATURE_PREFERENCE_SAVE_FAILED')));
 // Reserve Git API permissions separately; this worker never receives Git credentials or source payloads.
-importScripts("git-provider.js", "git-permissions-worker.js");
+importScripts("git-provider.js", "git-locations.js", "git-permissions-worker.js");
 let pendingIconUpdate = Promise.resolve();
 
 // Serialize site changes so a removal cannot race an earlier registration request.

@@ -87,13 +87,14 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     await popup.evaluate(() => PopupTabs.select('export'));
     const opened = context.waitForEvent('page'); await popup.locator('#manage-git').click();
     const connection = await opened; await connection.waitForFunction(() => !document.querySelector('#git-fields').disabled);
-    assert.match(await connection.locator('#git-folder-help').innerText(), /<Tenant ID>\/DataConnect\/Designer or Packages\/<Package>/);
+    await connection.locator('#git-legacy-folder').evaluate(element=>{element.open=true;});
+    assert.match(await connection.locator('#git-folder-help').innerText(), /DataConnect\/<Tenant Name>\/<Package>/);
     assert.ok((await connection.locator('#git-folder-help').innerText()).length < 110);
     assert.equal(await connection.locator('#git-folder').getAttribute('aria-describedby'), 'git-folder-help');
     // Typed folders update only the safe text example, including blank and markup-like input.
     for (const base of ['IntegrationPackages', '<example>', '']) {
       await connection.locator('#git-folder').fill(base);
-      assert.equal(await connection.locator('#git-folder-example').innerText(), `<Tenant ID>/${base || '<Base Folder>'}/Designer or Packages/<Package>`);
+      assert.equal(await connection.locator('#git-folder-example').innerText(), `${base || '<Base Folder>'}/<Tenant Name>/<Package>`);
     }
     await connection.locator('#git-folder').fill('DataConnect');
     assert.equal(await connection.locator('#git-token-help').count(), 0, 'Fresh-token reminder belongs to Save validation, not a permanent paragraph');
@@ -183,6 +184,16 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await popup.evaluate(async () => { await PopupTabs.refreshContext(); PopupTabs.select('export'); document.dispatchEvent(new KeyboardEvent('keydown',{key:'D',shiftKey:true})); document.querySelector('#export-pipelines').click(); });
       const exported = await exporting; exported.on('pageerror', error => errors.push(error.message));
       await exported.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
+      // Saving a readable alias changes this tenant only, without re-entering or changing the saved token.
+      await exported.locator('#location-advanced').evaluate(element=>{element.open=true;});
+      const locations=JSON.parse(await exported.locator('#location-json').inputValue());
+      const tenantKey=Object.keys(locations.tenants).find(key=>key.endsWith('11111111-2222-4333-8444-555555555555'));
+      locations.tenants[tenantKey].IntegrationPackages='Test/IntegrationPackages';
+      await exported.locator('#location-json').fill(JSON.stringify(locations,null,2));
+      await exported.locator('#location-save').click();
+      await exported.locator('#location-status').filter({hasText:'Locations saved.'}).waitFor();
+      assert.match(await exported.locator('#location-tree').innerText(),/^Test\/\n  IntegrationPackages\//);
+      assert.doesNotMatch(await exported.locator('#location-tree').innerText(),/[├└│]/);
       // A popup-opened connection can return to the sole export without changing its document or selection.
       const beforeReturn = exported.url();
       // Keep Return to Export beside the repository controls, not above the form.
@@ -202,8 +213,23 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await exported.locator('#git-comparison').waitFor({ state: 'visible' });
       assert.equal(writes.length, 0); assert.equal(await exported.locator('#git-push').isDisabled(), true);
       assert.match(await exported.locator('#git-destination').innerText(), /Visibility: private/);
-      assert.match(await exported.locator('#git-destination').innerText(), /Folder: 11111111-2222-4333-8444-555555555555\/DataConnect\/Packages/);
+      assert.match(await exported.locator('#git-destination').innerText(), /Folder: Test\/IntegrationPackages/);
       assert.equal(await exported.locator('#git-changes li').count(), 1);
+      // A different tab's route edit drops this reviewed comparison before any upload can be confirmed.
+      const savedLocations=await worker.evaluate(()=>chrome.storage.local.get('gitTenantLocations'));
+      await worker.evaluate(async()=>{
+        const saved=await chrome.storage.local.get('gitTenantLocations');
+        const key=Object.keys(saved.gitTenantLocations.tenants).find(key=>key.endsWith('11111111-2222-4333-8444-555555555555'));
+        saved.gitTenantLocations.tenants[key].IntegrationPackages='Alternate/IntegrationPackages';
+        await chrome.storage.local.set(saved);
+      });
+      await exported.locator('#git-comparison').waitFor({state:'hidden'});
+      assert.equal(writes.length,0);
+      await worker.evaluate(value=>chrome.storage.local.set(value),savedLocations);
+      await exported.locator('#refresh-preview').click();
+      await exported.locator('#export-status').filter({hasText:'Preview ready'}).waitFor();
+      await exported.locator('#git-prepare').click();
+      await exported.locator('#git-comparison').waitFor({state:'visible'});
       // Layout/selection changes invalidate already-prepared source buffers and confirmation.
       await exported.locator('#include-formatted').check(); assert.equal(await exported.locator('#git-comparison').isHidden(), true);
       await exported.locator('#git-prepare').click(); await exported.locator('#git-comparison').waitFor({ state: 'visible' });
@@ -211,7 +237,7 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       // Tenant-ID routing is independent of a friendly-name change; preparation still makes no writes.
       await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache['11111111-2222-4333-8444-555555555555'].environment = 'RenamedTest'; await chrome.storage.local.set(saved); });
       await exported.locator('#git-prepare').click(); await exported.locator('#git-comparison').waitFor({ state: 'visible' });
-      assert.match(await exported.locator('#git-destination').innerText(), /11111111-2222-4333-8444-555555555555\/DataConnect\/Packages/);
+      assert.match(await exported.locator('#git-destination').innerText(), /Test\/IntegrationPackages/);
       assert.equal(writes.length, 0);
       await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache['11111111-2222-4333-8444-555555555555'].environment = 'Test'; await chrome.storage.local.set(saved); });
       await exported.locator('#git-prepare').click(); await exported.locator('#git-comparison').waitFor({ state: 'visible' });
@@ -229,7 +255,7 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       assert.ok(writes.length > 0); assert.equal(await exported.locator('#git-comparison').isHidden(), true);
       assert.equal(await exported.locator('#git-result a').getAttribute('href'), provider === 'github' ? `https://github.com/owner/repo/commit/${commit}` : `https://git.example.edu/group/project/-/commit/${commit}`);
       assert.match(await exported.locator('#git-result').innerText(), /Private repositories require you to sign in/);
-      assert.equal((await exported.evaluate(() => GitVault.history()))[0].config.folder, '11111111-2222-4333-8444-555555555555/DataConnect/Packages');
+      assert.equal((await exported.evaluate(() => GitVault.history()))[0].config.folder, 'Test/IntegrationPackages');
       await exported.close();
       // The same saved base connection resolves Production into a different folder without changing Test files.
       await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache['aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'] = { environment: 'Production', packages: [{ name: 'Owned', pipelines: ['Pipeline'] }] }; await chrome.storage.local.set(saved); });
@@ -240,11 +266,19 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await popup.evaluate(async () => { await PopupTabs.refreshContext(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'D',shiftKey:true})); document.querySelector('#export-pipelines').click(); });
       const prodExport = await prodOpening;
       await prodExport.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
+      // Override the other synthetic environment independently; no source-cache name is needed.
+      await prodExport.locator('#location-advanced').evaluate(element=>{element.open=true;});
+      const prodLocations=JSON.parse(await prodExport.locator('#location-json').inputValue());
+      const prodKey=Object.keys(prodLocations.tenants).find(key=>key.endsWith('aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'));
+      prodLocations.tenants[prodKey].IntegrationPackages='Production/IntegrationPackages';
+      await prodExport.locator('#location-json').fill(JSON.stringify(prodLocations));
+      await prodExport.locator('#location-save').click();
+      await prodExport.locator('#location-status').filter({hasText:'Locations saved.'}).waitFor();
       await prodExport.evaluate(() => { chrome.permissions.contains = async () => true; });
       const beforeProd = writes.length;
       await prodExport.locator('#git-prepare').click(); await prodExport.locator('#git-comparison').waitFor({ state: 'visible' });
-      assert.match(await prodExport.locator('#git-destination').innerText(), /Folder: aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee\/DataConnect\/Packages/);
-      assert.ok((await prodExport.locator('#git-changes li').allTextContents()).every(text => text.includes('aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee/') && !text.includes('11111111-2222-4333-8444-555555555555/')));
+      assert.match(await prodExport.locator('#git-destination').innerText(), /Folder: Production\/IntegrationPackages/);
+      assert.ok((await prodExport.locator('#git-changes li').allTextContents()).every(text => text.includes('Production/IntegrationPackages/') && !text.includes('Test/IntegrationPackages/')));
       assert.equal(writes.length, beforeProd, 'Production preview makes no writes');
       await prodExport.close();
       await source.evaluate(() => { owner.context.tenantId = '11111111-2222-4333-8444-555555555555'; owner.state.currentTenant = '11111111-2222-4333-8444-555555555555'; window.__PRELOADED_STATE__.tenant = '11111111-2222-4333-8444-555555555555'; });

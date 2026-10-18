@@ -1,5 +1,11 @@
 # Update history
 
+## 3.1.2 — October 18, 2026
+
+- Bring repository locations into the real export page with an indented, metadata-only selected-file tree; shared ancestors appear once, without branch lines. Preview optional Source/Formatted folders and state-separated READMEs before source downloads.
+- Default new Git destinations to TenantName/IntegrationDesigner, TenantName/IntegrationPackages or TenantName/APIDesigner. Advanced JSON uses readable Name: Tenant ID keys matched only by UUID. Set literal per-source paths for aliases, existing folders or intentionally shared destinations; warn about matching-file overwrites. No automatic remote migration/deletion or saved credential rewrite. Legacy folder settings remain under a collapsed connection disclosure.
+- Save only non-secret locations locally through serialized worker writes with stale-edit rejection. Location changes invalidate prepared Git comparisons and recheck routing before unsent operations. Keep original tenant/document/consent/native/provider safeguards, separate push confirmation and independent v2/store artifacts.
+
 ## 3.1.1 — October 18, 2026
 
 - Add independent Navigation Tools and Export Tools switches in General. New installs default to Navigation on and Export off; upgrades preserve legacy v3 export access unless explicitly disabled. Switching off preserves subordinate settings, tenant favorites, source observations and encrypted connections. Navigation opt-out hides Navigation, Sharing and Appearance tabs, including keyboard focus; General, Sites and Export/Backup remain available. Re-enabling restores the saved task settings.

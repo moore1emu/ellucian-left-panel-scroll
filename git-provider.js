@@ -27,7 +27,8 @@
     const segments = repository.split('/');
     if (segments.length < 2 || segments.length > 10 || input.provider === 'github' && segments.length !== 2 || segments.some(x => !segment.test(x) || x.endsWith('.git'))) fail('Enter owner/repository or group/project, not a URL.');
     if (!branch || branch.length > 200 || /[\s~^:?*\[\\\u0000-\u001f]/u.test(branch) || branch.includes('..') || branch.includes('@{') || branch.startsWith('-') || branch.startsWith('/') || branch.endsWith('/') || branch.endsWith('.') || branch.split('/').some(x => !x || x.startsWith('.') || x.endsWith('.lock'))) fail('Enter a valid existing branch name.');
-    if (!folder || folder.length > 500 || folder.split('/').some(x => !segment.test(x) || x === '.' || x === '..' || /^(?:\.git|\.github|\.gitlab)$/iu.test(x))) fail('Choose a dedicated relative export folder, such as DataConnect/Test.');
+    // Preserve readable tenant names, including spaces, without permitting traversal or repository internals.
+    if (!folder || folder.length > 500 || folder.split('/').some(x => !/^[\p{L}\p{N}_][\p{L}\p{N} ._-]{0,99}$/u.test(x) || /[. ]$/u.test(x) || /^(?:\.git|\.github|\.gitlab)$/iu.test(x))) fail('Choose a dedicated relative export folder, such as Test/IntegrationDesigner.');
     return { provider: input.provider, server, repository, branch, folder };
   }
 

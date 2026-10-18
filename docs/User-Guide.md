@@ -1,6 +1,6 @@
 # User Guide
 
-> This is the separate **3.1.1 Git test candidate**, based on v2.1.9. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. ZIP/JSON backups below remain independent; the v2 release build is unchanged. Live Git acceptance is still unverified.
+> This is the separate **3.1.2 Git test candidate**, based on v2.1.9. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. ZIP/JSON backups below remain independent; the v2 release build is unchanged. Live Git acceptance is still unverified.
 
 If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
 
@@ -12,7 +12,7 @@ Open Settings → Export on Integration Designer or API Designer. Designer offer
 
 One Shift+D outside inputs reveals Integration Packages after confirming all accessible published content, including vendor content. No Shared From setup is required. Designer and API Designer also read their own native lists without that eligibility cache. No shortcut grants service permissions. Draft transformers, optional SQL/GURASPC and other product exporters are not included yet.
 
-Git preview shows Tenant ID / DataConnect / Designer or Packages, or Tenant ID / APIDesigner; the Data Connect folder remains configurable. Review it before confirmation. No old repository folders are moved or deleted. Advanced per-source JSON locations remain a design proposal.
+Destination shows selected files as an indented tree before source downloads. New Git roots default to TenantName/IntegrationDesigner, TenantName/IntegrationPackages or TenantName/APIDesigner. In Advanced, save per-tenant JSON paths keyed by readable Name: Tenant ID labels; matching uses only the ID. Aliases and existing/shared folders are allowed, with a matching-file overwrite warning. Location saves need no provider token and invalidate old comparisons. Review the resolved Git path before confirmation. No existing repository folders are moved or deleted; ZIP paths are unchanged by these Git settings.
 
 ## Earlier v2 Packages Export Workflow
 

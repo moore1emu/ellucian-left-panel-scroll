@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Folder preferences are separate from credentials and never move existing repository files.
+    "3.1.2": Object.freeze([
+      "Preview destinations as an indented folder tree before downloading source files.",
+      "Use tenant-name folders or customize each tenant's export paths in Advanced.",
+    ]),
     // Group opt-ins never erase user data or replace the confirmation for hidden Packages exports.
     "3.1.1": Object.freeze([
       "Use Navigation Tools, Export Tools, or both; saved data stays intact when tools are off.",

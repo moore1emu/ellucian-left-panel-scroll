@@ -14,13 +14,13 @@ const chrome = {
   permissions: { getAll: async () => ({ origins: ['https://api.github.com/*', 'https://git.example.edu/*', 'https://vanity.example.edu/*'] }), contains: async () => true },
   scripting: { getRegisteredContentScripts: async () => [], registerContentScripts: async value => registered.push(...value), updateContentScripts: async () => {}, unregisterContentScripts: async () => {} },
 };
-const sandbox = { chrome, URL, TextEncoder, TextDecoder, Uint8Array, setTimeout, clearTimeout };
+const sandbox = { chrome, URL, TextEncoder, TextDecoder, Uint8Array, setTimeout, clearTimeout, FeatureTools:{requireExport:async()=>{}} };
 vm.createContext(sandbox);
-for (const file of ['custom-sites.js', 'git-provider.js', 'git-permissions-worker.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), sandbox);
+for (const file of ['custom-sites.js', 'git-provider.js', 'git-locations.js', 'git-permissions-worker.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), sandbox);
 const sender = { id: 'fixture', url: 'chrome-extension://fixture/git-connection.html', frameId: 0 };
 const destination = provider => ({ provider, server: 'https://git.example.edu', repository: 'owner/repo', branch: 'exports', folder: 'DataConnect' });
 const reserve = (provider, from = sender) => new Promise(resolve => {
-  const accepted = listeners[0]({ type: 'git-reserve-server', config: destination(provider) }, from, resolve);
+  const accepted = listeners.some(listener=>listener({ type: 'git-reserve-server', config: destination(provider) }, from, resolve));
   if (!accepted) resolve(null);
 });
 (async () => {
@@ -35,5 +35,16 @@ const reserve = (provider, from = sender) => new Promise(resolve => {
   assert.deepEqual(saved.favorites, { keep: true });
   saved.customSites.push('https://git.example.edu');
   assert.equal((await reserve('gitlab')).ok, false, 'An Experience site cannot also be reserved as a Git server');
+  // Two concurrent whole-document saves cannot both replace the same prior preference snapshot.
+  const locationSender={...sender,url:'chrome-extension://fixture/pipeline-export.html#one-use-ticket'};
+  const id='11111111-2222-4333-8444-555555555555';
+  const saveLocations=(folder,from=locationSender)=>new Promise(resolve=>{
+    const message={type:'git-save-locations',expected:{tenants:{}},value:{tenants:{['Test: '+id]:{IntegrationDesigner:folder}}}};
+    if(!listeners.some(listener=>listener(message,from,resolve))) resolve(null);
+  });
+  const racing=await Promise.all([saveLocations('Test/Designer'),saveLocations('Other/Designer')]);
+  assert.equal(racing.filter(result=>result.ok).length,1);
+  assert.equal(saved.gitTenantLocations.tenants['Test: '+id].IntegrationDesigner,'Test/Designer');
+  for(const from of [{...locationSender,url:'https://experience.test/'},{...locationSender,frameId:1},{...locationSender,id:'other'}]) assert.equal(await saveLocations('Blocked',from),null);
   console.log('PASS Git permissions: serialized reservations, exact trusted sender, no Git content-script injection, interrupted Experience grant recovery, and unchanged favorites');
 })().catch(error => { console.error(error); process.exitCode = 1; });
