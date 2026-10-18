@@ -1,8 +1,10 @@
 # v3 Development — Git Export
 
-Checkpoint: **3.0.9 functional Git test candidate**, not a store release. Approved saved-token options, exact-origin self-hosted GitLab, connection page, and manual preview/confirmed push are implemented with synthetic tests. Published exports now match auto-sync's package-version/full-version request behavior without requiring omitted JSON version fields; explicit conflicts still fail. Live disposable-repository push acceptance remains unverified; see [Git Export](Git-Export.md).
+Checkpoint: **3.1.0 functional Git test candidate**, not a store release. Approved saved-token options, exact-origin self-hosted GitLab, connection page, and manual preview/confirmed push are implemented with synthetic tests. Published exports now match auto-sync's package-version/full-version request behavior without requiring omitted JSON version fields; explicit conflicts still fail. Live disposable-repository push acceptance remains unverified; see [Git Export](Git-Export.md).
 
 ## Branch and Release Boundaries
+
+Current 3.1.0 adds bounded Experience-store identity reads, native API Designer published definitions with explicit pagination, and Designer Draft/Published source separation. Existing six-slot scheduling and document-bound grants are reused. Packages has a two-stage temporary reveal, with its normal cache eligibility retained. New Git destinations use tenant UUID first; READMEs reuse only already-observed sharing metadata. SQL/GURASPC, draft transformers, advanced JSON location settings, Forms/EIP/Schema exporters remain outside this implementation. Earlier design sections below are historical where they conflict with this source/routing update.
 
 The owner requested a separate major version so v2 can be published independently. Branch `feature/v3-git-export` starts at v2.1.9 commit `56aed733e90d1fc4f53f48f96d0275b6247f6ca4`. Keep `develop` on v2, keep its release ZIP/unpacked folder unchanged, and track v3 in a separate draft PR targeting develop. Do not merge v3 into develop/main without explicit intended-release approval. A draft PR is a comparison, not permission to fold v3 into v2.
 

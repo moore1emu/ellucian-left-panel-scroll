@@ -51,10 +51,10 @@
       const url = new URL(context?.url);
       if (url.protocol !== 'https:') throw new Error('Unsupported document.');
       const resolved = /\/data-connect\/home\/?$/iu.test(url.pathname) ? 'packages'
-        : /\/data-connect-designer\/?$/iu.test(url.pathname) ? 'designer' : '';
+        : /\/data-connect-designer\/?$/iu.test(url.pathname) ? 'designer' : /\/APIDesigner\/?$/u.test(url.pathname) ? 'api-designer' : '';
       if (sequence !== readSequence) return page;
       page = resolved;
-      label.textContent = page === 'packages' ? 'Integration Packages' : page === 'designer' ? 'Integration Designer' : 'Open an Integration Page';
+      label.textContent = page === 'packages' ? 'Integration Packages' : page === 'designer' ? 'Integration Designer' : page === 'api-designer' ? 'API Designer' : 'Open an Integration Page';
     } catch (_error) {
       // Missing receivers or site access must not enable a page-specific action by guessing.
       if (sequence !== readSequence) return page;

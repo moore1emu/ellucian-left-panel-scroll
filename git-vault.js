@@ -162,7 +162,12 @@
         // Retain the actual tenant child in the receipt, without changing the encrypted base connection.
         if (typeof result.folder === 'string') {
           try { config = GitProvider.config({ ...savedConfig, folder: result.folder }); } catch { return done(); }
-          if (!config.folder.startsWith(savedConfig.folder + '/')) return done();
+          const [tenant,...parts] = config.folder.split('/');
+          const source = parts.join('/');
+          const tenantChild = /^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/iu.test(tenant) &&
+            [savedConfig.folder + '/Designer',savedConfig.folder + '/Packages','APIDesigner'].includes(source);
+          // Keep legacy receipt validation while permitting only the three fixed tenant-first source destinations.
+          if (!tenantChild && !config.folder.startsWith(savedConfig.folder + '/')) return done();
         }
         store.get('history').onsuccess = previous => {
           const entry = { time: Date.now(), config, commit: result.commit, count: result.count };

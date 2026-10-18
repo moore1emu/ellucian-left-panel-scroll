@@ -1,10 +1,18 @@
 # User Guide
 
-> This is the separate **3.0.9 Git test candidate**, based on v2.1.9. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. ZIP/JSON backups below remain independent; the v2 release build is unchanged. Live Git acceptance is still unverified.
+> This is the separate **3.1.0 Git test candidate**, based on v2.1.9. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. ZIP/JSON backups below remain independent; the v2 release build is unchanged. Live Git acceptance is still unverified.
 
 If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
 
-## Pipeline Export — v2 Test Candidate
+## Definition Export — Current v3 Candidate
+
+Open Settings → Export on Integration Designer or API Designer. Designer offers Drafts, Published, or Both; API Designer keeps each published API major. Review records, then choose Download ZIP or Preview Git Changes. Drafts and published files are separate, and new-source READMEs include state plus any Shared To observations already available in the page session. Unknown sharing stays unknown; timestamps identify cached observations.
+
+First Shift+D outside inputs reveals Integration Packages. Second Shift+D offers explicit temporary All Packages confirmation. Filtered Packages export still requires Shared From. Designer and API Designer do not use that cross-environment eligibility cache. No shortcut grants service permissions. Draft transformers, optional SQL/GURASPC and other product exporters are not included yet.
+
+Git preview shows Tenant ID / DataConnect / Designer or Packages, or Tenant ID / APIDesigner; the Data Connect folder remains configurable. Review it before confirmation. No old repository folders are moved or deleted. Advanced per-source JSON locations remain a design proposal.
+
+## Earlier v2 Packages Export Workflow
 
 1. Enable Shared From and visit Designer in each source environment to record package/pipeline names.
 2. Open Integration Packages, then select **Export → Preview Pipeline Export** in settings.

@@ -10,11 +10,11 @@ const root = path.resolve(__dirname, '..');
 function installStub() {
   // Retain unrelated settings across reloads to catch accidental resets.
   const saved = JSON.parse(localStorage.getItem('syntheticPreferences') || 'null') || {
-    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '3.0.1' }, favorites: { keep: true }, sharedFromEnabled: true,
+    packageArtifactsEnabled: false, pendingUpdateSummary: { version: '3.1.0' }, favorites: { keep: true }, sharedFromEnabled: true,
   };
   window.__messages = [];
   window.__page = 'packages';
-  const runtime = { lastError: undefined, getManifest: () => ({ version: '3.0.1', content_scripts: [{ matches: [] }] }),
+  const runtime = { lastError: undefined, getManifest: () => ({ version: '3.1.0', content_scripts: [{ matches: [] }] }),
     sendMessage: async message => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
   window.chrome = { runtime, storage: { local: {
     get(defaults, callback) { const result = { ...defaults }; for (const key of Object.keys(result)) if (Object.hasOwn(saved, key)) result[key] = saved[key]; if (callback) setTimeout(() => callback(result), 0); return Promise.resolve(result); },
@@ -64,13 +64,12 @@ function installStub() {
       assert.equal(await page.locator('.favorite-appearance-controls > .setting-title').textContent(), 'Favorites');
       // Task names do not repeat as headings; retain only distinct subgroup titles.
       assert.equal(await page.locator('#panel-sharing > h2, #panel-sites > h2').count(), 0);
-      assert.deepEqual(await page.locator('#panel-export h2').allTextContents(), ['Pipeline Export', 'Git Connection', 'Backup & Restore']);
+      assert.deepEqual(await page.locator('#panel-export h2').allTextContents(), ['Export Definitions', 'Git Connection', 'Backup & Restore']);
 
       // Dismissal failures remain retryable without changing preferences.
       assert.deepEqual(await page.locator('#update-summary li').allTextContents(), [
-        'Manually export selected files to GitHub or GitLab after reviewing and confirming changes.',
-        'Save an encrypted connection with automatic reuse or password unlock; self-hosted GitLab is supported.',
-        'ZIP exports and JSON backups remain independent. V3 is a test candidate, not a store release.',
+        'Export Designer drafts and published definitions separately, or published API Designer definitions.',
+        'Git destinations now group these exports by verified tenant ID and source tool.',
       ]);
       await page.evaluate(() => { window.__failWrite = true; });
       await page.locator('#dismiss-update-summary').click();
@@ -160,7 +159,7 @@ function installStub() {
           await page.waitForFunction(() => document.querySelector('#shared-from-status').textContent === 'Shared From data refreshed.');
         }
         await task('Export');
-        assert.equal(await page.locator('#export-pipelines').isDisabled(), current !== 'packages');
+        assert.equal(await page.locator('#export-pipelines').isDisabled(), current !== 'designer');
         assert.equal(await page.locator('#export-shared-from').isEnabled(), true);
         assert.equal(await page.locator('#import-favorites').isEnabled(), true);
       }
@@ -177,9 +176,13 @@ function installStub() {
       assert.equal(await page.evaluate(() => __saved.sharedFromEnabled), false);
       await page.locator('#cancel-shared-from').click();
 
-      // The hidden shortcut selects Export, but typing and revelation never grant override consent.
+      // The first shortcut reveals Packages; only the second offers temporary all-content consent.
       await page.locator('#icon-letters').evaluate(node => node.dispatchEvent(new KeyboardEvent('keydown', { key: 'D', shiftKey: true, bubbles: true })));
       assert.equal(await page.locator('#export-advanced').isVisible(), false);
+      await page.locator('#tab-sharing').press('Shift+D');
+      assert.equal(await page.locator('#export-advanced').isVisible(), false);
+      await page.selectOption('#export-source', 'packages');
+      page.once('dialog', dialog => dialog.dismiss());
       await page.locator('#tab-sharing').press('Shift+D');
       assert.equal(await page.locator('#export-advanced').isVisible(), true, JSON.stringify({ errors, state: await page.evaluate(() => ({ hidden: document.querySelector('#export-advanced').hidden, panel: document.querySelector('#panel-export').hidden, selected: document.querySelector('[role="tab"][aria-selected="true"]').id })) }));
       page.once('dialog', dialog => dialog.dismiss());

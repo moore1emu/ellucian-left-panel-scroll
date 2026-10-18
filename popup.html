@@ -249,10 +249,12 @@
         <section id="panel-export" class="settings-card settings-panel backup-card" role="tabpanel" aria-labelledby="tab-export" hidden>
           <!-- Open metadata only; source reads require ZIP or Git preparation in the separate export tab. -->
           <div class="pipeline-export-section" id="pipeline-export-section">
-            <h2>Pipeline Export</h2>
-            <p class="card-description">Export published pipelines and transformers.</p>
+            <h2>Export Definitions</h2>
+            <label class="search-display-control" for="export-source"><span>Source</span><select id="export-source"><option value="designer">Integration Designer</option><option value="api-designer">API Designer</option><option id="export-packages-option" value="packages" hidden disabled>Integration Packages</option></select></label>
+            <label class="search-display-control" id="export-mode-field" for="export-version-mode"><span>Versions</span><select id="export-version-mode"><option value="both">Drafts &amp; Published</option><option value="draft">Drafts Only</option><option value="published">Published Only</option></select></label>
+            <p class="card-description" id="export-source-description">Export Designer pipelines, APIs and sub-pipelines.</p>
             <p class="export-setup-notice">Shared From setup is required.</p>
-            <button id="export-pipelines" type="button" disabled aria-describedby="pipeline-export-status">Preview Pipeline Export</button>
+            <button id="export-pipelines" type="button" disabled aria-describedby="pipeline-export-status">Preview Export</button>
             <p id="pipeline-export-status" class="icon-status" role="status" aria-live="polite"></p>
             <div id="export-advanced" hidden>
               <label><input id="export-all-accessible" type="checkbox" /> Include All Accessible Content</label>

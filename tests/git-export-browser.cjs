@@ -15,8 +15,8 @@ const old = hash('old'); const tree = hash('tree'); const commit = hash('new-com
 const synthetic = 'SYNTHETIC_INSTALLED_TOKEN';
 const html = `<!doctype html><div data-testid="master"><h2 id="home_title-packages">PACKAGES</h2><ul role="tree"><li data-level="1" package-element>Owned</li></ul></div><main id="pipelineManager-main-customBlock"><h1 id="packageDetails-title">Package: Owned</h1></main><script>
 const pkg={name:'Owned',nameAndExtension:'owned.json',pipelines:[{name:'Pipeline',version:'v1.0.0',type:'integration'}]};
-window.stats={sources:0};window.__PRELOADED_STATE__={tenant:'synthetic'};
-const owner={state:{currentTenant:'synthetic',menu:[{'package-element':pkg}]},context:{tenantId:'synthetic',getJwt:()=>{throw Error('Credentials must remain native-owned');}}};
+window.stats={sources:0};window.__PRELOADED_STATE__={tenant:'11111111-2222-4333-8444-555555555555'};
+const owner={state:{currentTenant:'11111111-2222-4333-8444-555555555555',menu:[{'package-element':pkg}]},context:{tenantId:'11111111-2222-4333-8444-555555555555',getJwt:()=>{throw Error('Credentials must remain native-owned');}}};
 const row=document.querySelector('li');row.__reactFiber$fixture={return:{stateNode:owner}};row.__reactProps$fixture={'package-element':pkg};
 const opaque={};const helper={G9:async()=>[{nameAndExtension:'owned.json',version:'v1.0.0'}],db:async()=>opaque,bP:async()=>pkg,
 B0:async()=>{stats.sources++;return {name:'Pipeline',fittings:[]};}};
@@ -79,7 +79,7 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     });
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     await worker.evaluate(() => pendingOwnershipUpdate);
-    await worker.evaluate(() => chrome.storage.local.set({ sharedFromEnabled: true, designerOwnershipCache: { synthetic: { environment: 'Test', packages: [{ name: 'Owned', pipelines: ['Pipeline'] }] } }, syntheticFavorites: { keep: true } }));
+    await worker.evaluate(() => chrome.storage.local.set({ sharedFromEnabled: true, designerOwnershipCache: { '11111111-2222-4333-8444-555555555555': { environment: 'Test', packages: [{ name: 'Owned', pipelines: ['Pipeline'] }] } }, syntheticFavorites: { keep: true } }));
     const id = new URL(worker.url()).host;
     const source = await context.newPage(); await source.goto(site + packagesPath);
     const popup = await context.newPage(); await popup.goto(`chrome-extension://${id}/popup.html`);
@@ -87,13 +87,13 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     await popup.evaluate(() => PopupTabs.select('export'));
     const opened = context.waitForEvent('page'); await popup.locator('#manage-git').click();
     const connection = await opened; await connection.waitForFunction(() => !document.querySelector('#git-fields').disabled);
-    assert.match(await connection.locator('#git-folder-help').innerText(), /DataConnect\/<Tenant Name>\/<Package>/);
+    assert.match(await connection.locator('#git-folder-help').innerText(), /<Tenant ID>\/DataConnect\/Designer or Packages\/<Package>/);
     assert.ok((await connection.locator('#git-folder-help').innerText()).length < 110);
     assert.equal(await connection.locator('#git-folder').getAttribute('aria-describedby'), 'git-folder-help');
     // Typed folders update only the safe text example, including blank and markup-like input.
     for (const base of ['IntegrationPackages', '<example>', '']) {
       await connection.locator('#git-folder').fill(base);
-      assert.equal(await connection.locator('#git-folder-example').innerText(), `${base || '<Base Folder>'}/<Tenant Name>/<Package>`);
+      assert.equal(await connection.locator('#git-folder-example').innerText(), `<Tenant ID>/${base || '<Base Folder>'}/Designer or Packages/<Package>`);
     }
     await connection.locator('#git-folder').fill('DataConnect');
     assert.equal(await connection.locator('#git-token-help').count(), 0, 'Fresh-token reminder belongs to Save validation, not a permanent paragraph');
@@ -179,7 +179,7 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       // Open export with the original Packages document active and its real worker-bound grant intact.
       await source.bringToFront();
       const exporting = context.waitForEvent('page');
-      await popup.evaluate(async () => { await PopupTabs.refreshContext(); PopupTabs.select('export'); document.querySelector('#export-pipelines').click(); });
+      await popup.evaluate(async () => { await PopupTabs.refreshContext(); PopupTabs.select('export'); document.dispatchEvent(new KeyboardEvent('keydown',{key:'D',shiftKey:true})); document.querySelector('#export-source').value='packages'; document.querySelector('#export-source').dispatchEvent(new Event('change')); document.querySelector('#export-pipelines').click(); });
       const exported = await exporting; exported.on('pageerror', error => errors.push(error.message));
       await exported.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
       // A popup-opened connection can return to the sole export without changing its document or selection.
@@ -201,18 +201,18 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await exported.locator('#git-comparison').waitFor({ state: 'visible' });
       assert.equal(writes.length, 0); assert.equal(await exported.locator('#git-push').isDisabled(), true);
       assert.match(await exported.locator('#git-destination').innerText(), /Visibility: private/);
-      assert.match(await exported.locator('#git-destination').innerText(), /Folder: DataConnect\/Test/);
+      assert.match(await exported.locator('#git-destination').innerText(), /Folder: 11111111-2222-4333-8444-555555555555\/DataConnect\/Packages/);
       assert.equal(await exported.locator('#git-changes li').count(), 1);
       // Layout/selection changes invalidate already-prepared source buffers and confirmation.
       await exported.locator('#include-formatted').check(); assert.equal(await exported.locator('#git-comparison').isHidden(), true);
       await exported.locator('#git-prepare').click(); await exported.locator('#git-comparison').waitFor({ state: 'visible' });
       assert.equal(await exported.locator('#git-changes li').count(), 3);
-      // Renaming a cached environment after comparison must not silently switch the confirmed target.
-      await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache.synthetic.environment = 'RenamedTest'; await chrome.storage.local.set(saved); });
-      await exported.locator('#git-confirm').check(); await exported.locator('#git-push').click();
-      await exported.locator('#git-result').filter({ hasText: 'Tenant destination changed' }).waitFor();
+      // Tenant-ID routing is independent of a friendly-name change; preparation still makes no writes.
+      await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache['11111111-2222-4333-8444-555555555555'].environment = 'RenamedTest'; await chrome.storage.local.set(saved); });
+      await exported.locator('#git-prepare').click(); await exported.locator('#git-comparison').waitFor({ state: 'visible' });
+      assert.match(await exported.locator('#git-destination').innerText(), /11111111-2222-4333-8444-555555555555\/DataConnect\/Packages/);
       assert.equal(writes.length, 0);
-      await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache.synthetic.environment = 'Test'; await chrome.storage.local.set(saved); });
+      await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache['11111111-2222-4333-8444-555555555555'].environment = 'Test'; await chrome.storage.local.set(saved); });
       await exported.locator('#git-prepare').click(); await exported.locator('#git-comparison').waitFor({ state: 'visible' });
       // A changed remote head causes zero writes and requires a new preview rather than a silent rebase.
       await exported.locator('#git-confirm').check(); failHead = true;
@@ -228,11 +228,11 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       assert.ok(writes.length > 0); assert.equal(await exported.locator('#git-comparison').isHidden(), true);
       assert.equal(await exported.locator('#git-result a').getAttribute('href'), provider === 'github' ? `https://github.com/owner/repo/commit/${commit}` : `https://git.example.edu/group/project/-/commit/${commit}`);
       assert.match(await exported.locator('#git-result').innerText(), /Private repositories require you to sign in/);
-      assert.equal((await exported.evaluate(() => GitVault.history()))[0].config.folder, 'DataConnect/Test');
+      assert.equal((await exported.evaluate(() => GitVault.history()))[0].config.folder, '11111111-2222-4333-8444-555555555555/DataConnect/Packages');
       await exported.close();
       // The same saved base connection resolves Production into a different folder without changing Test files.
-      await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache['synthetic-prod'] = { environment: 'Production', packages: [{ name: 'Owned', pipelines: ['Pipeline'] }] }; await chrome.storage.local.set(saved); });
-      await source.evaluate(() => { owner.context.tenantId = 'synthetic-prod'; owner.state.currentTenant = 'synthetic-prod'; window.__PRELOADED_STATE__.tenant = 'synthetic-prod'; });
+      await worker.evaluate(async () => { const saved = await chrome.storage.local.get('designerOwnershipCache'); saved.designerOwnershipCache['aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'] = { environment: 'Production', packages: [{ name: 'Owned', pipelines: ['Pipeline'] }] }; await chrome.storage.local.set(saved); });
+      await source.evaluate(() => { owner.context.tenantId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'; owner.state.currentTenant = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'; window.__PRELOADED_STATE__.tenant = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'; });
       await source.bringToFront();
       const prodOpening = context.waitForEvent('page');
       await popup.evaluate(async () => { await PopupTabs.refreshContext(); document.querySelector('#export-pipelines').click(); });
@@ -241,11 +241,11 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await prodExport.evaluate(() => { chrome.permissions.contains = async () => true; });
       const beforeProd = writes.length;
       await prodExport.locator('#git-prepare').click(); await prodExport.locator('#git-comparison').waitFor({ state: 'visible' });
-      assert.match(await prodExport.locator('#git-destination').innerText(), /Folder: DataConnect\/Production/);
-      assert.ok((await prodExport.locator('#git-changes li').allTextContents()).every(text => text.includes('/Production/') && !text.includes('/Test/')));
+      assert.match(await prodExport.locator('#git-destination').innerText(), /Folder: aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee\/DataConnect\/Packages/);
+      assert.ok((await prodExport.locator('#git-changes li').allTextContents()).every(text => text.includes('aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee/') && !text.includes('11111111-2222-4333-8444-555555555555/')));
       assert.equal(writes.length, beforeProd, 'Production preview makes no writes');
       await prodExport.close();
-      await source.evaluate(() => { owner.context.tenantId = 'synthetic'; owner.state.currentTenant = 'synthetic'; window.__PRELOADED_STATE__.tenant = 'synthetic'; });
+      await source.evaluate(() => { owner.context.tenantId = '11111111-2222-4333-8444-555555555555'; owner.state.currentTenant = '11111111-2222-4333-8444-555555555555'; window.__PRELOADED_STATE__.tenant = '11111111-2222-4333-8444-555555555555'; });
     }
     assert.deepEqual(errors, []);
     assert.ok(calls.length > 0); assert.deepEqual((await worker.evaluate(() => chrome.storage.local.get('syntheticFavorites'))).syntheticFavorites, { keep: true });

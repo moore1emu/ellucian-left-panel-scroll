@@ -1,8 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-17 · Candidate: 3.0.9 · Status: Git compatibility candidate, not submitted
+Updated: 2026-10-17 · Candidate: 3.1.0 · Status: Git compatibility candidate, not submitted
 
-3.0.9 preparation note: shorter setup text, collapsed provider-token checklists, and Save-only fresh-token reminder. No credential, permission, privacy-flow, tenant-routing, or provider-operation changes. Refresh connection-page screenshots before a future v3 release; no store changes made.
+3.1.0 preparation note: add Designer drafts/published and API Designer published definition exports, with verified tenant-ID-first Git paths and state separation. Packages becomes a separately revealed, consent-filtered source. Existing native authentication and six slots remain; no new permissions, SQL execution, automatic uploads, or remote moves. Refresh export/connection screenshots and review expanded definition-data disclosures before any v3 submission. Forms/EIP/Schema exporters and advanced location JSON are not in this build. No store changes made.
 
 This v3 branch is not ready for submission. Connection/storage/provider flows are implemented and synthetic-tested; separate live disposable-repository testing and store privacy-disclosure/asset checks remain required. The public copy below is a v3 draft, not a live listing update. Do not modify the v2 listing from this branch.
 

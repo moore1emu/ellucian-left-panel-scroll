@@ -22,7 +22,7 @@
         <label for="git-repository">Repository</label><input id="git-repository" required placeholder="owner/repository or group/project" autocomplete="off" spellcheck="false" />
         <div class="git-columns"><div><label for="git-branch">Existing Branch</label><input id="git-branch" required value="exports" autocomplete="off" /></div><div><label for="git-folder">Base Export Folder</label><input id="git-folder" required value="DataConnect" autocomplete="off" aria-describedby="git-folder-help" spellcheck="false" /></div></div>
         <!-- Explain automatic tenant routing beside the field rather than relying on an input placeholder. -->
-        <p id="git-folder-help">Adds the tenant and package automatically: <code id="git-folder-example">DataConnect/&lt;Tenant Name&gt;/&lt;Package&gt;</code>.</p>
+        <p id="git-folder-help">Data Connect path: <code id="git-folder-example">&lt;Tenant ID&gt;/DataConnect/Designer or Packages/&lt;Package&gt;</code>.</p>
         <label for="git-token">New Access Token</label><input id="git-token" type="password" required autocomplete="off" spellcheck="false" maxlength="8192" />
         <!-- Native disclosures keep provider examples available without filling the setup page with instructions. -->
         <div class="git-token-guides">

@@ -32,8 +32,14 @@
   }
 
   // Resolve a tenant-named child only from the exact verified tenant's saved Designer observation.
-  function tenantDestination(destination, tenantId, cache) {
+  function tenantDestination(destination, tenantId, cache, sourceKind = '') {
     const c = config(destination);
+    // New source exports use the verified immutable tenant ID first; existing remote files are untouched.
+    if (sourceKind) {
+      if (!/^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/iu.test(tenantId) || !['designer','packages','api-designer'].includes(sourceKind)) fail('Verified tenant identity is unavailable. Reopen export.');
+      const source = sourceKind === 'api-designer' ? 'APIDesigner' : c.folder + (sourceKind === 'designer' ? '/Designer' : '/Packages');
+      return config({...c,folder:tenantId + '/' + source});
+    }
     const name = typeof tenantId === 'string' && Object.hasOwn(cache || {}, tenantId) ? cache[tenantId]?.environment : null;
     if (typeof name !== 'string' || !name.trim()) fail('Tenant name is unavailable. Refresh sources in Designer, then reopen export.');
     const tenantName = name.trim();

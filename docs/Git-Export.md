@@ -1,27 +1,37 @@
 # Git Export — V3 Test Candidate
 
-Version 3.0.9 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.1.0 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
 
-Published versions come from the selected package metadata. Pipeline/API downloads request the exact full version; Sub-Pipelines request its major. Downloaded JSON may omit or null its version, which is preserved unchanged; an explicit conflicting version is rejected. Package-reported versions are not independently certified from missing source fields. Git Connection's Return to Export button focuses an existing export without reloading its selection; if no export is open, start one from Integration Packages settings.
+Published Data Connect versions come from the selected package metadata. Pipeline/API downloads request the exact full version; Sub-Pipelines request its major. Downloaded JSON may omit or null its version, which is preserved unchanged; an explicit conflicting version is rejected. Package-reported versions are not independently certified from missing source fields. Git Connection's Return to Export button focuses an existing export without reloading its selection; if no export is open, start one from the source page's settings.
 
 ## Set Up a Connection
 
 1. In settings, open **Export → Manage Connection**. This opens a full extension-owned browser tab, not a provider login popup.
 2. Choose GitHub or GitLab. For self-hosted GitLab enter its HTTPS server origin. DNS domains are supported; custom ports and installations under a URL subpath are not supported in this candidate.
-3. Enter an existing repository (`owner/repository` or `group/subgroup/project`), an existing branch, and a **Base Export Folder** such as `DataConnect`, not `DataConnect/Test`. Every Git export automatically adds the current tenant name: `DataConnect/ExampleTenant/ExamplePackage/...`. Empty repositories/branches cannot be created here.
+3. Enter an existing repository (`owner/repository` or `group/subgroup/project`), an existing branch, and a **Base Export Folder** such as `DataConnect`. New Data Connect exports use `<Tenant ID>/DataConnect/Designer` or `<Tenant ID>/DataConnect/Packages`; API Designer uses `<Tenant ID>/APIDesigner`. Empty repositories/branches cannot be created here.
 4. Create an expiring, least-privilege provider token. GitHub fine-grained tokens need Contents read/write for the selected repository. GitLab's multi-file REST API needs API access and a role allowed to commit; a repository-only token scope is not enough. Organization approval and protected-branch rules still apply. Never reuse an Ellucian session token.
 5. Select encrypted device storage, encrypted password unlock, or session only. Accept the separate upload notice and **Save Connection**. A changed destination requires a freshly entered token; saved tokens never appear back in the form.
 6. Select **Allow Server Access**, then **Test Connection**. Testing reads only repository metadata; it does not prove write access to a protected branch or upload a test file.
 
 Git API origins are reserved separately from Custom Sites before permission is requested. Granting Git access does not inject Experience scripts into the server. At most 20 origins can be reserved. Forgetting a connection leaves these safety reservations and browser permissions intact; revoke permission in browser extension details if needed. There is one saved connection per browser profile in this first candidate.
 
-The tenant name comes only from the Shared From cache entry for the verified current tenant ID, even in advanced export mode. Visit/refresh Designer to populate it; Git export stops if it is missing, unsupported as a folder segment, or matches another known cached tenant name ignoring case. ZIP naming/export remains independent. The final destination is shown in Git preview and checked again before push. Cached observations are not a global uniqueness guarantee. Existing saved folder values are preserved: change `DataConnect/Test` to `DataConnect` explicitly and re-enter the token when saving. No old repository folder is moved or deleted; cleanup is manual. Recent Pushes records the actual resolved folder.
+Routing uses the verified tenant UUID, not a friendly name or URL guess. Friendly names remain display/download metadata. Review the final folder in Git preview before confirming. Existing saved folder values are preserved: change `DataConnect/Test` to `DataConnect` explicitly if desired and re-enter the token when saving. No old repository folder is moved or deleted; cleanup is manual. Recent Pushes records the actual resolved folder.
 
 Every save requires re-entering the access token, including changes to the base folder. An empty token shows this requirement rather than silently reusing the stored secret. Viewing a private commit on GitHub/GitLab requires signing in to that provider in the same browser; the extension token authenticates API requests, not website browsing.
 
 GitHub Token Settings and GitLab Token Instructions expand optional setup checklists; both start collapsed. GitHub uses a selected-repository fine-grained token with Contents read/write. The GitLab example uses a project token with api scope and Developer access to an unprotected export branch; creating it requires Maintainer/Owner, and GitLab.com project tokens require Premium/Ultimate. Your organization's restrictions still apply. Token values belong only in the extension field, never support messages.
 
-## Choose Credential Protection
+## Current Source Workflow (3.1.0)
+
+Open Settings → Export on the source page. Integration Designer offers Drafts, Published, or Both; API Designer exports published definition JSON for each resource major. Designer draft transformers and optional API SQL/GURASPC files are not included yet. Missing/changing tenant identity or source access stops the export.
+
+First Shift+D outside inputs reveals Integration Packages. Second Shift+D offers an explicit temporary All Packages confirmation. Filtered Packages export still requires Shared From; Designer and API Designer export their own visible definitions without that cross-environment cache requirement. This does not bypass service permissions.
+
+Git routing now uses Tenant ID / DataConnect / Designer or Packages, or Tenant ID / APIDesigner. The saved Data Connect folder can replace DataConnect; API Designer has its own fixed tool folder. Draft and Published files are separated beneath new-source destinations. Existing repository folders are not moved or deleted. Advanced location JSON remains a design proposal, not a setting in this build.
+
+New-source READMEs include source state and any Shared To observations already available from this page session. A timestamp marks cached destinations; absent observations stay unknown. No extra sharing or person-record lookups are made for export.
+
+## Credential Protection
 
 | Mode | After Browser/Extension Restart | Important Boundary |
 |---|---|---|
@@ -35,7 +45,7 @@ Tokens use AES-256-GCM with fresh IVs. Password keys use PBKDF2-SHA-256 with a f
 
 New commit messages summarize only added/updated file counts, excluding unchanged files. Package/file/path lists are omitted; use Git history/diffs for details. Source/Formatted copies and package READMEs are separate files in these counts. A random Export-ID footer (not a tenant identifier) supports uncertain-write verification. Existing commit history is unchanged.
 
-1. Open **Integration Packages**, then **Export → Preview Pipeline Export**.
+1. Open **Integration Designer** or **API Designer**, then **Export → Preview Export**. Choose the source and, for Designer, Drafts, Published, or Both. Integration Packages is a hidden secondary source as described above.
 2. Select the packages/artifacts and optional Formatted layout just as for ZIP export.
 3. Choose **Preview Git Changes**. This retrieves selected native sources into local memory and compares Git metadata. No source payload is uploaded yet.
 4. Review server, repository, branch, folder, visibility, compared commit, and every added/updated path. Unchanged files are skipped; nothing is deleted. Review sources for embedded secrets and consider provider visibility and CI/CD before confirming.

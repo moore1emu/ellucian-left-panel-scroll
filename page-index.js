@@ -122,6 +122,8 @@
   const sharedReleaseCache = new Map();
   // Remember only pipeline names already checked by the optional sharing column.
   const sharedArtifactNames = new Map();
+  // Reuse only already-observed sharing metadata in export READMEs; exporting never triggers these lookups.
+  const exportSharingObservations = new Map();
   // Keep: one global six-request sharing budget, raised from three on request (1.20.3).
   const SHARING_REQUEST_LIMIT = 6;
   // Keep: start the deadline only when an actual sharing service call starts, not in its queue (1.20.9).
@@ -336,6 +338,13 @@
 
   // Never reuse an old document, manager, tenant, or callback after Experience navigation.
   function checkExportSession(session) {
+    // New source adapters require the ready Experience tenant on every queued/read/verify boundary.
+    if (session?.kind && session.kind !== 'packages') {
+      const identity = ExperienceIdentity.read();
+      if (session.cancelled || session.expires < Date.now() || !identity || identity.tenantId !== session.tenantId ||
+        !session.anchor?.isConnected || window.location.href !== session.url || session.kind === 'designer' && session.owner.state.currentTenant !== session.tenantId) throw PipelineExportNative.fail('context-changed');
+      return;
+    }
     const owner = getExportManager();
     if (!session || session.cancelled || session.expires < Date.now() || !owner || owner !== session.owner ||
       owner.context.tenantId !== session.tenantId || owner.context.getJwt !== session.getJwt || window.location.href !== session.url) throw PipelineExportNative.fail('context-changed');
@@ -383,6 +392,7 @@
 
   // Prepare fresh latest package metadata after an explicit preview request; no pipeline code is requested.
   async function prepareExportSession(message) {
+    if (message.sourceKind && message.sourceKind !== 'packages') return prepareOtherSource(message);
     const owner = getExportManager();
     if (!owner) throw PipelineExportNative.fail('open-packages');
     for (const [id, session] of exportSessions) if (session.expires < Date.now()) closeExportSession(id);
@@ -428,6 +438,51 @@
     } catch (error) { closeExportSession(id); throw error; }
   }
 
+  // Find only the native client's props or Designer's package manager once per export preparation.
+  function sourceOwner(kind) {
+    const anchors = kind === 'designer' ? [document.querySelector('#pipelineManager-main-customBlock')] :
+      [...document.querySelectorAll('[role="main"], [role="main"] div')].slice(0,120);
+    for (const anchor of anchors.filter(Boolean)) {
+      const key = Object.keys(anchor).find(name => name.startsWith('__reactFiber$'));
+      for (let fiber = key ? anchor[key] : null, depth = 0; fiber && depth < 65; depth += 1, fiber = fiber.return) {
+        if (kind === 'designer' && Array.isArray(fiber.stateNode?.state?.packageList)) return { owner: fiber.stateNode, anchor };
+        if (kind === 'api-designer' && typeof fiber.memoizedProps?.data?.authenticatedEthosFetch === 'function') return { owner: fiber.memoizedProps.data, anchor };
+      }
+    }
+    return null;
+  }
+
+  // Reuse the original six-slot scheduler and document-bound sessions for each fixed source adapter.
+  async function prepareOtherSource(message) {
+    const kind = message.sourceKind;
+    if (!(kind === 'designer' && isDesignerPage() || kind === 'api-designer' && /\/APIDesigner\/?$/u.test(location.pathname))) throw PipelineExportNative.fail('context-changed');
+    const identity = ExperienceIdentity.read();
+    const resolved = sourceOwner(kind);
+    if (!identity || !resolved || exportSessions.size >= 20) throw PipelineExportNative.fail('context-changed');
+    const id = normalizeText(message.sessionId);
+    if (!id || exportSessions.has(id)) throw PipelineExportNative.fail('context-changed');
+    const session = { ...resolved, kind, tenantId: identity.tenantId, url: location.href, cancelled: false, expires: Date.now()+1800000, packages: new Map() };
+    exportSessions.set(id,session);
+    try {
+      const schedule = run => scheduleExportJob(session,run);
+      const verify = () => checkExportSession(session);
+      session.adapter = kind === 'api-designer' ? SourceExportNative.api(session.owner,schedule,verify) :
+        SourceExportNative.designer(getDesignerModules()?.server,session.tenantId,session.owner.state.packageList,schedule,verify,message.exportMode);
+      const packages = await session.adapter.prepare();
+      verify();
+      for (const pkg of packages) {
+        const prior = session.packages.get(pkg.name);
+        session.packages.set(pkg.name,prior ? { ...prior, pipelines:[...prior.pipelines,...pkg.pipelines] } : pkg);
+      }
+      if (kind === 'designer' && sharingEnabled) for (const pkg of packages) for (const item of pkg.pipelines) {
+        const observed = item.state === 'published' && exportSharingObservations.get(JSON.stringify([session.tenantId,item.name,item.version.replace(/^v/u,'')]));
+        if (observed) item.sharing = observed;
+      }
+      return { context:{url:session.url,tenantId:session.tenantId,documentKey:exportDocumentKey,sessionId:id},packages,
+        environment:identity.label || identity.name || identity.tenantId };
+    } catch (error) { closeExportSession(id); throw error; }
+  }
+
   // Correlate every reply; only fixed failure codes cross the page boundary, never native exceptions.
   async function handleExportOperation(message) {
     const response = { source: MESSAGE_SOURCE, type: 'pipeline-export-operation-response', requestId: normalizeText(message.requestId) };
@@ -441,7 +496,7 @@
           const entry = message.entry;
           const pkg = session.packages.get(entry?.packageName);
           // Entries must be real published members of the exact package snapshot, not arbitrary artifact names.
-          if (!pkg?.pipelines.some((item) => item.name === entry.name && item.type === entry.type && item.version.replace(/^v/u, '') === entry.version?.replace(/^v/u, ''))) throw PipelineExportNative.fail('entry-unavailable');
+          if (!pkg?.pipelines.some((item) => item.name === entry.name && item.type === entry.type && item.state === entry.state && item.version.replace(/^v/u, '') === entry.version?.replace(/^v/u, ''))) throw PipelineExportNative.fail('entry-unavailable');
           response.data = await session.adapter.read(entry, pkg.ref);
           checkExportSession(session);
         }
@@ -573,6 +628,13 @@
         ...await getTenantDetails(modules.server, id, true), version,
         outdated: cleanVersion !== version,
       })));
+
+      // Bound the optional export snapshot and distinguish unknown from an observed empty destination list.
+      if (destinations.length <= 16) {
+        const observationKey = JSON.stringify([tenantId,entry.name,normalizeText(entry.version).replace(/^v/u,'')]);
+        exportSharingObservations.set(observationKey,{observedAt:Date.now(),destinations:destinations.map(d=>({environment:normalizeText(d.environment||d.tenantName||d.tenantId),version:normalizeText(d.version)}))});
+        while (exportSharingObservations.size > 1000) exportSharingObservations.delete(exportSharingObservations.keys().next().value);
+      }
 
       return {
         key: entry.key,
@@ -783,6 +845,7 @@
   // Immediately discard waiting sharing calls on opt-out, without clearing good results.
   function handleSharedStatusSetting(message) {
     sharingEnabled = message.enabled === true;
+    if (!sharingEnabled) exportSharingObservations.clear();
     drainSharingRequests();
   }
 

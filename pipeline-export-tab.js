@@ -114,7 +114,9 @@
     // Count checked artifacts by type so independent major versions and non-pipeline files are visible.
     const byType = { pipeline: 0, 'sub-pipeline': 0, api: 0, transformer: 0 };
     for (const entry of selectedEntries()) byType[entry.type] += 1;
-    counts.textContent = `${selectedPackages} of ${groups.size} packages · ${selected.size} of ${plan.entries.length} files selected (Pipelines: ${byType.pipeline}, Sub-Pipelines: ${byType['sub-pipeline']}, APIs: ${byType.api}, Transformers: ${byType.transformer}) · ${plan.skipped} unrecorded records in inspected packages skipped`;
+    // Only Packages uses saved-source eligibility; direct Designer inventories have no unrecorded skip count.
+    counts.textContent = `${selectedPackages} of ${groups.size} packages · ${selected.size} of ${plan.entries.length} files selected (Pipelines: ${byType.pipeline}, Sub-Pipelines: ${byType['sub-pipeline']}, APIs: ${byType.api}, Transformers: ${byType.transformer})` +
+      (!plan.sourceKind || plan.sourceKind === 'packages' ? ` · ${plan.skipped} unrecorded records in inspected packages skipped` : '');
     download.disabled = !DOWNLOADS_READY || !selected.size || Boolean(controller);
     if (gitPrepare) gitPrepare.disabled = !selected.size || Boolean(controller) || !globalThis.GitProvider || !globalThis.GitVault;
     if (changed) status.textContent = selected.size ? 'Selection updated. Choose Download ZIP or Preview Git Changes to retrieve checked records.' : 'No files selected. Check a package or file to export.';
@@ -135,7 +137,7 @@
   // Resolve the current tenant's folder once per preparation and again before the confirmed push.
   async function gitDestination(snapshot, connection) {
     const saved = await chrome.storage.local.get({ designerOwnershipCache: {} });
-    return GitProvider.tenantDestination(connection.config, snapshot.context.tenantId, saved.designerOwnershipCache);
+    return GitProvider.tenantDestination(connection.config, snapshot.context.tenantId, saved.designerOwnershipCache, snapshot.sourceKind);
   }
 
   // Display only application-owned messages; no provider response body or credential can appear here.
@@ -261,7 +263,7 @@
     wrapper.className = 'pipeline-list';
     const table = document.createElement('table');
     const head = table.createTHead().insertRow();
-    for (const label of ['Select', 'Name', 'Type', 'Version']) {
+    for (const label of ['Select', 'Name', 'Type', 'Version', 'State']) {
       const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = label; head.append(cell);
     }
     const body = table.createTBody();
@@ -273,7 +275,7 @@
       checkbox.checked = selected.has(item.index);
       item.checkbox = checkbox;
       row.insertCell().append(checkbox);
-      for (const value of [item.entry.name, item.entry.type === 'transformer' ? 'Transformer' : item.entry.type === 'api' ? 'API' : item.entry.type === 'sub-pipeline' ? 'Sub-Pipeline' : 'Integration', item.entry.version.replace(/^v/u, '')]) row.insertCell().textContent = value;
+      for (const value of [item.entry.name, item.entry.type === 'transformer' ? 'Transformer' : item.entry.type === 'api' ? 'API' : item.entry.type === 'sub-pipeline' ? 'Sub-Pipeline' : 'Integration', item.entry.version.replace(/^v/u, ''), item.entry.state === 'draft' ? 'Draft' : 'Published']) row.insertCell().textContent = value;
       checkbox.addEventListener('change', () => { if (checkbox.checked) selected.add(item.index); else selected.delete(item.index); updateSelection(true); });
     }
     wrapper.append(table);
@@ -327,17 +329,19 @@
       const saved = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
       if (current !== generation) return;
       const options = { sharedFromEnabled: saved.sharedFromEnabled === true, overrideConfirmed: launch.overrideConfirmed };
-      PipelineExportCore.buildPlan([], saved.designerOwnershipCache, options);
+      if (!launch.sourceKind || launch.sourceKind === 'packages') PipelineExportCore.buildPlan([], saved.designerOwnershipCache, options);
       // The worker derives the original source and consent from this created document's claimed grant.
       const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'preview', overrideConfirmed: launch.overrideConfirmed });
       if (current !== generation) return;
       if (!result?.ok) throw new Error(result?.reason === 'session-unavailable' ? 'Temporary export storage is unavailable. Reload the extension, refresh Packages, and reopen export.' : result?.reason === 'preview-expired' ? 'Preview expired. Reopen export from settings.' : result?.reason === 'context-changed' ? 'Source page changed. Reopen export from settings.' : result?.reason === 'open-packages' ? 'Open Integration Packages, then reopen export from settings.' : result?.reason === 'requests-stalled' ? 'Earlier service requests are still running. Wait, then refresh preview.' : 'Package metadata is unavailable. Refresh the original page, then reopen export from settings.');
       // Default exact-name eligibility is computed in the extension, not in untrusted page code.
-      plan = { ...result.plan, context: result.context, environment: result.environment || result.context.tenantId };
-      document.querySelector('#export-mode').textContent = launch.overrideConfirmed ? 'Temporary advanced mode: all accessible content. No additional permissions are granted.' : 'Designer-recorded content only. Saved source observations may be stale.';
+      plan = { ...result.plan, context: result.context, environment: result.environment || result.context.tenantId, sourceKind:result.sourceKind };
+      document.querySelector('#export-mode').textContent = launch.sourceKind === 'api-designer' ? 'API Designer · Published definitions, each major version.' : launch.sourceKind === 'designer' ? 'Integration Designer · ' + launch.exportMode + '. Drafts and published files are kept separate.' : launch.overrideConfirmed ? 'Temporary advanced mode: all accessible content. No additional permissions are granted.' : 'Designer-recorded content only. Saved source observations may be stale.';
       renderPackages();
       download.disabled = !DOWNLOADS_READY || !plan.entries.length;
-      status.textContent = plan.entries.length ? 'Preview ready. Choose Download ZIP or Preview Git Changes to retrieve these published records.' : 'No eligible published files found. Refresh Shared From in the source Designer first.';
+      // Draft/API exports must not direct users to an unrelated Shared From setup step.
+      status.textContent = plan.entries.length ? 'Preview ready. Choose Download ZIP or Preview Git Changes to retrieve these definitions.' :
+        plan.sourceKind === 'packages' ? 'No eligible published files found. Refresh Shared From in the source Designer first.' : 'No definitions found for the selected source and versions.';
     } catch (error) {
       if (current === generation) {
         // Display only our fixed validation messages, never arbitrary native service exceptions.
@@ -456,7 +460,7 @@
   refresh.addEventListener('click', preview);
   // A default export loses eligibility immediately when the user withdraws Shared From consent.
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || launch?.overrideConfirmed) return;
+    if (area !== 'local' || launch?.overrideConfirmed || launch?.sourceKind && launch.sourceKind !== 'packages') return;
     const known = changes.designerOwnershipCache ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue) : null;
     const knownTransforms = known ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue, 'transformer') : null;
     // Removed eligibility revokes even a completed local Save ZIP link; timestamp-only refreshes do not.

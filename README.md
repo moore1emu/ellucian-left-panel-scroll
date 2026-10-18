@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v3 test candidate (3.0.9):** Manual GitHub/GitLab push with preview/confirmation, encrypted saved connections, and self-hosted GitLab support. Published exports use package-reported versions and versioned requests, matching auto-sync even when source JSON omits its version. Synthetic tests exercise the full workflow; a separately authorized live push is still required. V2 remains independent. See [Git Setup](docs/Git-Export.md), [v3 Development](docs/V3-Development.md), and the earlier [design mockup](docs/mockups/git-export-settings.html). Do not treat this as a published store release.
+> **v3 test candidate (3.1.0):** Manual GitHub/GitLab push with preview/confirmation, encrypted saved connections, and self-hosted GitLab support. Published exports use package-reported versions and versioned requests, matching auto-sync even when source JSON omits its version. Synthetic tests exercise the full workflow; a separately authorized live push is still required. V2 remains independent. See [Git Setup](docs/Git-Export.md), [v3 Development](docs/V3-Development.md), and the earlier [design mockup](docs/mockups/git-export-settings.html). Do not treat this as a published store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -8,6 +8,7 @@ Make Ellucian Integration Packages and Integration Designer easier to navigate i
 
 ## What It Does
 
+- V3: export Integration Designer drafts/published definitions or API Designer published definitions, with tenant-ID-first Git folders. See [current source setup](docs/Git-Export.md#current-source-workflow-310).
 - Scroll and resize the package sidebar independently of the main page.
 - Search package and pipeline names, even with different spacing or separators.
 - Pin packages and published pipelines, then drag favorites into your preferred order.
@@ -99,6 +100,8 @@ node tests/pipeline-export-context.cjs
 node tests/pipeline-export-native-flow.cjs
 node tests/pipeline-export-transformers.cjs
 node tests/pipeline-export-preview.cjs
+node tests/source-export.cjs
+node tests/source-export-browser.cjs
 node tests/package-artifact-majors.cjs
 node tests/v2-popup.cjs
 ```

@@ -1,5 +1,14 @@
 # Update history
 
+## 3.1.0 — October 17, 2026
+
+- Add shared Experience-store tenant detection for new exports, requiring a ready UUID and rejecting missing/ambiguous identity. Recheck tenant/document context before reads and output; native credentials remain in the page.
+- Make Integration Designer the normal Data Connect export source, with Drafts, Published, or Both. Draft pipeline/API/Sub-Pipeline records use their draft IDs; published records use versioned native readers and preserve each Pipeline/Sub-Pipeline major. Keep Draft and Published folders separate. Draft transformers are not yet exported.
+- First Shift+D reveals Integration Packages as a source. Second Shift+D offers a separately confirmed, temporary All Packages override. Default Packages export retains Shared From eligibility; neither shortcut grants native service permissions or persists consent.
+- Add published API Designer definition export through the existing native authenticated client, explicit offset/limit pagination, each resource major, and the native export media type. No SQL/GURASPC queries or table/business data are collected.
+- New Git previews use verified Tenant ID first, followed by the configured Data Connect folder and Designer/Packages; API Designer uses APIDesigner. Existing remote files are not moved/deleted and saved connections are not rewritten. New-source README files describe draft/published state and include already-observed Shared To metadata when available, with observation time; unknown sharing stays unknown.
+- Keep six native slots, source limits, document grants, selection/confirmation, no automatic writes/replays, favorites and existing ZIP/backup paths. Advanced per-source location JSON remains an offline proposal; Forms/EIP/Schema exporters are not included in this checkpoint.
+
 ## 3.0.9 — October 17, 2026
 
 - Show only the selected provider's collapsed token guide, including saved connections. Put both provider links at the top and label token-name/expiration examples explicitly. Switching providers closes the hidden guide. The folder example follows typed or loaded base-folder text without interpreting HTML or changing destination validation. Authentication, stored settings, and Git operations remain unchanged.

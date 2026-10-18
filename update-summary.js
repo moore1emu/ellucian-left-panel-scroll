@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Announce the expanded source workflow without advertising unfinished exporters or hidden shortcuts.
+    "3.1.0": Object.freeze([
+      "Export Designer drafts and published definitions separately, or published API Designer definitions.",
+      "Git destinations now group these exports by verified tenant ID and source tool.",
+    ]),
     // Keep provider-specific setup concise and avoid showing irrelevant instructions.
     "3.0.9": Object.freeze([
       "Token help follows your selected provider, with consistent links and clear examples.",

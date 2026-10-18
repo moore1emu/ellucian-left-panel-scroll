@@ -99,7 +99,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     async function openExport() {
       // Keep the synthetic Packages page active while invoking the real settings button in its own document.
       await source.bringToFront();
-      await popup.evaluate(async () => { await PopupTabs.refreshContext(); PopupTabs.select('export'); });
+      await popup.evaluate(async () => { await PopupTabs.refreshContext(); PopupTabs.select('export'); if(document.querySelector('#export-packages-option').disabled) document.dispatchEvent(new KeyboardEvent('keydown',{key:'D',shiftKey:true})); if(document.querySelector('#export-source').value!=='packages'){document.querySelector('#export-source').value='packages';document.querySelector('#export-source').dispatchEvent(new Event('change'));} });
       const opened = context.waitForEvent('page');
       await popup.evaluate(() => document.querySelector('#export-pipelines').click());
       const page = await opened;

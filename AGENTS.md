@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- At 3.1.0 the owner approved shared ready-tenant detection, API Designer published exports, and Designer as primary Data Connect source with separate Draft/Published output. Packages is revealed by first Shift+D; second offers explicit temporary all-content confirmation. Keep draft transformers, SQL/GURASPC and other product exporters out until implemented/tested. New Git routing is tenant-ID-first, with no remote migration; advanced location JSON remains a mockup. This supersedes earlier source/tenant-name routing restrictions only for the new v3 flow. Next checkpoint 3.1.1. Preserve native credential ownership, six slots and document/consent checks.
+
 - At 3.0.9 token help follows the selected provider, starts collapsed when switched, and keeps both official links above explicit examples. Base-folder help reflects typed/loaded text via textContent, not HTML or saved destination changes. Preserve all authentication and routing rules. Next checkpoint 3.1.0.
 
 - At 3.0.8 the owner requested concise setup: one short base-folder example, Save-only fresh-token feedback, and collapsed GitHub/GitLab token checklists with provider links. Keep native Details/Summary keyboard behavior and avoid long always-visible explanations or adding tooltip scripts. Authentication, consent, tenant routing, and provider operations remain unchanged. Next checkpoint 3.0.9.
