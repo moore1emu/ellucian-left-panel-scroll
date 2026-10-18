@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Group opt-ins never erase user data or replace the confirmation for hidden Packages exports.
+    "3.1.1": Object.freeze([
+      "Use Navigation Tools, Export Tools, or both; saved data stays intact when tools are off.",
+      "Packages export now uses one confirmed Shift+D shortcut, without Shared From setup.",
+    ]),
     // Announce the expanded source workflow without advertising unfinished exporters or hidden shortcuts.
     "3.1.0": Object.freeze([
       "Export Designer drafts and published definitions separately, or published API Designer definitions.",

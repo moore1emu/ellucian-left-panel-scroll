@@ -83,21 +83,27 @@
         const session = { id: crypto.randomUUID(), clientId, kind, override: kind === 'packages' && message.overrideConfirmed === true, entries: new Map(), context: null };
         sessions.set(clientId, session);
         // Read source metadata once per preview; later consent/cache changes invalidate affected sessions.
-        const saved = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
+        const filtered = kind === 'packages' && !session.override;
+        // Current exports do not read/process the Shared From list; retain the old filtered protocol only.
+        const defaults = {exportToolsEnabled:false,...(filtered ? {sharedFromEnabled:false,designerOwnershipCache:{}} : {})};
+        const saved = await chrome.storage.local.get(defaults);
         if (sessions.get(clientId) !== session) return { ok: false, reason: 'cancelled' };
+        // Register before authorization reads so opt-out/cancel cannot be overtaken by a late read.
+        if (saved.exportToolsEnabled !== true) { close(clientId); return {ok:false,reason:'tools-disabled'}; }
         const options = { sharedFromEnabled: saved.sharedFromEnabled === true, overrideConfirmed: message.overrideConfirmed === true };
         if (kind === 'packages') PipelineExportCore.buildPlan([], saved.designerOwnershipCache, options);
         const result = await request(session, 'prepare', { overrideConfirmed: session.override,
           sourceKind:kind, exportMode:['draft','published','both'].includes(message.exportMode) ? message.exportMode : 'published',
-          packageNames: [...PipelineExportCore.sourceNames(saved.designerOwnershipCache).keys()] });
+          packageNames: filtered ? [...PipelineExportCore.sourceNames(saved.designerOwnershipCache).keys()] : [] });
         if (!result?.ok || sessions.get(clientId) !== session || !result.context || result.context.url !== window.location.href) {
           // An old response must not cancel a newer preview owned by the same export client.
           if (sessions.get(clientId) === session) close(clientId);
           return { ok: false, reason: result?.reason || 'context-changed' };
         }
         // Exact cache filtering stays isolated from untrusted page code and smart-search normalization.
-        const current = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
+        const current = await chrome.storage.local.get(defaults);
         if (sessions.get(clientId) !== session) return { ok: false, reason: 'cancelled' };
+        if (current.exportToolsEnabled !== true) { close(clientId); return {ok:false,reason:'tools-disabled'}; }
         const plan = kind === 'packages' ? PipelineExportCore.buildPlan(result.packages, current.designerOwnershipCache, { ...options, sharedFromEnabled: current.sharedFromEnabled === true }) : PipelineExportCore.buildSourcePlan(result.packages);
         session.context = result.context;
         session.entries = new Map(plan.entries.map((entry) => [key(entry), entry]));
@@ -105,10 +111,13 @@
         const cache = current.designerOwnershipCache || {};
         const name = Object.hasOwn(cache, result.context.tenantId) ? cache[result.context.tenantId]?.environment : null;
         const environment = typeof name === 'string' && name.trim() && name.length <= 500 ? name.trim() : result.context.tenantId;
-        return { ok: true, context: result.context, environment:kind === 'packages' ? environment : result.environment || result.context.tenantId, sourceKind:kind, plan };
+        return { ok: true, context: result.context, environment:result.environment || environment, sourceKind:kind, plan };
       }
       const session = sessions.get(clientId);
       if (!session || !same(session.context, message.context) || session.context.url !== window.location.href) return { ok: false, reason: 'context-changed' };
+      const tools = await chrome.storage.local.get({exportToolsEnabled:false});
+      if (sessions.get(clientId) !== session) return {ok:false,reason:'cancelled'};
+      if (tools.exportToolsEnabled !== true) { close(clientId); return {ok:false,reason:'tools-disabled'}; }
       if (message.type === 'pipeline-export-read') {
         const entry = session.entries.get(key(message.entry));
         if (!entry) return { ok: false, reason: 'entry-unavailable' };
@@ -134,6 +143,9 @@
 
   // Cache timestamps/labels can change without interrupting a valid job; removed membership cannot.
   chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.exportToolsEnabled?.newValue !== true && changes.exportToolsEnabled) {
+      for (const id of [...sessions.keys()]) close(id);
+    }
     if (area !== 'local') return;
     const known = changes.designerOwnershipCache ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue) : null;
     const knownTransforms = known ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue, 'transformer') : null;

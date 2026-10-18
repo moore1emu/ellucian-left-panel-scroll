@@ -11,7 +11,7 @@
       <header><img src="icons/icon48.png" width="40" height="40" alt="" /><div><h1>Definition Export</h1><p>Integration Navigator</p></div></header>
       <section aria-labelledby="preview-heading">
         <h2 id="preview-heading">Export Preview</h2>
-        <p>Review the source, state and versions below. Drafts and published definitions are exported separately; Packages uses saved Designer sources unless explicitly overridden.</p>
+        <p>Review the selected definitions and versions. Drafts and published files stay separate. Packages includes all accessible published content.</p>
         <p id="export-mode"></p>
         <p id="export-status" role="status" aria-live="polite">Preparing preview…</p>
         <progress id="export-progress" hidden aria-label="Export progress"></progress>
@@ -40,6 +40,7 @@
         <p>Opening this tab does not refresh Shared From, change favorites, or grant site access. Closing it discards temporary export state.</p>
       </section>
     </main>
+    <script src="feature-tools.js"></script>
     <script src="pipeline-export-core.js"></script>
     <script src="pipeline-export-session.js"></script>
     <script src="git-provider.js"></script>

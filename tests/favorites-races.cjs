@@ -65,7 +65,7 @@ page = vm.createContext({ chrome, console, structuredClone, FavoritesData: worke
   FAVORITES_EXPANDED_BY_HOST_KEY: 'favoritesExpandedByHost', FAVORITES_HEIGHTS_BY_HOST_KEY: 'favoritesHeightsByHost',
   getFavoriteScope: () => scope, getFavoriteScopeKey: () => key,
   serializeFavoriteState: () => local, loadFavoriteState: values => { local = clone(values); }, refreshFavoritesUI() {},
-  isSupportedPage: () => true, applySearchMode() {},
+  isSupportedPage: () => true, navigationAllowed:()=>true, applySearchMode() {},
   applyFavoriteSettings: (values, storageKey) => { local = clone(values.favoritePackagesByTenant[storageKey]); },
   stopDisconnectedOwnership: () => { throw new Error('Unexpected disconnection'); },
 });

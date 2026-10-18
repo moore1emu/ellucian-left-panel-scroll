@@ -289,7 +289,7 @@ const enter = (tenantId, page = 'packages') => { current = { scope: scope(tenant
   const loader = vm.createContext({ ownershipExtensionDisconnected: false, preferencesLoaded: true,
     favoriteLoadSequence: 0, favoritesLoaded: false, activeFavoritesStorageKey: '',
     FAVORITES_BY_HOST_KEY: data.KEY, FAVORITES_EXPANDED_BY_HOST_KEY: data.EXPANDED, FAVORITES_HEIGHTS_BY_HOST_KEY: data.HEIGHTS,
-    isSupportedPage: () => true, getFavoriteScopeKey: () => loader.key, getFavoriteScope: () => data.fromKey(loader.key),
+    isSupportedPage: () => true, navigationAllowed:()=>true, getFavoriteScopeKey: () => loader.key, getFavoriteScope: () => data.fromKey(loader.key),
     console: { warn() {} },
     chrome: { runtime: { id: 'fixture', sendMessage: (_message, callback) => reads.push(callback) } },
     applyFavoriteSettings: (values, key) => { loader.saved = values[data.KEY]?.[key]; },

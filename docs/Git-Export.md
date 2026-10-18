@@ -1,6 +1,6 @@
 # Git Export — V3 Test Candidate
 
-Version 3.1.0 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.1.1 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
 
 Published Data Connect versions come from the selected package metadata. Pipeline/API downloads request the exact full version; Sub-Pipelines request its major. Downloaded JSON may omit or null its version, which is preserved unchanged; an explicit conflicting version is rejected. Package-reported versions are not independently certified from missing source fields. Git Connection's Return to Export button focuses an existing export without reloading its selection; if no export is open, start one from the source page's settings.
 
@@ -21,11 +21,13 @@ Every save requires re-entering the access token, including changes to the base 
 
 GitHub Token Settings and GitLab Token Instructions expand optional setup checklists; both start collapsed. GitHub uses a selected-repository fine-grained token with Contents read/write. The GitLab example uses a project token with api scope and Developer access to an unprotected export branch; creating it requires Maintainer/Owner, and GitLab.com project tokens require Premium/Ultimate. Your organization's restrictions still apply. Token values belong only in the extension field, never support messages.
 
-## Current Source Workflow (3.1.0)
+## Current Source Workflow (3.1.1)
+
+Enable Export Tools in General first. Navigation Tools may stay off; export uses native lists/identity without adding favorites, search or sharing columns. Disabling Export keeps encrypted connections but blocks new source/provider requests and clears transient previews. It cannot recall requests already sent. Backup/restore stays usable with either group off.
 
 Open Settings → Export on the source page. Integration Designer offers Drafts, Published, or Both; API Designer exports published definition JSON for each resource major. Designer draft transformers and optional API SQL/GURASPC files are not included yet. Missing/changing tenant identity or source access stops the export.
 
-First Shift+D outside inputs reveals Integration Packages. Second Shift+D offers an explicit temporary All Packages confirmation. Filtered Packages export still requires Shared From; Designer and API Designer export their own visible definitions without that cross-environment cache requirement. This does not bypass service permissions.
+One Shift+D outside inputs confirms and reveals Integration Packages for all accessible published content. Packages, Designer and API Designer exports do not require Shared From setup. This does not bypass service permissions.
 
 Git routing now uses Tenant ID / DataConnect / Designer or Packages, or Tenant ID / APIDesigner. The saved Data Connect folder can replace DataConnect; API Designer has its own fixed tool folder. Draft and Published files are separated beneath new-source destinations. Existing repository folders are not moved or deleted. Advanced location JSON remains a design proposal, not a setting in this build.
 

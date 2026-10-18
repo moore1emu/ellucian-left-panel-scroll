@@ -22,7 +22,7 @@ const listing = submission.split('## Public Store Listing')[1].split('## Assets'
 assert.doesNotMatch(listing, /shift\s*\+?\s*d|include all accessible|advanced override/i);
 const reviewer = submission.split('## Reviewer Instructions')[1];
 assert.match(reviewer, /Shift\+D/);
-assert.match(reviewer, /does not grant/);
+assert.match(reviewer, /does not grant|grants no/);
 assert.equal(manifest.description.length <= 132, true);
 
 // Every shipped reference must exist; inspect PNG headers without image tools or extra dependencies.

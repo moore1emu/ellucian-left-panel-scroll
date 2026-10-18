@@ -81,6 +81,10 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       // Generations revoke late replies after refresh/cancel without freeing native request slots early.
       if (operation === 'preview' || operation === 'cancel') record.generation += 1;
       const generation = record.generation;
+      // Capture generation before this read so cancellation cannot be overtaken by an older preview.
+      if (operation !== 'cancel' && (await chrome.storage.local.get({ exportToolsEnabled:false })).exportToolsEnabled !== true) {
+        respond({ok:false,reason:'tools-disabled'}); return;
+      }
       // A caller may narrow previously confirmed advanced mode, but can never elevate a default grant.
       if (operation === 'preview') record.overrideConfirmed = record.overrideConfirmed && message.overrideConfirmed === true;
       if (operation === 'cancel' && message.revokeOverride === true) record.overrideConfirmed = false;
@@ -102,6 +106,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   }
   if (message?.type === 'pipeline-export-open' && sender.url === popupUrl) {
     (async () => {
+      if ((await chrome.storage.local.get({ exportToolsEnabled:false })).exportToolsEnabled !== true) throw new Error('tools-disabled');
       await pipelineExportGrantsReady;
       if (pipelineExportStateFailed) throw new Error('Session storage unavailable');
       // Expire abandoned previews without alarms, storage writes, or idle polling.
@@ -171,4 +176,19 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   for (const [key, ticket] of pipelineExportTickets) if (ticket.tabId === tabId || ticket.sourceTabId === tabId) pipelineExportTickets.delete(key);
   // Remove closed grants without writing session storage for unrelated browser-tab events.
   if (changed) await savePipelineExportGrants().catch(() => {});
+});
+
+// Retire transient grants on opt-out; native requests already sent retain their six-slot accounting.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local' || !changes.exportToolsEnabled || changes.exportToolsEnabled.newValue === true) return;
+  (async () => {
+    await pipelineExportGrantsReady;
+    pipelineExportTickets.clear(); pipelineExportBindings.clear();
+    const records = [...pipelineExportGrants.values()];
+    pipelineExportGrants.clear();
+    await savePipelineExportGrants();
+    for (const record of records) chrome.tabs.sendMessage(record.sourceTabId,
+      {type:'pipeline-export-cancel',clientId:record.clientId,sourceUrl:record.sourceUrl},
+      {frameId:0,documentId:record.sourceDocumentId}).catch(() => {});
+  })().catch(() => console.warn('[Integration Navigator] EXPORT_REVOKE_FAILED'));
 });

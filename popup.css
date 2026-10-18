@@ -435,13 +435,14 @@ footer {
 /* Keep: reserve each full label's width so neighboring hover backgrounds cannot cover it (2.1.7). */
 .settings-tabs button {
   background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted);
-  cursor: pointer; flex: 1 0 auto; font: 12px "Segoe UI", Arial, sans-serif; min-width: max-content; padding: 9px 6px; white-space: nowrap;
+  cursor: pointer; flex: 1 0 auto; font: 12px "Segoe UI", Arial, sans-serif; min-width: max-content; padding: 9px 3px; white-space: nowrap;
 }
 .settings-tabs button[aria-selected="true"] { border-bottom-color: var(--purple); color: var(--purple); font-weight: 700; }
 .settings-tabs button:hover { background: var(--purple-soft); }
 .settings-tabs button:focus-visible { outline: 2px solid var(--purple); outline-offset: -2px; }
 .settings-panels { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
 .settings-panel { background: transparent; border: 0; border-radius: 0; padding: 0 2px 8px; overflow: visible; }
+.settings-panel[inert] { opacity: 0.55; }
 /* Indent controls, not scope headings, to make their parent group apparent without extra height. */
 .navigation-card .navigation-group { padding: 0 0 0 8px; }
 /* Keep: normal Navigation fits without scrolling; long notices still use the panel scroller (2.1.4). */

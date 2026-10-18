@@ -111,6 +111,8 @@
 
   // Fail closed for a changed/locked/corrupt credential without printing WebCrypto or token details.
   async function token(revision) {
+    // Preserve encrypted credentials while withholding their use when Export Tools is off.
+    if (globalThis.FeatureTools) await FeatureTools.requireExport();
     const record = await get('connection');
     if (!record || record.revision !== revision) throw new Error('Connection changed. Prepare a new preview.');
     try {

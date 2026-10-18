@@ -6,6 +6,7 @@
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
     if (message?.type !== 'git-reserve-server' || sender.id !== chrome.runtime.id || sender.url !== chrome.runtime.getURL('git-connection.html') || sender.frameId !== 0) return;
     pending = pending.catch(() => {}).then(async () => {
+      if (globalThis.FeatureTools) await FeatureTools.requireExport();
       const c = GitProvider.config(message.config);
       const origin = c.provider === 'github' ? 'https://api.github.com' : c.server;
       const local = await chrome.storage.local.get({ gitProviderOrigins: [], customSites: [] });

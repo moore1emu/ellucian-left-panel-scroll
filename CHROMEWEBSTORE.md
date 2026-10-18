@@ -1,8 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-17 · Candidate: 3.1.0 · Status: Git compatibility candidate, not submitted
+Updated: 2026-10-18 · Candidate: 3.1.1 · Status: Git compatibility candidate, not submitted
 
-3.1.0 preparation note: add Designer drafts/published and API Designer published definition exports, with verified tenant-ID-first Git paths and state separation. Packages becomes a separately revealed, consent-filtered source. Existing native authentication and six slots remain; no new permissions, SQL execution, automatic uploads, or remote moves. Refresh export/connection screenshots and review expanded definition-data disclosures before any v3 submission. Forms/EIP/Schema exporters and advanced location JSON are not in this build. No store changes made.
+3.1.1 preparation note: add Designer drafts/published and API Designer published definition exports, with verified tenant-ID-first Git paths and state separation. Navigation and Export Tools are independently enabled. Packages is separately revealed and confirmed for accessible published content without source-cache setup. Existing native authentication and six slots remain; no new permissions, SQL execution, automatic uploads, or remote moves. Refresh export/connection screenshots and review expanded definition-data disclosures before any v3 submission. Forms/EIP/Schema exporters and advanced location JSON are not in this build. No store changes made.
 
 This v3 branch is not ready for submission. Connection/storage/provider flows are implemented and synthetic-tested; separate live disposable-repository testing and store privacy-disclosure/asset checks remain required. The public copy below is a v3 draft, not a live listing update. Do not modify the v2 listing from this branch.
 
@@ -38,7 +38,7 @@ Back up and restore saved favorites and optional Shared From observations using 
 
 Sharing features are off by default. Settings and favorites stay in your browser. Optional sharing/export operations use your existing Ellucian session; the extension does not inspect or store your password or bearer token, upload exported files, or send analytics to the publisher. Exported source files can contain confidential embedded values; review and protect them before sharing.
 
-Install, open a supported Integration page, and use the toolbar button to configure settings. To prepare Shared From and the default export, enable Shared From, visit Designer in each source environment, then open Integration Packages and select Export.
+Install, open a supported Integration page, and use the toolbar button to configure settings. In General, choose Navigation Tools, Export Tools, or both. New installs start with Navigation on and Export off. Shared From setup is only needed for its optional source column, not definition exports.
 
 Support: moore.life@gmail.com
 
@@ -91,9 +91,9 @@ These notes are for the reviewer/testing field and GitHub documentation, not the
 
 1. Open a permitted Ellucian Experience Integration Packages or Designer page. Check navigation, resizing, search, and favorites independently of the optional sharing features.
 2. In Sharing, enable Shared From and accept the local-data notice. Visit Designer in the intended source environment, wait for the cache status, or select Refresh. Refresh is unavailable outside Designer.
-3. Open Integration Packages and select Export → Preview Pipeline Export. Default eligibility uses exact Designer-recorded package/artifact relationships, not a live ownership certification. Review selections, then choose Download ZIP. Refresh/replacement of the original source document requires reopening export.
+3. In General, enable Export Tools. Open Designer or API Designer, select Export → Preview Export, review selections and choose Download ZIP. Designer offers Drafts, Published or Both. No Shared From eligibility list is required. Refresh/replacement of the source document requires reopening export.
 4. Formatted is off by default. When selected, inspect Source/Formatted folders and the selected-artifact package README. Sub-Pipeline source may report null/omitted version because the native route resolves by major. Transformer displayed versions are package metadata, not independent verification of the latest endpoint's source version.
-5. To test the temporary advanced filter option, keep settings open, stop typing, and press Shift+D. Reveal does not enable it: explicitly confirm Include All Accessible Content before opening export. It bypasses only the saved Designer-source filter and does not grant website, service, or account permissions. It can include vendor-provided content accessible to that session; use it only when authorized. It is not a persistent preference and resets when settings closes/launches; the launched workflow retains temporary consent until cancelled or closed. Disclose this behavior to reviewers; never use it to conceal functionality or bypass review.
+5. To test Integration Packages export, keep settings open, stop typing, press Shift+D once and confirm all accessible published content. This needs no Shared From list and grants no website, service or account permissions. It can include vendor-provided content accessible to that session; use it only when authorized. It is not a persistent preference and resets when settings closes/launches; the launched workflow retains temporary consent until cancelled or closed. Disclose this behavior to reviewers; never use it to conceal functionality or bypass review.
 6. Optional published fitting viewing is read-only; verify copying/scrolling while actions and edits remain blocked, including when a draft exists. Unknown editor/state fails closed.
 
 Known limitations: source observations can become stale; unvisited environments are unknown; same-list simultaneous favorite edits in different tabs retain whole-list conflict limitations. Failed/cancelled exports do not download partial ZIPs. Already completed browser downloads remain under the user's control.

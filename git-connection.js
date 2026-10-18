@@ -12,8 +12,9 @@
   // Keep pending settings writes separate from input controls so another tab cannot silently win.
   function enabled(value) {
     busy = !value;
-    $('git-fields').disabled = !value;
-    for (const id of ['git-allow', 'git-test', 'git-forget']) $(id).disabled = !value || !saved;
+    const allowed = !globalThis.FeatureTools || FeatureTools.state.export;
+    $('git-fields').disabled = !value || !allowed;
+    for (const id of ['git-allow', 'git-test', 'git-forget']) $(id).disabled = !value || !saved || !allowed && id !== 'git-forget';
   }
 
   // Explain the storage boundary; password mode has manual/session locking, not a background idle timer.
@@ -152,5 +153,10 @@
     error(failure); enabled(false);
     // A malformed saved destination must not make its local credential impossible to forget.
     $('git-forget').disabled = !saved;
+  });
+  // Keep local Forget usable, but never make a provider request or credential edit while disabled.
+  globalThis.FeatureTools?.subscribe(state => {
+    enabled(!busy);
+    if (!state.export) $('git-status').textContent = 'Enable Export Tools in General.';
   });
 })();

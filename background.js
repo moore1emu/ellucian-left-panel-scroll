@@ -1,7 +1,9 @@
 "use strict";
 
 // Load the same validation and drawing rules used by the settings preview.
-importScripts("icon-appearance.js", "custom-sites.js", "favorites-data.js", "favorites-worker.js", "update-summary.js", "pipeline-export-worker.js");
+importScripts("feature-tools.js", "icon-appearance.js", "custom-sites.js", "favorites-data.js", "favorites-worker.js", "update-summary.js", "pipeline-export-worker.js");
+// Preserve an existing v3 user's export workflow without enabling it on a new installation.
+chrome.runtime.onInstalled.addListener(details => FeatureTools.migrate(details).catch(() => console.warn('[Integration Navigator] FEATURE_PREFERENCE_SAVE_FAILED')));
 // Reserve Git API permissions separately; this worker never receives Git credentials or source payloads.
 importScripts("git-provider.js", "git-permissions-worker.js");
 let pendingIconUpdate = Promise.resolve();
@@ -181,9 +183,9 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     failureStage = 'document-unavailable';
     const current = await readOwnershipContext(sender);
     failureStage = 'storage-read';
-    const consent = await chrome.storage.local.get({ sharedFromEnabled: false });
+    const consent = await chrome.storage.local.get({ sharedFromEnabled: false, navigationToolsEnabled:true, exportToolsEnabled:false });
     if (current.url.href !== url.href) throw new Error("Designer page changed before saving.");
-    if (!current.enabled || consent.sharedFromEnabled !== true) return;
+    if (!current.enabled || consent.sharedFromEnabled !== true || consent.navigationToolsEnabled === false) return;
     failureStage = 'storage-write';
     await chrome.storage.local.set({ designerOwnershipCache: cache });
   });

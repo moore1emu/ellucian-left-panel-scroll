@@ -33,6 +33,7 @@ window.webpackChunkdata_connect_designer=[];window.webpackChunkdata_connect_desi
       return route.fulfill({contentType:'text/html',body:html});
     });
     const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker');
+    await worker.evaluate(()=>chrome.storage.local.set({navigationToolsEnabled:false,exportToolsEnabled:true}));
     const id=new URL(worker.url()).host;
     const source=await context.newPage();
     const popup=await context.newPage();
@@ -77,24 +78,40 @@ window.webpackChunkdata_connect_designer=[];window.webpackChunkdata_connect_desi
       await exported.waitForFunction(()=>document.querySelector('#save-zip').hidden);
       await exported.close();
     }
-    // Hidden package export has two independent gestures; cancelling cannot remove the source filter.
+    // One hidden gesture still needs confirmation, but no Shared From cache or second shortcut.
     await popup.bringToFront();
     await popup.locator('h1').click();
-    await popup.keyboard.press('Shift+D');
-    assert.equal(await popup.locator('#export-packages-option').evaluate(e=>e.disabled||e.hidden),false);
-    assert.equal(await popup.locator('#export-advanced').isVisible(),false);
     popup.once('dialog',d=>d.dismiss());
     await popup.keyboard.press('Shift+D');
+    assert.equal(await popup.locator('#export-packages-option').evaluate(e=>e.disabled||e.hidden),true);
     assert.equal(await popup.locator('#export-all-accessible').isChecked(),false);
     popup.once('dialog',d=>d.accept());
     await popup.keyboard.press('Shift+D');
+    assert.equal(await popup.locator('#export-packages-option').evaluate(e=>e.disabled||e.hidden),false);
     assert.equal(await popup.locator('#export-all-accessible').isChecked(),true);
+    // Turning off Export while a real preview is open retires the grant and clears prepared actions.
+    await source.evaluate(()=>{fixtureState={...fixtureState,tenant:'11111111-2222-4333-8444-555555555555'};});
+    await popup.selectOption('#export-source','designer');
+    await source.bringToFront();
+    await popup.evaluate(async()=>{await PopupTabs.refreshContext();});
+    const opening=context.waitForEvent('page');
+    await popup.evaluate(()=>document.querySelector('#export-pipelines').click());
+    const active=await opening;
+    await active.waitForFunction(()=>document.querySelector('#export-status').textContent.startsWith('Preview ready'));
+    const reads=await source.evaluate(()=>fixtureStats.reads);
+    await worker.evaluate(()=>chrome.storage.local.set({exportToolsEnabled:false}));
+    await active.waitForFunction(()=>document.querySelector('#export-status').textContent==='Enable Export Tools in General.');
+    assert.equal(await active.locator('#download-zip').isDisabled(),true);
+    assert.equal(await active.locator('#save-zip').isHidden(),true);
+    assert.equal(await source.evaluate(()=>fixtureStats.reads),reads);
     assert.deepEqual(errors,[]);
     console.log('PASS installed sources: API/Designer page gating, worker grants, no preview source reads, both API majors, separate drafts/published, complete ZIP and tenant-change retry revocation.');
   } finally {
-    if(context)await context.close();
-    const resolved=fs.realpathSync(profile);
-    if(path.dirname(resolved)!==tempRoot||!path.basename(resolved).startsWith('navigator-sources-test-'))throw Error('Unsafe cleanup target');
-    fs.rmSync(resolved,{recursive:true,force:true,maxRetries:8,retryDelay:250});
+    // Closing failure must not skip the owned-profile removal attempt.
+    try{if(context)await context.close();}finally{
+      const resolved=fs.realpathSync(profile);
+      if(path.dirname(resolved)!==tempRoot||!path.basename(resolved).startsWith('navigator-sources-test-'))throw Error('Unsafe cleanup target');
+      fs.rmSync(resolved,{recursive:true,force:true,maxRetries:8,retryDelay:250});
+    }
   }
 })().catch(error=>{console.error(error);process.exitCode=1;});

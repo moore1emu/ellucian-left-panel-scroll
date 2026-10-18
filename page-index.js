@@ -346,6 +346,9 @@
       return;
     }
     const owner = getExportManager();
+    // A ready outer Experience identity must agree with the native Packages session when both exist.
+    const identity = globalThis.ExperienceIdentity?.read();
+    if (identity && identity.tenantId !== session?.tenantId) throw PipelineExportNative.fail('context-changed');
     if (!session || session.cancelled || session.expires < Date.now() || !owner || owner !== session.owner ||
       owner.context.tenantId !== session.tenantId || owner.context.getJwt !== session.getJwt || window.location.href !== session.url) throw PipelineExportNative.fail('context-changed');
   }
@@ -433,8 +436,11 @@
       const failed = outcomes.find((item) => item.status === 'rejected');
       if (failed) throw failed.reason;
       checkExportSession(session);
-      // Packages has no Designer tenant-name helper; naming comes from the isolated Shared From cache.
-      return { context: { url: session.url, tenantId: session.tenantId, documentKey: exportDocumentKey, sessionId: id }, packages: results };
+      // Use the ready Experience name only for this exact native tenant; no cache or name lookup is needed.
+      const identity = globalThis.ExperienceIdentity?.read();
+      if (identity && identity.tenantId !== session.tenantId) throw PipelineExportNative.fail('context-changed');
+      return { context: { url: session.url, tenantId: session.tenantId, documentKey: exportDocumentKey, sessionId: id }, packages: results,
+        environment:identity?.label || identity?.name || session.tenantId };
     } catch (error) { closeExportSession(id); throw error; }
   }
 

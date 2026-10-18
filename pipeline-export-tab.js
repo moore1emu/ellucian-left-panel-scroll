@@ -136,7 +136,8 @@
 
   // Resolve the current tenant's folder once per preparation and again before the confirmed push.
   async function gitDestination(snapshot, connection) {
-    const saved = await chrome.storage.local.get({ designerOwnershipCache: {} });
+    // Tenant-first source destinations no longer depend on saved source labels or favorites.
+    const saved = snapshot.sourceKind ? {} : await chrome.storage.local.get({ designerOwnershipCache: {} });
     return GitProvider.tenantDestination(connection.config, snapshot.context.tenantId, saved.designerOwnershipCache, snapshot.sourceKind);
   }
 
@@ -314,6 +315,9 @@
 
   // Refresh preview metadata only, never source code or ownership observations.
   async function preview() {
+    if (globalThis.FeatureTools) {
+      try { await FeatureTools.requireExport(); } catch { status.textContent = 'Enable Export Tools in General.'; return; }
+    }
     const current = ++generation;
     discard();
     refresh.disabled = true;
@@ -326,9 +330,12 @@
         if (!launch?.ok) { launch = null; throw new Error('Preview expired. Reopen export from settings.'); }
       }
       // Require saved consent/setup before even requesting the page's existing metadata.
-      const saved = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
+      const saved = launch.sourceKind ? {} : await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
       if (current !== generation) return;
       const options = { sharedFromEnabled: saved.sharedFromEnabled === true, overrideConfirmed: launch.overrideConfirmed };
+      if (launch.sourceKind === 'packages' && !launch.overrideConfirmed) {
+        status.textContent = 'Reopen Packages export with Shift+D.'; return;
+      }
       if (!launch.sourceKind || launch.sourceKind === 'packages') PipelineExportCore.buildPlan([], saved.designerOwnershipCache, options);
       // The worker derives the original source and consent from this created document's claimed grant.
       const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'preview', overrideConfirmed: launch.overrideConfirmed });
@@ -341,7 +348,7 @@
       download.disabled = !DOWNLOADS_READY || !plan.entries.length;
       // Draft/API exports must not direct users to an unrelated Shared From setup step.
       status.textContent = plan.entries.length ? 'Preview ready. Choose Download ZIP or Preview Git Changes to retrieve these definitions.' :
-        plan.sourceKind === 'packages' ? 'No eligible published files found. Refresh Shared From in the source Designer first.' : 'No definitions found for the selected source and versions.';
+        'No definitions found for the selected source and versions.';
     } catch (error) {
       if (current === generation) {
         // Display only our fixed validation messages, never arbitrary native service exceptions.
@@ -467,5 +474,13 @@
     if (changes.sharedFromEnabled?.newValue === false || known && plan?.entries.some((entry) => !(entry.type === 'transformer' ? knownTransforms : known).get(entry.packageName)?.has(entry.name))) cancel.click();
   });
   window.addEventListener('pagehide', () => { controller?.abort(); if (launch) chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'cancel', release: true }).catch(() => {}); discard(); launch = null; });
+  // Opt-out aborts unsent work, removes prepared blobs/confirmations, and retains saved connections.
+  globalThis.FeatureTools?.subscribe(state => {
+    if (!state.export) {
+      cancel.click();
+      refresh.disabled = true; download.disabled = true; gitPrepare.disabled = true;
+      if (!gitWriting) status.textContent = 'Enable Export Tools in General.';
+    } else refresh.disabled = Boolean(controller);
+  });
   preview();
 })();

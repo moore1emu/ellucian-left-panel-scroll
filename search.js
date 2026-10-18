@@ -15,6 +15,9 @@
     PANEL_SELECTOR, PIPELINE_ROW_SELECTOR, DOM_CHANGE_EVENT, LAYOUT_REQUEST_EVENT,
     isSupportedPage, isPackagesPage, getPageStorageKey, attachResizeDrag,
   } = globalThis.NavigatorShared;
+  // Exports read native lists on demand; neither their identity bridge nor ZIP needs navigation caching.
+  const navigationAllowed = () => !globalThis.FeatureTools || FeatureTools.state.navigation;
+  const sourcesAllowed = navigationAllowed;
 
   // Keep sidebar and selected-package Designer search presentation independent.
   const SEARCH_MODE_KEY = "searchDisplayMode";
@@ -679,6 +682,7 @@
 
   // Load the correct page-specific favorites after an in-app route change.
   function loadFavoritesForCurrentPage() {
+    if (!navigationAllowed()) return;
     // An old page cannot read extension storage again after its connection is lost.
     if (ownershipExtensionDisconnected) return;
     if (!isSupportedPage()) {
@@ -762,6 +766,7 @@
 
   // Ask the page-world helper for the currently rendered package index.
   function requestSearchIndex() {
+    if (!navigationAllowed()) return;
     latestRequestId = crypto.randomUUID();
     indexState = searchIndex.length ? indexState : "loading";
 
@@ -2139,7 +2144,7 @@
 
   // Synchronize the favorites section and every visible package-row star.
   function updateFavoritesForPanel(panel) {
-    if (!favoritesEnabled || !favoritesLoaded || activeFavoritesStorageKey !== getFavoriteScopeKey()) {
+    if (!navigationAllowed() || !favoritesEnabled || !favoritesLoaded || activeFavoritesStorageKey !== getFavoriteScopeKey()) {
       removeFavoritesFromPanel(panel);
       return;
     }
@@ -2735,7 +2740,7 @@
   // Report this document's current operation and last successful save, not another environment's date.
   function getOwnershipStatus() {
     const designer = isDesignerPackagePage();
-    const enabled = sharedFromEnabled && !ownershipExtensionDisconnected;
+    const enabled = sourcesAllowed() && sharedFromEnabled && !ownershipExtensionDisconnected;
     return { designer, enabled, tenantId: designer ? ownershipTenantId : '',
       busy: Boolean(designer && enabled && (ownershipRequest || ownershipIndexTimer || ownershipManualResponse)),
       checkedAt: designer ? ownershipCacheTimes.get(ownershipTenantId) || 0 : 0 };
@@ -2798,7 +2803,7 @@
 
   // Wait for React's complete package data using bounded local messages, not server polling.
   function requestDesignerOwnershipIndex() {
-    if (ownershipExtensionDisconnected || !sharedFromEnabled || !isDesignerPackagePage() || ownershipIndexReady || ownershipIndexTimer) return;
+    if (!sourcesAllowed() || ownershipExtensionDisconnected || !sharedFromEnabled || !isDesignerPackagePage() || ownershipIndexReady || ownershipIndexTimer) return;
     if (ownershipIndexAttempts >= OWNERSHIP_INDEX_ATTEMPTS) {
       finishOwnershipRefresh({ ok: false, reason: 'not-ready' });
       return;
@@ -2815,7 +2820,7 @@
 
   // Recognize SPA entry and exit even when the browser emits no pageshow or popstate.
   function updateDesignerOwnershipVisit(force = false) {
-    const pageKey = sharedFromEnabled && isDesignerPackagePage() ? getPageStorageKey() : '';
+    const pageKey = sourcesAllowed() && sharedFromEnabled && isDesignerPackagePage() ? getPageStorageKey() : '';
     if (!force && pageKey === ownershipPageKey) return;
     resetDesignerOwnership(sharedFromEnabled ? 'left-designer' : 'disabled');
     ownershipTenantId = '';
@@ -2825,7 +2830,7 @@
 
   // Ask for one source snapshot only after this visit's loaded Designer index is ready.
   function requestDesignerOwnership() {
-    if (ownershipExtensionDisconnected || !sharedFromEnabled || !isDesignerPackagePage() || !ownershipIndexReady || indexState !== "ready" || ownershipRequest) return;
+    if (!sourcesAllowed() || ownershipExtensionDisconnected || !sharedFromEnabled || !isDesignerPackagePage() || !ownershipIndexReady || indexState !== "ready" || ownershipRequest) return;
     const signature = JSON.stringify([getPageStorageKey(), searchIndex.map((entry) => [entry.name, entry.pipelines.map((pipeline) => pipeline.name)])]);
     // A changed inventory gets its own bounded attempt budget.
     if (signature !== ownershipSignature) {
@@ -2866,7 +2871,7 @@
     }
     // Let only this extension's background verify the live route of this isolated document.
     if (message?.type === 'designer-ownership-context' && sender.id === chrome.runtime?.id && !sender.tab) {
-      respond({ url: window.location.href, enabled: sharedFromEnabled && !ownershipExtensionDisconnected });
+      respond({ url: window.location.href, enabled: sourcesAllowed() && sharedFromEnabled && !ownershipExtensionDisconnected });
       return;
     }
     if (message?.type !== 'designer-ownership-refresh' || sender.id !== chrome.runtime?.id || sender.tab) return;
@@ -2875,7 +2880,7 @@
       respond({ ok: false, reason: 'extension-reloaded' });
       return;
     }
-    if (!sharedFromEnabled || !isDesignerPackagePage()) {
+    if (!sourcesAllowed() || !sharedFromEnabled || !isDesignerPackagePage()) {
       respond({ ok: false, reason: sharedFromEnabled ? 'open-designer' : 'disabled' });
       return;
     }
@@ -2951,10 +2956,10 @@
   function updatePackageArtifacts() {
     // Share only the preference; the page observer never receives the source cache or other settings.
     if (packageArtifactPreferencesLoaded && packageArtifactSettingSent !== packageArtifactsEnabled) {
-      window.postMessage({ source: MESSAGE_SOURCE, type: 'package-artifacts-setting', enabled: packageArtifactsEnabled }, window.location.origin);
+      window.postMessage({ source: MESSAGE_SOURCE, type: 'package-artifacts-setting', enabled: navigationAllowed() && packageArtifactsEnabled }, window.location.origin);
       packageArtifactSettingSent = packageArtifactsEnabled;
     }
-    if (!packageArtifactsEnabled || !isPackagesPage()) {
+    if (!navigationAllowed() || !packageArtifactsEnabled || !isPackagesPage()) {
       clearPackageArtifacts();
       document.querySelectorAll('[data-ellucian-type-cell]').forEach((cell) => cell.remove());
       packageArtifacts = { key: '', row: null, nodeId: '', requestId: '', pipelines: [] };
@@ -3078,8 +3083,8 @@
   // Add observed source information only to the native Integration Packages table.
   function updateSharedFromColumn() {
     // Tell the page helper to stop source lookups when the feature or route is inactive.
-    window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-ownership-setting', enabled: sharedFromEnabled && isDesignerPackagePage() }, window.location.origin);
-    if (!sharedFromEnabled || !isPackagesPage()) {
+    window.postMessage({ source: MESSAGE_SOURCE, type: 'designer-ownership-setting', enabled: sourcesAllowed() && sharedFromEnabled && isDesignerPackagePage() }, window.location.origin);
+    if (!navigationAllowed() || !sharedFromEnabled || !isPackagesPage()) {
       document.querySelectorAll('[data-ellucian-source-cell]').forEach((cell) => cell.remove());
       return;
     }
@@ -3147,7 +3152,7 @@
   // Fit each package's names while keeping Version and optional source columns compact.
   function updatePackagePipelineColumn() {
     // Remove only our presentation when a retained table belongs to another route.
-    if (!isPackagesPage()) {
+    if (!navigationAllowed() || !isPackagesPage()) {
       // Treat a return from another page as a new package selection too.
       packagePipelineWidthKey = '';
       document.querySelectorAll('[data-ellucian-pipeline-table]').forEach((table) => {
@@ -3311,8 +3316,8 @@
   // Add sharing information only to the rendered Designer pipeline table.
   function updateSharedVersionColumn() {
     // Tell the page helper to stop queued requests when the option is disabled.
-    window.postMessage({ source: MESSAGE_SOURCE, type: 'shared-status-setting', enabled: sharedVersionEnabled && isDesignerPackagePage() }, window.location.origin);
-    if (!sharedVersionEnabled || !isDesignerPackagePage()) {
+    window.postMessage({ source: MESSAGE_SOURCE, type: 'shared-status-setting', enabled: navigationAllowed() && sharedVersionEnabled && isDesignerPackagePage() }, window.location.origin);
+    if (!navigationAllowed() || !sharedVersionEnabled || !isDesignerPackagePage()) {
       // Release old reply state on opt-out/navigation without deleting completed cache entries.
       for (const [requestId, pending] of pendingSharedStatusRequests) {
         window.clearTimeout(pending.timer);
@@ -3494,7 +3499,7 @@
 
   // Place a package-scoped search beside the Designer Pipelines heading.
   function updateDesignerSearch() {
-    const heading = isDesignerPackagePage() && Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim() === 'Pipelines:');
+    const heading = navigationAllowed() && isDesignerPackagePage() && Array.from(document.querySelectorAll('h2')).find((item) => item.textContent.trim() === 'Pipelines:');
     const packageName = getPackageHeading()?.textContent.trim() || '';
     document.querySelectorAll('.ellucian-designer-search').forEach((control) => {
       // Restore native heading styling and cancel pending work when the control leaves.
@@ -3680,7 +3685,7 @@
     updatePackagePipelineColumn();
     requestDesignerOwnership();
     // Keep the shared Experience shell untouched outside the supported pages.
-    if (!isSupportedPage()) {
+    if (!navigationAllowed() || !isSupportedPage()) {
       document.querySelectorAll(PANEL_SELECTOR).forEach((panel) => {
         removeFavoritesFromPanel(panel);
         removeSearchControls(panel);
@@ -4101,6 +4106,22 @@
 
   // Install help once for controls on either page, including the sidebar's resize handle.
   initializePageTooltips();
+
+  // Discard only transient pin UI on disable; re-enabling reloads the same durable tenant-scoped records.
+  let lastNavigationGroup = null;
+  globalThis.FeatureTools?.subscribe(state => {
+    // Export changes must not reset a loaded favorites visit or repeat its indexing work.
+    if (lastNavigationGroup === state.navigation) return;
+    lastNavigationGroup = state.navigation;
+    // Export uses its own native readers and needs no navigation-table observation.
+    detailObserver.disconnect();
+    if (state.navigation) detailObserver.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['hidden','aria-hidden']});
+    resetFavoriteScope();
+    updateDesignerOwnershipVisit(true);
+    applySearchMode();
+    if (navigationAllowed()) requestSearchIndex();
+    window.dispatchEvent(new Event(LAYOUT_REQUEST_EVENT));
+  });
 
   // Load search and favorites preferences before inserting the first controls.
   chrome.storage.local.get(

@@ -1,5 +1,13 @@
 # Update history
 
+## 3.1.1 — October 18, 2026
+
+- Add independent Navigation Tools and Export Tools switches in General. New installs default to Navigation on and Export off; upgrades preserve legacy v3 export access unless explicitly disabled. Switching off preserves subordinate settings, tenant favorites, source observations and encrypted connections. Navigation opt-out hides Navigation, Sharing and Appearance tabs, including keyboard focus; General, Sites and Export/Backup remain available. Re-enabling restores the saved task settings.
+- Restore native sidebar/table/fitting behavior when Navigation is off, pausing its observers and source-cache collection. Export-only mode retains minimal route/identity/native readers and needs no Shared From list. Neither group performs new export/provider operations while disabled. Opt-out retires document grants and local preview/ZIP state; requests already sent cannot be recalled. Recheck group authorization before unsent source/provider requests and preserve cancellation ordering across delayed reads.
+- Replace the two-stage Packages reveal with one Shift+D plus explicit all-content confirmation. Packages stays hidden by default, includes accessible vendor content only when confirmed, and needs no Shared From list. Preview/selection and separate Git upload confirmation remain mandatory; service/account access is unchanged.
+- Use the ready Experience tenant name for Packages ZIP/display metadata only when its ID matches the native Packages tenant; otherwise use the native tenant ID. Reject mismatched ready identities. Git routing remains verified tenant-ID-first, with no remote migration or extra name lookup.
+- Keep native authentication, six slots, per-major/version guards, source bounds and v1/v2/store independence. Add tests for all four group combinations, pin/connection preservation, open-preview revocation, published-fitting restoration, one-shortcut confirmation and tenant-name matching/fallback.
+
 ## 3.1.0 — October 17, 2026
 
 - Add shared Experience-store tenant detection for new exports, requiring a ready UUID and rejecting missing/ambiguous identity. Recheck tenant/document context before reads and output; native credentials remain in the page.

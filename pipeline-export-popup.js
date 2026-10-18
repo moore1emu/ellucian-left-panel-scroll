@@ -18,21 +18,30 @@
     // Presentation follows the chosen source; worker/document checks remain authoritative.
     const kind = source.value;
     const packages = kind === 'packages';
-    const consent = !sourceSwitch.disabled && sourceSwitch.checked;
-    const allowed = PopupTabs.page === kind && (!packages || reveal > 0 && (consent || override.checked));
+    const tools = !globalThis.FeatureTools || FeatureTools.state.export;
+    const allowed = tools && PopupTabs.page === kind && (!packages || reveal > 0 && override.checked);
     button.disabled = opening || !allowed;
     document.querySelector('#pipeline-export-section').classList.toggle('is-unavailable', !allowed);
     availability.textContent = PopupTabs.page !== kind ? `Open ${kind === 'api-designer' ? 'API Designer' : packages ? 'Integration Packages' : 'Integration Designer'} to export.`
-      : packages && !consent && !override.checked ? 'Set up Shared From in Sharing before exporting.' : '';
-    availability.hidden = allowed;
-    document.querySelector('.export-setup-notice').hidden = !packages || consent || override.checked;
+      : !tools ? 'Enable Export Tools in General.' : packages && !override.checked ? 'Press Shift+D to confirm Packages export.' : '';
+    availability.hidden = !tools || allowed;
+    document.querySelector('.export-setup-notice').hidden = true;
     document.querySelector('#export-mode-field').hidden = kind !== 'designer';
-    document.querySelector('#export-source-description').textContent = kind === 'api-designer' ? 'Published API definitions, with each major version.' : packages ? 'Deployed versions; filtered by saved Designer sources.' : 'Draft pipeline/API/Sub-Pipeline records and published artifacts.';
+    document.querySelector('#export-source-description').textContent = kind === 'api-designer' ? 'Published APIs, each major version.' : packages ? 'All accessible published package definitions.' : 'Drafts and published definitions.';
   }
   document.addEventListener('settings-context-changed', updateAvailability);
   document.addEventListener('settings-consent-changed', updateAvailability);
   sourceSwitch.addEventListener('change', updateAvailability);
-  source.addEventListener('change', () => { override.checked = false; updateAvailability(); });
+  source.addEventListener('change', () => {
+    override.checked = false;
+    if (source.value === 'packages') {
+      override.checked = window.confirm('Include all accessible published packages, including Ellucian content? This temporary choice does not grant service access.');
+      if (!override.checked) source.value = 'designer';
+    }
+    updateAvailability();
+  });
+  document.addEventListener('settings-tools-changed', updateAvailability);
+  globalThis.FeatureTools?.subscribe(state => { if (!state.export) override.checked = false; updateAvailability(); });
   // Select API Designer automatically only when its native page has positively answered the route query.
   document.addEventListener('settings-context-changed', () => { if (PopupTabs.page === 'api-designer') source.value = 'api-designer'; updateAvailability(); });
   updateAvailability();
@@ -42,18 +51,15 @@
     if (event.repeat || event.ctrlKey || event.altKey || event.metaKey || !event.shiftKey || event.key.toLowerCase() !== 'd') return;
     if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
     event.preventDefault();
+    if (globalThis.FeatureTools && !FeatureTools.state.export) return;
     PopupTabs.select('export');
-    if (reveal === 0) {
+    // One shortcut confirms/reveals all Packages; keep explicit consent rather than silently broadening access.
+    if (window.confirm('Include all accessible published packages, including Ellucian content? This temporary choice does not grant service access.')) {
       reveal = 1;
       document.querySelector('#export-packages-option').hidden = false;
       document.querySelector('#export-packages-option').disabled = false;
-      status.textContent = 'Integration Packages is available in Source.';
-    } else if (reveal === 1) {
-      advanced.hidden = false;
-      // A second shortcut still requires explicit authorization before removing the Designer-source filter.
-      if (window.confirm('Include all accessible published packages, including Ellucian content? This temporary choice does not grant service access.')) {
-        reveal = 2; source.value = 'packages'; override.checked = true;
-      }
+      source.value = 'packages'; override.checked = true;
+      status.textContent = 'Integration Packages is available for this export.';
     }
     updateAvailability();
   });

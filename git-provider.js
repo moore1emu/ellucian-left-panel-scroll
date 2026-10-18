@@ -70,6 +70,8 @@
     const api = c.provider === 'github' ? 'https://api.github.com' : c.server;
     const root = c.provider === 'github' ? `/repos/${c.repository.split('/').map(part).join('/')}` : `/api/v4/projects/${part(c.repository)}`;
     async function request(path, method = 'GET', body) {
+      // Group opt-out blocks provider reads and writes even from an already-open Git tab.
+      if (globalThis.FeatureTools) await FeatureTools.requireExport();
       await check();
       if (signal?.aborted) fail('Git operation cancelled.');
       if (path !== '' && (!path.startsWith('/') || path.startsWith('//'))) fail('Invalid provider operation.');

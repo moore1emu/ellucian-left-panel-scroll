@@ -79,7 +79,7 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     });
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     await worker.evaluate(() => pendingOwnershipUpdate);
-    await worker.evaluate(() => chrome.storage.local.set({ sharedFromEnabled: true, designerOwnershipCache: { '11111111-2222-4333-8444-555555555555': { environment: 'Test', packages: [{ name: 'Owned', pipelines: ['Pipeline'] }] } }, syntheticFavorites: { keep: true } }));
+    await worker.evaluate(() => chrome.storage.local.set({ exportToolsEnabled:true, sharedFromEnabled: true, designerOwnershipCache: { '11111111-2222-4333-8444-555555555555': { environment: 'Test', packages: [{ name: 'Owned', pipelines: ['Pipeline'] }] } }, syntheticFavorites: { keep: true } }));
     const id = new URL(worker.url()).host;
     const source = await context.newPage(); await source.goto(site + packagesPath);
     const popup = await context.newPage(); await popup.goto(`chrome-extension://${id}/popup.html`);
@@ -179,7 +179,8 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       // Open export with the original Packages document active and its real worker-bound grant intact.
       await source.bringToFront();
       const exporting = context.waitForEvent('page');
-      await popup.evaluate(async () => { await PopupTabs.refreshContext(); PopupTabs.select('export'); document.dispatchEvent(new KeyboardEvent('keydown',{key:'D',shiftKey:true})); document.querySelector('#export-source').value='packages'; document.querySelector('#export-source').dispatchEvent(new Event('change')); document.querySelector('#export-pipelines').click(); });
+      popup.once('dialog',dialog=>dialog.accept());
+      await popup.evaluate(async () => { await PopupTabs.refreshContext(); PopupTabs.select('export'); document.dispatchEvent(new KeyboardEvent('keydown',{key:'D',shiftKey:true})); document.querySelector('#export-pipelines').click(); });
       const exported = await exporting; exported.on('pageerror', error => errors.push(error.message));
       await exported.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
       // A popup-opened connection can return to the sole export without changing its document or selection.
@@ -235,7 +236,8 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await source.evaluate(() => { owner.context.tenantId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'; owner.state.currentTenant = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'; window.__PRELOADED_STATE__.tenant = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'; });
       await source.bringToFront();
       const prodOpening = context.waitForEvent('page');
-      await popup.evaluate(async () => { await PopupTabs.refreshContext(); document.querySelector('#export-pipelines').click(); });
+      popup.once('dialog',dialog=>dialog.accept());
+      await popup.evaluate(async () => { await PopupTabs.refreshContext(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'D',shiftKey:true})); document.querySelector('#export-pipelines').click(); });
       const prodExport = await prodOpening;
       await prodExport.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
       await prodExport.evaluate(() => { chrome.permissions.contains = async () => true; });
@@ -249,6 +251,11 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     }
     assert.deepEqual(errors, []);
     assert.ok(calls.length > 0); assert.deepEqual((await worker.evaluate(() => chrome.storage.local.get('syntheticFavorites'))).syntheticFavorites, { keep: true });
+    // Saved encrypted settings survive opt-out, but the vault refuses token use from a stale open tab.
+    const savedConnection=await connection.evaluate(()=>GitVault.info());
+    await worker.evaluate(()=>chrome.storage.local.set({exportToolsEnabled:false}));
+    assert.equal(await connection.evaluate(async()=>{try{await GitVault.token((await GitVault.info()).revision);return 'unexpected';}catch(error){return error.message;}}),'Enable Export Tools in General.');
+    assert.deepEqual(await connection.evaluate(()=>GitVault.info()),savedConnection);
     console.log('PASS installed Git export: real settings/worker/native source flow, both providers, encrypted setup, missing permission, formatted file preview, explicit confirmation, conflict/no writes, and commit links without source rereads');
   } finally {
     // Close only this owned context and remove only its verified system-temp profile, even after startup failure.

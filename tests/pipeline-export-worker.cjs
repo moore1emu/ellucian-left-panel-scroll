@@ -27,7 +27,7 @@ function fixture(sessionState = {}, faults = {}) {
   const context = vm.createContext({ URL, Date: { now: () => now }, crypto: { randomUUID: () => `ticket-${++counter}` }, chrome: {
     runtime: { id: popup.id, getManifest: () => ({ version: '2.0.5' }), getURL: (file) => base + file, onMessage: { addListener: (callback) => { listener = callback; } } },
     // Only browser-memory grant metadata is shared across simulated worker restarts.
-    storage: { session: faults.absent ? undefined : {
+    storage: { local:{get:async()=>({exportToolsEnabled:true})}, onChanged:{addListener(){}}, session: faults.absent ? undefined : {
       get: async () => { if (faults.holdRead) await faults.holdRead; if (faults.read) throw new Error('Synthetic read failure'); return structuredClone(sessionState); },
       set: async (value) => { if (faults.write) throw new Error('Synthetic write failure'); Object.assign(sessionState, structuredClone(value)); },
       remove: async (key) => { delete sessionState[key]; },

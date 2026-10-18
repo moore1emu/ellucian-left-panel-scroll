@@ -22,7 +22,7 @@ const window = { location: { href: 'https://synthetic.test/data-connect/home', o
 // Worker-to-content envelopes omit sender.tab; routing fields come from the authenticated worker.
 const sender = { id: 'synthetic', url: 'chrome-extension://synthetic/background.js' };
 const chrome = { runtime: { id: sender.id, getURL: (file) => 'chrome-extension://synthetic/' + file, onMessage: { addListener: (callback) => { runtime = callback; } } },
-  storage: { local: { get: async () => { if (storageHold) await storageHold; return { sharedFromEnabled: true, designerOwnershipCache: sourceCache }; } }, onChanged: { addListener(callback) { storageChanged = callback; } } } };
+  storage: { local: { get: async () => { if (storageHold) await storageHold; return { exportToolsEnabled:true, sharedFromEnabled: true, designerOwnershipCache: sourceCache }; } }, onChanged: { addListener(callback) { storageChanged = callback; } } } };
 const context = vm.createContext({ window, chrome, crypto: { randomUUID }, TextEncoder, Uint8Array, Uint32Array });
 for (const file of ['pipeline-export-core.js', 'pipeline-export-bridge.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context);
 const respond = (data, origin = window.location.origin) => events.get('message')({ source: window, origin, data: { source: 'ellucian-left-panel-scroll', type: 'pipeline-export-operation-response', ...data } });
@@ -50,12 +50,13 @@ async function run() {
   const result = await preview;
   assert.equal(result.ok, true);
   assert.equal(result.plan.entries.length, 1);
-  assert.equal(result.environment, 'Saved Environment', 'Page-supplied environment names must not override the exact cached tenant name');
+  assert.equal(result.environment, 'Synthetic Environment', 'Native Experience labels are display metadata only, never tenant authorization');
   assert.equal(JSON.stringify(result).includes('secret'), false);
   assert.equal(timers.size, 0);
 
   // Navigation rejects outstanding verification replies, even if their request identifier matches.
   const verification = call({ type: 'pipeline-export-verify', context: result.context });
+  await turn();
   const verifyRequest = messages.at(-1);
   window.location.href += '?changed';
   respond({ requestId: verifyRequest.requestId, ok: true });
