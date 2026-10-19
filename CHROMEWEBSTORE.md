@@ -1,6 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-18 · Candidate: 3.1.4 · Status: Git layout test candidate, not submitted
+Updated: 2026-10-19 · Candidate: 3.1.5 · Status: Git layout test candidate, not submitted
+
+3.1.5 preparation: the small Export settings tab launches the full workspace, with Git Connections and Export Configuration shortcuts and independent Favorites Backup & Restore. Source/version selectors are no longer duplicated in the popup. Source-page authorization, configuration review, credential boundaries and permissions are unchanged. Refresh the popup screenshot before a future submission; no store action is authorized.
 
 Current preparation: approved three-tab export workspace, tenant/card configuration and first-save review, shared ZIP/Git paths, Designer Source/Formatted defaults and local folding JSON editor. No new permissions or remote editor code. Refresh workspace screenshots before any future submission. Earlier placement/default notes below are historical; this update is not authorization to publish.
 

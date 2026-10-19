@@ -220,6 +220,8 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       // Keep Return to Export beside the repository controls, not above the form.
       assert.equal(await connection.locator('.actions #git-return-export').count(), 1);
       await connection.locator('#git-return-export').click();
+      // Wait for the asynchronous browser lookup rather than asserting a previous missing-export message.
+      await connection.waitForFunction(()=>!document.querySelector('#git-return-export').disabled && document.querySelector('#git-return-status').textContent==='');
       assert.equal(await connection.locator('#git-return-status').innerText(), '');
       assert.equal(exported.url(), beforeReturn);
       assert.equal(await exported.locator('#select-all').isChecked(), true);

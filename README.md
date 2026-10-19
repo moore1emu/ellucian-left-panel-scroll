@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v3 test candidate (3.1.4):** Export, Git Connections and Export Configuration share one workspace. Review/save tenant-specific folders and Designer version/file-type choices before ZIP or Git preparation. Designer defaults keep Draft/Published together and Source/Formatted separate; editable JSON supports syntax colors and folding. Existing repository files are never moved/deleted. V2 remains independent. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). This is not a store release.
+> **v3 test candidate (3.1.5):** Settings → Export opens the full Export Workspace, with shortcuts to Git Connections and Export Configuration. The connected source page is detected automatically; version/file choices live in the workspace. Review/save tenant-specific defaults before ZIP or Git preparation. Favorites Backup & Restore stays in settings. V2 remains independent. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). This is not a store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -9,7 +9,7 @@ Make Ellucian Integration Packages and Integration Designer easier to navigate i
 ## What It Does
 
 - Choose Navigation Tools, Export Tools, or both in General; turning a group off keeps saved data. Backup/restore always remains available.
-- V3: export Integration Designer drafts/published definitions or API Designer published definitions, with tenant-name folders matched by tenant ID. See [current source setup](docs/Git-Export.md#current-source-workflow-314).
+- V3: export Integration Designer drafts/published definitions or API Designer published definitions, with tenant-name folders matched by tenant ID. See [current source setup](docs/Git-Export.md#current-source-workflow-315).
 - Scroll and resize the package sidebar independently of the main page.
 - Search package and pipeline names, even with different spacing or separators.
 - Pin packages and published pipelines, then drag favorites into your preferred order.

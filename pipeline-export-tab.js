@@ -408,6 +408,8 @@
       if (!launch) {
         launch = await chrome.runtime.sendMessage({ type: 'pipeline-export-claim', ticket: location.hash.slice(1) });
         if (!launch?.ok) { launch = null; throw new Error('Preview expired. Reopen export from settings.'); }
+        // Open a requested setup tab only after this exact export document has claimed its source ticket.
+        if (['connections','configuration'].includes(launch.initialView)) globalThis.GitWorkspace?.show(launch.initialView);
       }
       // Require saved consent/setup before even requesting the page's existing metadata.
       const saved = launch.sourceKind ? {} : await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });

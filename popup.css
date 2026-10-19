@@ -415,7 +415,6 @@ footer {
 /* Keep subgroup headings consistent while preserving native form controls and themes. */
 .settings-card h2 { font-size: 14px; line-height: 1.3; margin: 10px 0 5px; }
 .pipeline-export-section { border-bottom: 1px solid var(--border); margin-bottom: 10px; padding-bottom: 10px; }
-.export-setup-notice { background: var(--purple-soft); border-radius: 5px; color: var(--text); font-size: 12px; line-height: 1.4; margin: 7px 0; padding: 7px; }
 .backup-card > button, #export-pipelines { display: block; width: 100%; }
 
 /* Keep the release summary dismissible and non-modal; it never opens a new browser tab. */
@@ -457,7 +456,7 @@ footer {
 /* Readable reasons stay outside the dimmed action block, with normal backup controls below Export. */
 .source-refresh-block { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; margin-top: 12px; padding: 10px; }
 .source-cache-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; justify-content: space-between; font-size: 12px; }
-.is-unavailable > :not(.export-setup-notice) { opacity: .55; }
+.is-unavailable > * { opacity: .55; }
 .source-refresh-block .shared-from-actions { margin-top: 8px; }
 #source-refresh-availability, #pipeline-export-availability { font-weight: 400; line-height: 1.4; margin: 8px 0; }
 .pipeline-export-section { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 10px; }
@@ -478,3 +477,6 @@ footer { border-top: 1px solid var(--border); padding-top: 8px; }
 /* Keep the new Git subgroup aligned with the existing heading/control indentation. */
 .git-connection-section { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px; }
 .git-connection-section h2 { margin-left: -8px; }
+/* Keep setup shortcuts compact without shrinking their labels or keyboard focus targets. */
+.git-connection-section { display: flex; flex-wrap: wrap; gap: 6px; }
+.git-connection-section button { flex: 1 1 auto; min-height: 28px; }

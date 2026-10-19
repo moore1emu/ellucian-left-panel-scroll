@@ -1,6 +1,6 @@
 # v3 Development — Git Export
 
-Checkpoint: **3.1.4 functional Git test candidate**, not a store release. The approved workspace now has Export, Git Connections and Export Configuration tabs. Tenant/card settings control shared ZIP/Git destinations, explicit first-save confirmation, Designer version/file choices and optional folder separation/suffixes. Local Ace JSON editing is bundled offline. Credentials, native guards and separate Git upload confirmation remain intact. Earlier placement/ID-first/default-formatting notes below are historical; see [Git Export](Git-Export.md) for current behavior.
+Checkpoint: **3.1.5 functional Git test candidate**, not a store release. The popup now launches the workspace for its connected source, with direct Git Connections/Export Configuration shortcuts and independent Backup & Restore. Designer launches both states; reviewed configuration narrows them. Source-bound tickets, first-save review, hidden Packages consent, native guards, credentials and separate Git upload confirmation remain intact. Earlier placement/ID-first/default-formatting notes below are historical; see [Git Export](Git-Export.md) for current behavior.
 
 ## Branch and Release Boundaries
 

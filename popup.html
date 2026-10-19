@@ -265,24 +265,16 @@
           <p id="export-tools-notice" class="card-description" hidden>Enable Export Tools in General.</p>
           <!-- Open metadata only; source reads require ZIP or Git preparation in the separate export tab. -->
           <div class="pipeline-export-section" id="pipeline-export-section">
-            <h2>Export Definitions</h2>
-            <label class="search-display-control" for="export-source"><span>Source</span><select id="export-source"><option value="designer">Integration Designer</option><option value="api-designer">API Designer</option><option id="export-packages-option" value="packages" hidden disabled>Integration Packages</option></select></label>
-            <label class="search-display-control" id="export-mode-field" for="export-version-mode"><span>Versions</span><select id="export-version-mode"><option value="both">Drafts &amp; Published</option><option value="draft">Drafts Only</option><option value="published">Published Only</option></select></label>
-            <p class="card-description" id="export-source-description">Export Designer pipelines, APIs and sub-pipelines.</p>
-            <p class="export-setup-notice" hidden>Packages includes all accessible published content after confirmation.</p>
-            <button id="export-pipelines" type="button" disabled aria-describedby="pipeline-export-status">Preview Export</button>
+            <h2>Export Workspace</h2>
+            <p class="card-description" id="export-source-description">Choose definitions, review folders, then download or push to Git.</p>
+            <button id="export-pipelines" type="button" disabled aria-describedby="pipeline-export-availability pipeline-export-status">Open Export Workspace</button>
             <p id="pipeline-export-status" class="icon-status" role="status" aria-live="polite"></p>
-            <div id="export-advanced" hidden>
-              <label><input id="export-all-accessible" type="checkbox" /> Include All Accessible Content</label>
-              <p class="icon-status">Temporary preview override. Not saved.</p>
-            </div>
           </div>
-          <p id="pipeline-export-availability" class="card-description" hidden>Open the selected source page to export.</p>
+          <p id="pipeline-export-availability" class="card-description" hidden>Open Integration Designer or API Designer to export.</p>
           <!-- Git credentials live only in the dedicated extension tab, never in this popup or page scripts. -->
           <div class="git-connection-section">
-            <h2 id="git-connection-title">Git Connection</h2>
-            <p class="card-description">Set up GitHub or GitLab exports.</p>
-            <button id="manage-git" type="button">Manage Connection</button>
+            <button id="manage-git" type="button">Git Connections</button>
+            <button id="configure-export" type="button">Export Configuration</button>
           </div>
           <!-- JSON backups remain independent of ZIP pipeline downloads. -->
           <h2 id="backup-title">Backup &amp; Restore</h2>

@@ -19,7 +19,7 @@
         || (tabs.length === 1 ? tabs[0] : null);
       if (!target) {
         status.textContent = tabs.length ? 'Multiple exports are open. Select the export tab you want to continue.'
-          : 'No export is open. Open Integration Packages, then Settings → Export → Preview Pipeline Export.';
+          : 'No export is open. On a supported source page, choose Settings → Export → Open Export Workspace.';
         return;
       }
       // Keep: activate without URL changes so selections and private prepared bytes survive.

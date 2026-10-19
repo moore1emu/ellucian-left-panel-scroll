@@ -118,6 +118,8 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       const sourceKind = message.sourceKind || 'packages';
       if (!Object.hasOwn(exportSourceRoutes,sourceKind) || sourceKind === 'packages' && message.packagesRevealed !== true && message.sourceKind) throw new Error('Source not enabled');
       const record = { sourceTabId: source.id, sourceKind, exportMode:['draft','published','both'].includes(message.exportMode) ? message.exportMode : 'published',
+        // Initial view is presentation-only; keep it inside the ticket without altering claim URLs or source scope.
+        initialView: ['export','connections','configuration'].includes(message.initialView) ? message.initialView : 'export',
         overrideConfirmed: sourceKind === 'packages' && message.overrideConfirmed === true, expires: Date.now() + 300000, tabId: null };
       pipelineExportTickets.set(ticket, record);
       try {
@@ -157,7 +159,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       // Keep the source target and advanced consent in the worker, not in caller-controlled relay fields.
       pipelineExportGrants.set(sender.tab.id, { ...ticket, creation: undefined, exportDocumentId: sender.documentId, clientId: crypto.randomUUID(), generation: 0 });
       await savePipelineExportGrants();
-      respond({ ok: true, overrideConfirmed: ticket.overrideConfirmed, sourceKind:ticket.sourceKind, exportMode:ticket.exportMode });
+      respond({ ok: true, overrideConfirmed: ticket.overrideConfirmed, sourceKind:ticket.sourceKind, exportMode:ticket.exportMode, initialView:ticket.initialView });
     })().catch(() => respond({ ok: false }));
     return true;
   }

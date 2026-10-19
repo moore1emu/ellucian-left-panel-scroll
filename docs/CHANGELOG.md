@@ -1,5 +1,12 @@
 # Update history
 
+## 3.1.5 — October 19, 2026
+
+- Simplify the popup Export tab to Open Export Workspace, Git Connections and Export Configuration shortcuts, with independent Backup & Restore below. Detect the connected source page instead of duplicating Source/Versions selectors.
+- Open a normal browser tab through the existing one-use source/document-bound ticket. Setup shortcuts retain that verified source when available, or open standalone setup without source authority on other pages. Keep the ticket URL unchanged; validate its initial view as presentation only.
+- Designer opens with both states available; reviewed workspace configuration selects Draft/Published and file layout. Preserve first-save review, hidden confirmed Shift+D Packages access, credentials, favorites and six-request safeguards. No new permissions, live provider write, merge or store update.
+- Verification: 33 of 34 maintained regressions passed, with focused installed launcher/shortcut checks and unchanged permission/source boundaries. The standalone Connections Return to Export check fails in this test environment against both this build and unchanged 3.1.4; same-document workspace switching passes. Live/manual acceptance remains required.
+
 ## 3.1.4 — October 18, 2026
 
 - Match the approved workspace mockup: Export, Git Connections and Export Configuration tabs, compact Repository/Authentication panels, card-specific controls left and visible folder preview right.

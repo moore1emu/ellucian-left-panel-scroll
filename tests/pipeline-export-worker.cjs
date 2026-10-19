@@ -52,8 +52,8 @@ function fixture(sessionState = {}, faults = {}) {
     },
   } });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'pipeline-export-worker.js'), 'utf8'), context);
-  const open = async (overrideConfirmed = false) => {
-    assert.equal((await call({ type: 'pipeline-export-open', overrideConfirmed }, popup)).ok, true);
+  const open = async (overrideConfirmed = false, initialView) => {
+    assert.equal((await call({ type: 'pipeline-export-open', overrideConfirmed, initialView }, popup)).ok, true);
     const tab = created.at(-1);
     return { id: popup.id, url: tab.url, tab: { id: tab.id }, frameId: 0, documentId: `export-document-${tab.id}` };
   };
@@ -73,6 +73,13 @@ async function run() {
   assert.equal(grant.ok, true);
   assert.equal(grant.overrideConfirmed, true);
   assert.equal(grant.sourceTabId, undefined);
+  assert.equal(grant.initialView, 'export');
+  // Presentation shortcuts retain the exact one-use URL and never select a new source document.
+  for (const view of ['connections','configuration','untrusted-view']) {
+    const shortcut=await f.open(false,view);
+    assert.match(shortcut.url, /pipeline-export\.html#ticket-\d+$/);
+    assert.equal((await f.claim(shortcut)).initialView,view==='untrusted-view'?'export':view);
+  }
   assert.equal((await f.claim(page)).ok, false);
   for (const impostor of [{ ...page, tab: { id: 99 } }, { ...page, frameId: 1 }, { ...page, documentId: 'replacement' }, { ...page, url: base + 'popup.html' }]) {
     assert.equal((await f.relay(impostor, 'preview')).reason, 'preview-expired');

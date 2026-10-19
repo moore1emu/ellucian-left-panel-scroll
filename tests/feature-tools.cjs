@@ -99,7 +99,8 @@ async function unit(){
         assert.deepEqual(await worker.evaluate(()=>chrome.storage.local.get(['navigationToolsEnabled','exportToolsEnabled'])),{navigationToolsEnabled:false});
       }
       // Hidden Packages never appears just because Export Tools was enabled.
-      assert.equal(await popup.locator('#export-packages-option').evaluate(e=>e.hidden&&e.disabled),true);
+      assert.equal(await popup.locator('#export-source, #export-packages-option').count(),0);
+      assert.equal(await popup.locator('#export-pipelines').isDisabled(),true,'Packages needs its separate temporary confirmation');
       assert.deepEqual(await worker.evaluate(()=>chrome.storage.local.get(['favoritePackagesByTenant','syntheticKeep'])),retained);
       await popup.evaluate(()=>PopupTabs.select('general'));
     }

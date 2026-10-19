@@ -1,14 +1,16 @@
 # Git Export — V3 Test Candidate
 
-Version 3.1.4 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.1.5 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
 
-## Current Workspace (3.1.4)
+## Current Workspace (3.1.5)
+
+Settings → Export now has Open Export Workspace plus Git Connections and Export Configuration shortcuts. The main button detects the connected Integration Designer or API Designer page and opens a normal browser tab. Setup shortcuts keep that verified source attached when available; on other pages they open setup only, without source access. Favorites/saved-source Backup & Restore stays in settings and works independently of Export Tools.
 
 Export, Git Connections and Export Configuration are tabs in one extension-owned workspace. Switching tabs keeps the source document grant and selection; opening Git setup independently still works. GitHub currently supports github.com; GitLab supports gitlab.com and custom HTTPS origins. No credential is copied into the JSON editor.
 
 Before downloading or preparing Git changes, open Export Configuration and save the defaults or your changes for the current tenant/card. Each tenant/card requires its own confirmation. The destination tree on Export shows actual selected paths from metadata only. Configuration's right-side preview uses example files. Configuration saves require no provider token and do not upload, move or delete repository files.
 
-Integration Designer defaults include Draft and Published together under the package, with Source and Formatted in separate folders. Source is original importable JSON/JavaScript. Formatted is a readable review copy for copying, comparisons and blame; it is not importable. Choose either/both file types and either/both versions. Separate Draft/Published or Source/Formatted folders may remain enabled even when only one item is chosen. Draft filenames have no version suffix; published majors retain theirs. The original launch scope limits available records: reopen export with Both if a Draft-only launch omitted published records.
+Integration Designer defaults include Draft and Published together under the package, with Source and Formatted in separate folders. Source is original importable JSON/JavaScript. Formatted is a readable review copy for copying, comparisons and blame; it is not importable. Choose either/both file types and either/both versions in Export Configuration. Separate Draft/Published or Source/Formatted folders may remain enabled even when only one item is chosen. Draft filenames have no version suffix; published majors retain theirs. Designer launches with both states available; the saved configuration narrows the selection within the original source grant.
 
 ZIP and Git use the same configured tenant/card root and physical file plan. State and sharing observations appear in package READMEs. Optional naming suffixes are JSON-only; combined copies default to _formatted to avoid collisions. Unsafe paths, duplicate IDs, unsupported settings and colliding files are rejected. Reset stages defaults for this card; Save applies them. Stale writes from another tab fail instead of overwriting newer preferences.
 
@@ -20,7 +22,7 @@ Folder Config Override (JSON) uses pinned, locally bundled Ace 1.43.3 with JSON 
 
 IntegrationPackages stays absent until the session's confirmed Shift+D reveal. Existing hidden settings survive ordinary saves/reset. Its configuration card supports its root folder; the existing optional Packages formatted-copy choice stays on its Export view. API Designer has a folder setting only. Source consent, six-reader budget and separate reviewed Git upload confirmation are unchanged.
 
-The older checkpoint sections below describe earlier releases where placement/default behavior differs; this section is authoritative for 3.1.4.
+The older checkpoint sections below describe earlier releases where placement/default behavior differs; this section is authoritative for 3.1.5.
 
 ## Repository Locations
 
@@ -49,7 +51,7 @@ Published Data Connect versions come from the selected package metadata. Pipelin
 
 ## Set Up a Connection
 
-1. In settings, open **Export → Manage Connection**. This opens a full extension-owned browser tab, not a provider login popup.
+1. In settings, open **Export → Git Connections**. This opens a full extension-owned browser tab, not a provider login popup.
 2. Choose GitHub or GitLab. For self-hosted GitLab enter its HTTPS server origin. DNS domains are supported; custom ports and installations under a URL subpath are not supported in this candidate.
 3. Enter an existing repository (`owner/repository` or `group/subgroup/project`) and existing branch in the grouped connection row. Configure tenant locations under Advanced on this Connections page. Empty repositories/branches cannot be created here.
 4. Create an expiring, least-privilege provider token. GitHub fine-grained tokens need Contents read/write for the selected repository. GitLab's multi-file REST API needs API access and a role allowed to commit; a repository-only token scope is not enough. Organization approval and protected-branch rules still apply. Never reuse an Ellucian session token.
@@ -64,11 +66,11 @@ Every save requires re-entering the access token, including changes to the base 
 
 GitHub Token Settings and GitLab Token Instructions expand optional setup checklists; both start collapsed. GitHub uses a selected-repository fine-grained token with Contents read/write. The GitLab example uses a project token with api scope and Developer access to an unprotected export branch; creating it requires Maintainer/Owner, and GitLab.com project tokens require Premium/Ultimate. Your organization's restrictions still apply. Token values belong only in the extension field, never support messages.
 
-## Current Source Workflow (3.1.4)
+## Current Source Workflow (3.1.5)
 
 Enable Export Tools in General first. Navigation Tools may stay off; export uses native lists/identity without adding favorites, search or sharing columns. Disabling Export keeps encrypted connections but blocks new source/provider requests and clears transient previews. It cannot recall requests already sent. Backup/restore stays usable with either group off.
 
-Open Settings → Export on the source page. Integration Designer offers Drafts, Published, or Both; API Designer exports published definition JSON for each resource major. Designer draft transformers and optional API SQL/GURASPC files are not included yet. Missing/changing tenant identity or source access stops the export.
+Open Settings → Export → Open Export Workspace on the source page. Choose Drafts, Published, or Both in Export Configuration; API Designer exports published definition JSON for each resource major. Designer draft transformers and optional API SQL/GURASPC files are not included yet. Missing/changing tenant identity or source access stops the export.
 
 One Shift+D outside inputs confirms and reveals Integration Packages for all accessible published content. Packages, Designer and API Designer exports do not require Shared From setup. This does not bypass service permissions.
 

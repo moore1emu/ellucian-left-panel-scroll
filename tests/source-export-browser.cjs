@@ -44,8 +44,8 @@ window.webpackChunkdata_connect_designer=[];window.webpackChunkdata_connect_desi
       await source.bringToFront();
       await popup.evaluate(async()=>{await PopupTabs.refreshContext();PopupTabs.select('export');});
       await popup.waitForFunction(()=>!document.querySelector('#export-pipelines').disabled);
-      assert.equal(await popup.locator('#export-source').inputValue(),kind);
-      assert.equal(await popup.locator('#export-packages-option').evaluate(e=>e.disabled&&e.hidden),true);
+      assert.equal(await popup.locator('#export-source, #export-version-mode').count(),0,'Source and version controls belong to the workspace');
+      assert.match(await popup.locator('#export-source-description').innerText(),kind==='designer'?/Integration Designer/:/API Designer/);
       // Retain requested visual checks outside the shared repository; normal runs create no images.
       const artifacts=process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS;
       if(artifacts){
@@ -117,20 +117,49 @@ window.webpackChunkdata_connect_designer=[];window.webpackChunkdata_connect_desi
       await exported.waitForFunction(()=>document.querySelector('#save-zip').hidden);
       await exported.close();
     }
+    // Both setup shortcuts carry the same bound source ticket, without definition reads or new authority.
+    await source.evaluate(()=>{fixtureState={...fixtureState,tenant:'11111111-2222-4333-8444-555555555555'};});
+    const beforeSetup=await source.evaluate(()=>fixtureStats.reads);
+    for (const [selector,view] of [['#manage-git','connections'],['#configure-export','configuration']]) {
+      await source.bringToFront();
+      await popup.evaluate(()=>PopupTabs.refreshContext());
+      const opening=context.waitForEvent('page');
+      await popup.evaluate(selector=>document.querySelector(selector).click(),selector);
+      const workspace=await opening;
+      await workspace.waitForFunction(()=>document.querySelector('#export-status').textContent.startsWith('Preview ready'));
+      assert.match(workspace.url(),/pipeline-export\.html#[^#]+$/);
+      assert.equal(await workspace.locator('#workspace-'+view).isVisible(),true);
+      assert.equal(await source.evaluate(()=>fixtureStats.reads),beforeSetup);
+      await workspace.close();
+    }
+    // Unrelated pages permit standalone setup only; the main launcher and source reads stay unavailable.
+    await source.goto(site+'/fixture/home');
+    await source.bringToFront();
+    await popup.evaluate(()=>PopupTabs.refreshContext());
+    assert.equal(await popup.locator('#export-pipelines').isDisabled(),true);
+    for (const [selector,view,hash] of [['#manage-git','connections',''],['#configure-export','configuration','#locations']]) {
+      const opening=context.waitForEvent('page');
+      await popup.evaluate(selector=>document.querySelector(selector).click(),selector);
+      const setup=await opening;
+      await setup.waitForFunction(()=>!document.querySelector('#location-fields').disabled);
+      assert.equal(new URL(setup.url()).pathname,'/git-connection.html');
+      assert.equal(new URL(setup.url()).hash,hash);
+      assert.equal(await setup.locator('#workspace-'+view).isVisible(),true);
+      assert.equal(await setup.locator('#workspace-export').count(),0);
+      await setup.close();
+    }
+    await source.goto(site+'/fixture/app/all-accounts/Ellucian/data-connect-designer/');
     // One hidden gesture still needs confirmation, but no Shared From cache or second shortcut.
     await popup.bringToFront();
     await popup.locator('h1').click();
     popup.once('dialog',d=>d.dismiss());
     await popup.keyboard.press('Shift+D');
-    assert.equal(await popup.locator('#export-packages-option').evaluate(e=>e.disabled||e.hidden),true);
-    assert.equal(await popup.locator('#export-all-accessible').isChecked(),false);
+    assert.doesNotMatch(await popup.locator('#panel-export').innerText(),/Integration Packages is available/);
     popup.once('dialog',d=>d.accept());
     await popup.keyboard.press('Shift+D');
-    assert.equal(await popup.locator('#export-packages-option').evaluate(e=>e.disabled||e.hidden),false);
-    assert.equal(await popup.locator('#export-all-accessible').isChecked(),true);
+    assert.match(await popup.locator('#pipeline-export-status').innerText(),/Integration Packages is available/);
     // Turning off Export while a real preview is open retires the grant and clears prepared actions.
     await source.evaluate(()=>{fixtureState={...fixtureState,tenant:'11111111-2222-4333-8444-555555555555'};});
-    await popup.selectOption('#export-source','designer');
     await source.bringToFront();
     await popup.evaluate(async()=>{await PopupTabs.refreshContext();});
     const opening=context.waitForEvent('page');

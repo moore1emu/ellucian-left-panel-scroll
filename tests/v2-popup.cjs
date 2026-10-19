@@ -64,7 +64,7 @@ function installStub() {
       assert.equal(await page.locator('.favorite-appearance-controls > .setting-title').textContent(), 'Favorites');
       // Task names do not repeat as headings; retain only distinct subgroup titles.
       assert.equal(await page.locator('#panel-sharing > h2, #panel-sites > h2').count(), 0);
-      assert.deepEqual(await page.locator('#panel-export h2').allTextContents(), ['Export Definitions', 'Git Connection', 'Backup & Restore']);
+      assert.deepEqual(await page.locator('#panel-export h2').allTextContents(), ['Export Workspace', 'Backup & Restore']);
 
       // Dismissal failures remain retryable without changing preferences.
       assert.deepEqual(await page.locator('#update-summary li').allTextContents(), [
@@ -120,7 +120,6 @@ function installStub() {
         ['Appearance', '#panel-appearance > h2', '.icon-appearance-controls'],
         ['Appearance', '.favorite-appearance-controls > .setting-title', '.favorite-match-control'],
         ['Export', '.pipeline-export-section h2', '.pipeline-export-section > .card-description'],
-        ['Export', '#git-connection-title', '#manage-git'],
         ['Export', '#backup-title', '#export-shared-from'],
       ];
       for (const [name, heading, control] of pairs) {
@@ -178,17 +177,15 @@ function installStub() {
 
       // One shortcut confirms all accessible Packages, independent of the Shared From switch.
       await page.locator('#icon-letters').evaluate(node => node.dispatchEvent(new KeyboardEvent('keydown', { key: 'D', shiftKey: true, bubbles: true })));
-      assert.equal(await page.locator('#export-advanced').isVisible(), false);
+      assert.equal(await page.locator('#export-source, #export-version-mode, #export-advanced').count(), 0);
       page.once('dialog', dialog => dialog.dismiss());
       await page.locator('#tab-sharing').press('Shift+D');
-      assert.equal(await page.locator('#export-packages-option').evaluate(node=>node.hidden&&node.disabled),true);
       assert.equal(await page.locator('#export-pipelines').isDisabled(), true);
       page.once('dialog', dialog => dialog.accept());
       await page.locator('#tab-sharing').press('Shift+D');
-      assert.equal(await page.locator('#export-source').inputValue(),'packages');
       assert.equal(await page.locator('#export-pipelines').isDisabled(),false);
       await page.locator('#export-pipelines').click();
-      assert.equal(await page.locator('#export-all-accessible').isChecked(), false);
+      assert.equal(await page.locator('#export-pipelines').isDisabled(), true, 'Hidden consent is consumed after launch');
       assert.equal(await page.evaluate(() => __messages.find(message => message.type === 'pipeline-export-open').overrideConfirmed), true);
       assert.equal(await page.evaluate(() => Object.hasOwn(__saved, 'overrideConfirmed')), false);
 
