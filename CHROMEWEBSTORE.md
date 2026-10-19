@@ -1,6 +1,26 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-16 · Candidate: 2.1.9 · Status: local test candidate, not submitted
+Updated: 2026-10-19 · Candidate: 3.1.9 · Status: Git layout test candidate, not submitted
+
+3.1.9 preparation: Export uses matching flat task sections without card backgrounds, visible outlines or rounded corners. The red unavailable-page hint remains above all groups; Preview & Export stays third. No data, permission, consent, credential or source/provider behavior changes. Refresh settings screenshots before future submission; no store action is authorized.
+
+3.1.7 preparation: matching popup cards explain Git Connections, Export Configuration and Preview & Export, with consistent Open buttons. This clarifies connection setup, file configuration and the export workflow without changing permissions, consent, credentials or source/provider operations. Refresh popup screenshots before a future submission; no store update is authorized.
+
+3.1.6 preparation: Git Connections and Export Configuration now precede the workspace launcher in popup visual/keyboard order. Consent, authorization, permissions, credentials and backup behavior are unchanged. Refresh the popup screenshot before any future submission.
+
+3.1.5 preparation: the small Export settings tab launches the full workspace, with Git Connections and Export Configuration shortcuts and independent Favorites Backup & Restore. Source/version selectors are no longer duplicated in the popup. Source-page authorization, configuration review, credential boundaries and permissions are unchanged. Refresh the popup screenshot before a future submission; no store action is authorized.
+
+Current preparation: approved three-tab export workspace, tenant/card configuration and first-save review, shared ZIP/Git paths, Designer Source/Formatted defaults and local folding JSON editor. No new permissions or remote editor code. Refresh workspace screenshots before any future submission. Earlier placement/default notes below are historical; this update is not authorization to publish.
+
+Reviewer clarification for 3.1.3: ordinary generated and visible existing location config omits the hidden Packages source. Shift+D confirmation explains revealing/adding its configuration entry, without granting access. Existing hidden paths are preserved during ordinary saves. Keep this explanation in reviewer/GitHub guidance, not the public listing description.
+
+3.1.3 preparation note: compact responsive connection fields, removed Legacy Base Folder control and concise default-path help. Advanced Export Locations now lives on Connections; Export's Edit Locations opens that section and its destination tree updates after a save. Credential handling, permissions and provider/source consent are unchanged. Refresh both page screenshots before submission. Earlier placement notes below are historical; no live store changes authorized.
+
+3.1.2 preparation note: destination preview now shows an indented folder hierarchy; Git defaults use tenant names and IntegrationDesigner/IntegrationPackages/APIDesigner folders. Advanced stores explicit non-secret per-tenant-ID location preferences with readable name/ID keys. No credentials are changed by location saves; existing remote files are not moved/deleted. Refresh export/connection screenshots before submission. This supersedes the older deferred-location and ID-first statements below; no live store update is authorized.
+
+3.1.1 preparation note: add Designer drafts/published and API Designer published definition exports, with verified tenant-ID-first Git paths and state separation. Navigation and Export Tools are independently enabled. Packages is separately revealed and confirmed for accessible published content without source-cache setup. Existing native authentication and six slots remain; no new permissions, SQL execution, automatic uploads, or remote moves. Refresh export/connection screenshots and review expanded definition-data disclosures before any v3 submission. Forms/EIP/Schema exporters and advanced location JSON are not in this build. No store changes made.
+
+This v3 branch is not ready for submission. Connection/storage/provider flows are implemented and synthetic-tested; separate live disposable-repository testing and store privacy-disclosure/asset checks remain required. The public copy below is a v3 draft, not a live listing update. Do not modify the v2 listing from this branch.
 
 This is the maintained preparation document, not proof of the live dashboard state. Copy only the Public Store Listing section into the public description fields. Reviewer Instructions are separate and must not be appended to that description. Publishing, changing distribution, and merging main each require owner authorization. Preserve existing account, pricing, visibility, and unrelated dashboard fields.
 
@@ -22,6 +42,8 @@ Find packages and pipelines with configurable search controls. Resize the packag
 
 The redesigned settings use Navigation, Sharing, Appearance, Sites, and Export tabs, with page-specific actions available where they work.
 
+Optional manual Git export connects an existing GitHub or GitLab repository, including supported HTTPS self-hosted GitLab servers. Save an encrypted provider token on this device or use password unlock, allow the exact server, and review destination visibility and added/updated files before separately confirming Push to Git. Nothing is deleted or automatically synchronized. ZIP download and JSON backup remain independent. Review sources for embedded secrets; public repositories expose files and commits may trigger CI/CD. See the privacy policy for credential storage, local receipt history, and provider data flows.
+
 Shared To shows sharing destinations in Integration Designer and highlights published/shared version differences. Optional Shared From identifies likely sources in Integration Packages using information saved when you visit Designer in each source environment. Shared From requires a local-data opt-in; its saved observations may be incomplete or stale. Refresh sources from Designer when needed.
 
 Export eligible published Pipelines, Sub-Pipelines, APIs, and Transformers from Integration Packages into a ZIP organized by package. Select whole packages or individual artifacts. Pipelines and Sub-Pipelines include the latest published release within each available major; APIs and Transformers use their latest overall published release. Exports use your saved Designer source observations and existing access. Optional readable formatting adds Source and Formatted folders with a package README; Formatted copies are for review, not import or execution.
@@ -32,7 +54,7 @@ Back up and restore saved favorites and optional Shared From observations using 
 
 Sharing features are off by default. Settings and favorites stay in your browser. Optional sharing/export operations use your existing Ellucian session; the extension does not inspect or store your password or bearer token, upload exported files, or send analytics to the publisher. Exported source files can contain confidential embedded values; review and protect them before sharing.
 
-Install, open a supported Integration page, and use the toolbar button to configure settings. To prepare Shared From and the default export, enable Shared From, visit Designer in each source environment, then open Integration Packages and select Export.
+Install, open a supported Integration page, and use the toolbar button to configure settings. In General, choose Navigation Tools, Export Tools, or both. New installs start with Navigation on and Export off. Shared From setup is only needed for its optional source column, not definition exports.
 
 Support: moore.life@gmail.com
 
@@ -85,9 +107,9 @@ These notes are for the reviewer/testing field and GitHub documentation, not the
 
 1. Open a permitted Ellucian Experience Integration Packages or Designer page. Check navigation, resizing, search, and favorites independently of the optional sharing features.
 2. In Sharing, enable Shared From and accept the local-data notice. Visit Designer in the intended source environment, wait for the cache status, or select Refresh. Refresh is unavailable outside Designer.
-3. Open Integration Packages and select Export → Preview Pipeline Export. Default eligibility uses exact Designer-recorded package/artifact relationships, not a live ownership certification. Review selections, then choose Download ZIP. Refresh/replacement of the original source document requires reopening export.
+3. In General, enable Export Tools. Open Designer or API Designer, select Export → Preview Export, review selections and choose Download ZIP. Designer offers Drafts, Published or Both. No Shared From eligibility list is required. Refresh/replacement of the source document requires reopening export.
 4. Formatted is off by default. When selected, inspect Source/Formatted folders and the selected-artifact package README. Sub-Pipeline source may report null/omitted version because the native route resolves by major. Transformer displayed versions are package metadata, not independent verification of the latest endpoint's source version.
-5. To test the temporary advanced filter option, keep settings open, stop typing, and press Shift+D. Reveal does not enable it: explicitly confirm Include All Accessible Content before opening export. It bypasses only the saved Designer-source filter and does not grant website, service, or account permissions. It can include vendor-provided content accessible to that session; use it only when authorized. It is not a persistent preference and resets when settings closes/launches; the launched workflow retains temporary consent until cancelled or closed. Disclose this behavior to reviewers; never use it to conceal functionality or bypass review.
+5. To test Integration Packages export, keep settings open, stop typing, press Shift+D once and confirm all accessible published content. This needs no Shared From list and grants no website, service or account permissions. It can include vendor-provided content accessible to that session; use it only when authorized. It is not a persistent preference and resets when settings closes/launches; the launched workflow retains temporary consent until cancelled or closed. Disclose this behavior to reviewers; never use it to conceal functionality or bypass review.
 6. Optional published fitting viewing is read-only; verify copying/scrolling while actions and edits remain blocked, including when a draft exists. Unknown editor/state fails closed.
 
 Known limitations: source observations can become stale; unvisited environments are unknown; same-list simultaneous favorite edits in different tabs retain whole-list conflict limitations. Failed/cancelled exports do not download partial ZIPs. Already completed browser downloads remain under the user's control.
@@ -111,7 +133,7 @@ Known limitations: source observations can become stale; unvisited environments 
 - [ ] Preserve unlisted distribution, existing artwork unless updated with approval, account settings, price, and unrelated fields.
 - [ ] Record the dashboard-confirmed submitted version, review/publication state, and publication choice; do not call a pending review live.
 
-Canonical code history is [docs/CHANGELOG.md](docs/CHANGELOG.md). This preparation document intentionally does not reconstruct unverified submission history. Candidate 2.1.9 has not been submitted by this work.
+Canonical code history is [docs/CHANGELOG.md](docs/CHANGELOG.md). This preparation document intentionally does not reconstruct unverified submission history. Candidate 3.0.0 is a separate foundation checkpoint and has not been submitted by this work.
 
 ## Official References
 

@@ -1,6 +1,126 @@
 # Update history
 
+## 3.1.9 — October 19, 2026
+
+- Remove the Export settings groups' visible card backgrounds, outlines and rounded corners to match the other settings tabs. Preserve the headings, descriptions, button treatment, spacing and order.
+- Keep the bold red source-page hint above all groups, independent Backup & Restore, and every source/consent/configuration/credential safeguard unchanged.
+
+## 3.1.8 — October 19, 2026
+
+- Style Backup & Restore as the fourth matching Export settings card, retaining its description, JSON export/import, import preview/confirmation and recovery controls. It remains available independently of Export Tools and the current source page.
+- Move the existing bold red unavailable-page hint to the top of the Export panel. Keep Git Connections, Export Configuration, Preview & Export and Backup & Restore in their existing order; Preview & Export stays third. No source/consent/configuration/credential/backup-data behavior changes.
+
+## 3.1.7 — October 19, 2026
+
+- Rename the popup action to Preview & Export. Use three matching cards with headings, short task descriptions and full-width Open buttons: Git Connections for the repository/token, Export Configuration for folders/file types/versions, and Preview & Export for record selection, file review, ZIP download and reviewed Git push.
+- Keep task descriptions stable while the popup header identifies the connected page. Associate each button with its description for assistive technology; preserve card order, the bold red unavailable-page hint above Preview & Export, hidden confirmed Packages access and independent Backup & Restore.
+- Preserve button IDs, source-bound tickets, first-save configuration review, credentials, favorites and all export/provider safeguards. This is a presentation change, not an authorization change or store release.
+
+## 3.1.6 — October 19, 2026
+
+- Move Git Connections and Export Configuration above Export Workspace in the settings popup, including its keyboard/reading order. Preserve existing button identities, launch behavior and independent Backup & Restore.
+- Show “Open Integration Designer or API Designer to enable Export Workspace.” above the workspace card when its source-page action is unavailable; keep the explanation outside the dimmed card.
+- Make the unavailable-page explanation bold red, using dark red in light mode and a readable lighter red in dark mode.
+- Packages export remains intentionally disabled until this popup's confirmed Shift+D gesture; the layout change does not bypass that consent or alter source/tenant/document authorization, credentials or configuration review.
+
+## 3.1.5 — October 19, 2026
+
+- Simplify the popup Export tab to Open Export Workspace, Git Connections and Export Configuration shortcuts, with independent Backup & Restore below. Detect the connected source page instead of duplicating Source/Versions selectors.
+- Open a normal browser tab through the existing one-use source/document-bound ticket. Setup shortcuts retain that verified source when available, or open standalone setup without source authority on other pages. Keep the ticket URL unchanged; validate its initial view as presentation only.
+- Designer opens with both states available; reviewed workspace configuration selects Draft/Published and file layout. Preserve first-save review, hidden confirmed Shift+D Packages access, credentials, favorites and six-request safeguards. No new permissions, live provider write, merge or store update.
+- Verification: 33 of 34 maintained regressions passed, with focused installed launcher/shortcut checks and unchanged permission/source boundaries. The standalone Connections Return to Export check fails in this test environment against both this build and unchanged 3.1.4; same-document workspace switching passes. Live/manual acceptance remains required.
+
+## 3.1.4 — October 18, 2026
+
+- Match the approved workspace mockup: Export, Git Connections and Export Configuration tabs, compact Repository/Authentication panels, card-specific controls left and visible folder preview right.
+- Add tenant-ID/card-scoped configuration with explicit Save confirmation before ZIP or Git preparation, including defaults. Existing path-only records remain readable; credentials, favorites and source observations are untouched. Other tenants/cards and hidden Packages configuration survive ordinary saves.
+- Designer defaults include Draft and Published together in the package folder, with Source and Formatted in separate folders. Draft filenames are unversioned; published majors retain their suffix. Support optional state/type folder separation and JSON-only suffix overrides. Preserve original Source bytes, per-package README state/version/sharing metadata, preflight collisions and all-or-nothing collection.
+- ZIP and Git use the same saved destination/file plan. Invalid/stale edits cannot replace applied settings; configuration changes invalidate prepared files/comparisons and are checked before unsent operations. Selection remains metadata-only; the launch's native version scope still limits available records.
+- Bundle pinned Ace 1.43.3 JSON editing, folding, line numbers, indentation guides and light/dark themes with retained BSD license. No CDN, worker, eval allowance, new permissions, automatic provider writes or remote migration.
+- Preserve hidden Packages reveal/consent and its existing optional formatted output. GitHub stays cloud-hosted; GitLab supports cloud/custom HTTPS origins. This is an isolated v3 manual-test candidate, not a merge or store release.
+
+## 3.1.3 — October 18, 2026
+
+- Keep IntegrationPackages absent from ordinary generated defaults and visible existing configuration until temporary Shift+D confirmation. Explain in that prompt that the hidden configuration entry is being added; Save Locations persists explicit path edits, not the reveal. Preserve existing hidden Packages paths during ordinary edits/resets without deleting them or showing them. A confirmed Packages export carries only its existing UI confirmation into the targeted Connections view; revealing configuration alone grants no source/service access.
+
+- Group Provider, Repository and Existing Branch in a compact responsive row; retain native labels and stack at narrow widths. Remove the Legacy Base Folder control and shorten default-path help. Preserve existing encrypted configuration without an automatic rewrite or fresh-token change.
+- Move Advanced Export Locations to Connections, independently of credential saves. Export keeps the indented destination tree and an Edit Locations button that opens Connections with Advanced expanded. Suggest only the original/sole export's non-secret tenant name/ID; no source contents, credentials or new grants are transferred. Reject untrusted save senders and retain serialized stale-edit rejection.
+- Saving paths updates open export trees and invalidates old Git comparisons without changing package selection or reading source code. Keep tenant/source/native/six-slot, provider, consent and add/update-only behavior unchanged. No real provider upload, remote migration, merge or store update.
+
+## 3.1.2 — October 18, 2026
+
+- Bring repository locations into the real export page with an indented, metadata-only selected-file tree; shared ancestors appear once, without branch lines. Preview optional Source/Formatted folders and state-separated READMEs before source downloads.
+- Default new Git destinations to TenantName/IntegrationDesigner, TenantName/IntegrationPackages or TenantName/APIDesigner. Advanced JSON uses readable Name: Tenant ID keys matched only by UUID. Set literal per-source paths for aliases, existing folders or intentionally shared destinations; warn about matching-file overwrites. No automatic remote migration/deletion or saved credential rewrite. Legacy folder settings remain under a collapsed connection disclosure.
+- Save only non-secret locations locally through serialized worker writes with stale-edit rejection. Location changes invalidate prepared Git comparisons and recheck routing before unsent operations. Keep original tenant/document/consent/native/provider safeguards, separate push confirmation and independent v2/store artifacts.
+
+## 3.1.1 — October 18, 2026
+
+- Add independent Navigation Tools and Export Tools switches in General. New installs default to Navigation on and Export off; upgrades preserve legacy v3 export access unless explicitly disabled. Switching off preserves subordinate settings, tenant favorites, source observations and encrypted connections. Navigation opt-out hides Navigation, Sharing and Appearance tabs, including keyboard focus; General, Sites and Export/Backup remain available. Re-enabling restores the saved task settings.
+- Restore native sidebar/table/fitting behavior when Navigation is off, pausing its observers and source-cache collection. Export-only mode retains minimal route/identity/native readers and needs no Shared From list. Neither group performs new export/provider operations while disabled. Opt-out retires document grants and local preview/ZIP state; requests already sent cannot be recalled. Recheck group authorization before unsent source/provider requests and preserve cancellation ordering across delayed reads.
+- Replace the two-stage Packages reveal with one Shift+D plus explicit all-content confirmation. Packages stays hidden by default, includes accessible vendor content only when confirmed, and needs no Shared From list. Preview/selection and separate Git upload confirmation remain mandatory; service/account access is unchanged.
+- Use the ready Experience tenant name for Packages ZIP/display metadata only when its ID matches the native Packages tenant; otherwise use the native tenant ID. Reject mismatched ready identities. Git routing remains verified tenant-ID-first, with no remote migration or extra name lookup.
+- Keep native authentication, six slots, per-major/version guards, source bounds and v1/v2/store independence. Add tests for all four group combinations, pin/connection preservation, open-preview revocation, published-fitting restoration, one-shortcut confirmation and tenant-name matching/fallback.
+
+## 3.1.0 — October 17, 2026
+
+- Add shared Experience-store tenant detection for new exports, requiring a ready UUID and rejecting missing/ambiguous identity. Recheck tenant/document context before reads and output; native credentials remain in the page.
+- Make Integration Designer the normal Data Connect export source, with Drafts, Published, or Both. Draft pipeline/API/Sub-Pipeline records use their draft IDs; published records use versioned native readers and preserve each Pipeline/Sub-Pipeline major. Keep Draft and Published folders separate. Draft transformers are not yet exported.
+- First Shift+D reveals Integration Packages as a source. Second Shift+D offers a separately confirmed, temporary All Packages override. Default Packages export retains Shared From eligibility; neither shortcut grants native service permissions or persists consent.
+- Add published API Designer definition export through the existing native authenticated client, explicit offset/limit pagination, each resource major, and the native export media type. No SQL/GURASPC queries or table/business data are collected.
+- New Git previews use verified Tenant ID first, followed by the configured Data Connect folder and Designer/Packages; API Designer uses APIDesigner. Existing remote files are not moved/deleted and saved connections are not rewritten. New-source README files describe draft/published state and include already-observed Shared To metadata when available, with observation time; unknown sharing stays unknown.
+- Keep six native slots, source limits, document grants, selection/confirmation, no automatic writes/replays, favorites and existing ZIP/backup paths. Advanced per-source location JSON remains an offline proposal; Forms/EIP/Schema exporters are not included in this checkpoint.
+
+## 3.0.9 — October 17, 2026
+
+- Show only the selected provider's collapsed token guide, including saved connections. Put both provider links at the top and label token-name/expiration examples explicitly. Switching providers closes the hidden guide. The folder example follows typed or loaded base-folder text without interpreting HTML or changing destination validation. Authentication, stored settings, and Git operations remain unchanged.
+
+## 3.0.8 — October 17, 2026
+
+- Shorten base-folder help to a single layout example and remove the permanent fresh-token paragraph; keep existing empty-token Save feedback. Replace the long token-permissions paragraph with collapsed, keyboard-operable native GitHub/GitLab setup checklists and provider links. Include scoped GitHub Contents read/write steps and GitLab project-token api/role prerequisites from official documentation. Help uses native Details/Summary without nested interactive summary controls or extra scripts. Keep credential requirements, tenant routing, consent, connection actions, and provider operations unchanged.
+
+## 3.0.7 — October 17, 2026
+
+- Treat the saved Git folder as a base and append the saved Designer environment name for the exact verified current tenant ID. Do not guess URL names, fall back to another tenant, sanitize conflicting names into one folder, or change saved base folders automatically. Missing/unsupported names and case-insensitive duplicate names among known cached tenants stop preparation. Recheck the resolved destination before push; renamed/ambiguous/missing labels require another preview. Existing remote files are not moved/deleted; unrelated data and one-commit/no-batching behavior remain unchanged.
+- Label setup Base Export Folder with linked help explaining Base/Tenant/Package layout and reviewing the resolved preview. Existing DataConnect/Test settings are preserved; explicitly resave DataConnect to use it as the base. Successful receipts retain the actual tenant child without changing the encrypted base connection; receipt rendering shows that folder.
+- Add the approved browser sign-in reminder beside successful private/internal commit links and in Recent Pushes; provider-specific View Commit labels never include tokens. Explain that every save requires a freshly entered token, with native empty-token validation and visible linked help. Saving/token rules remain unchanged.
+
+## 3.0.6 — October 17, 2026
+
+- Remove the owner-rejected separate Git upload-size cap from preview and request serialization, without batching, splitting commits, or changing provider operations. Preserve source-export bounds, the existing 16 MB response-memory bound, timeouts, remote-tree limits, context/consent/conflict checks, and uncertain-write verification. Provider-enforced limits may still reject requests. Synthetic tests send 9 MB raw content (larger base64 payload on GitLab) through preview and the unchanged single-commit path on both providers, including lost-response verification without replay.
+
+## 3.0.5 — October 17, 2026
+
+- Remove the owner-rejected arbitrary 500-file Git preview/push cap, without replacing it with another Git-specific file-count cap. Retain request/response byte limits, timeouts, existing source-export bounds, remote-tree inventory bounds, and all permission/context/confirmation/conflict safeguards. Derive GitHub post-upload tree allowance from the actual changed paths and ancestors rather than a hardcoded 500-entry allowance. Synthetic tests cover 561 files on both providers, lost responses without replay, and oversized requests rejected before provider access. Provider-specific limits can still reject an export; no automatic partial commits or batching is introduced.
+
+## 3.0.4 — October 17, 2026
+
+- GitHub/GitLab commit subjects show only added/updated file totals, excluding unchanged selections. Per the owner's clarification, omit package/file/path lists and leave details to Git history/diffs. Formatted/source/README files count separately. Retain the random export identifier only in an Export-ID footer for uncertain GitLab write verification without replay. Existing commits are not rewritten; preview/confirmation, source collection, credentials, and add/update-only behavior are unchanged.
+
+## 3.0.3 — October 17, 2026
+
+- Move Return to Export into the connection action row beside Allow Server Access, Test Connection, and Forget Connection. Move its separate status below that row. Navigation, credential controls, permissions, and export behavior are unchanged.
+
+## 3.0.2 — October 17, 2026
+
+- Match the owner's confirmed read-only auto-sync reference: Pipeline/API versions come from package metadata and exact full-version requests. Accept missing/null source version fields without injecting them into source JSON; reject supplied conflicting/malformed versions. Sub-Pipeline major routing, type/name/context/consent checks, and six slots remain unchanged. Applies equally to ZIP and Git preparation.
+- Preserve fixed source-reader failure reasons in Git preview feedback, distinguishing unavailable sources, version conflicts, timeouts, and expired context before upload. Never display native response bodies or credentials.
+- Add Return to Export on Git Connection, focusing an existing export without reloading its selections. Missing or ambiguous export tabs show guidance instead of starting another session.
+
+## 3.0.1 — October 17, 2026
+
+- Implement the approved manual GitHub/GitLab connection and add/update-only push workflow, including exact-origin self-hosted GitLab permission, existing branch/folder validation, metadata comparison, explicit upload confirmation, no-op skipping, and bounded commit receipts. No scheduling, deletions, force-push, repository creation, or remote restore.
+- Add encrypted device-key and password-unlock storage, plus session-only mode, in extension-origin IndexedDB/trusted memory. Use AES-256-GCM, destination-bound authentication data, fresh IV/salt, PBKDF2-SHA-256 at 600,000 iterations, durable revision checks, manual/session locks, and local Forget. No plaintext credential fallback, content-script access, token logging, or backup export.
+- Reuse the guarded six-slot source collector for generated files before ZIP assembly. Git previews keep files local; confirmed pushes reuse exact prepared bytes. Selection, format, context/consent, connection, permission, unlock, and remote changes invalidate/stop stale work. ZIP/JSON backups stay independent.
+- Reserve Git API hosts separately before permission requests so Custom Sites never recovers them for content-script injection, while genuine interrupted Experience grants still recover. Preserve all v2 sources/active outputs and main/develop branches.
+- Add synthetic provider, vault, permission, and installed-browser regressions for both APIs, formatting, encryption, key/save races, lock/unlock/restart/forget, corruption, confirmation, conflicts, uncertain responses without replay, limits, path collisions, and unchanged favorites. Live disposable-repository acceptance is unverified and needs separate owner permission. No real provider credentials or institutional source were used. See Git-Export.md for limits and GitLab's non-atomic whole-branch concurrency caveat.
+
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
+
+## 3.0.0 — 2026-10-17 — Separate Git Export Foundation
+
+- Starts isolated v3 development from v2.1.9 on feature/v3-git-export. Develop and the existing outputs remain the v2 release candidate; this checkpoint does not publish, merge, or replace that build.
+- Adds an interactive, synthetic Export/Git Connection mockup and a staged GitHub/GitLab plan. Encrypted saved credentials, changes preview, and push history are proposals, not implemented repository connections. The preview accepts no real tokens and makes no network/storage requests.
+- Runtime changes are limited to the 3.0.0 version and honest development summary. Existing ZIP export, source safeguards, settings, and favorites remain unchanged. No additional permissions, actual Git credentials, third-party runtime code, repository uploads, or scheduled sync are introduced.
 
 ## 2.1.9 — 2026-10-16 — Submission Preparation and Compatibility
 

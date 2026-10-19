@@ -6,6 +6,8 @@
     PANEL_SELECTOR, DOM_CHANGE_EVENT, LAYOUT_REQUEST_EVENT,
     isSupportedPage, getPageStorageKey, attachResizeDrag,
   } = globalThis.NavigatorShared;
+  // Keep the small context bridge alive while optional navigation presentation is off.
+  const navigationAllowed = () => !globalThis.FeatureTools || FeatureTools.state.navigation;
 
   // Mark only panels that contain the package tree structure we expect.
   const TREE_SELECTOR = ':scope > [role="tree"]';
@@ -29,7 +31,7 @@
 
   // Ask the existing MAIN helper to change only the current fitting's UI locks.
   function sendFittingDetailsSetting() {
-    window.postMessage({ source: 'ellucian-left-panel-scroll', type: 'fitting-details-setting', enabled: fittingDetailsEnabled }, window.location.origin);
+    window.postMessage({ source: 'ellucian-left-panel-scroll', type: 'fitting-details-setting', enabled: navigationAllowed() && fittingDetailsEnabled }, window.location.origin);
   }
 
   // Handle either script load order without repeating a storage read or adding polling.
@@ -109,6 +111,7 @@
 
   // Apply a session-only width without writing to browser storage.
   function setPanelWidth(panel, requestedWidth) {
+    if (!navigationAllowed()) return;
     const maximumWidth = getMaximumPanelWidth();
     const adjustedWidth = Math.min(
       maximumWidth,
@@ -138,7 +141,7 @@
 
   // Save the current width only when the toolbar switch is enabled.
   function savePanelWidth(panel) {
-    if (!rememberWidth) {
+    if (!navigationAllowed() || !rememberWidth) {
       return;
     }
 
@@ -253,7 +256,7 @@
   // Size each package panel to the visible viewport below its current top edge.
   function applyPanelAdjustments() {
     // Disable the behavior if Ellucian navigates to a different in-app route.
-    if (!isSupportedPage()) {
+    if (!navigationAllowed() || !isSupportedPage()) {
       clearPanelAdjustments();
       return;
     }
@@ -446,6 +449,17 @@
         )
         .forEach(savePanelWidth);
     }
+  });
+
+  // Restore native sizing and fitting locks immediately without clearing remembered widths or opt-ins.
+  let lastNavigationGroup = null;
+  globalThis.FeatureTools?.subscribe(state => {
+    if (lastNavigationGroup === state.navigation) return;
+    lastNavigationGroup = state.navigation;
+    // Export reads native lists on request, so only Navigation needs sidebar mutation observation.
+    pageObserver.disconnect();
+    if (state.navigation) pageObserver.observe(document.body,{childList:true,subtree:true});
+    sendFittingDetailsSetting(); schedulePanelAdjustment();
   });
 
   // Load the switch and any saved host width before the first visual adjustment.

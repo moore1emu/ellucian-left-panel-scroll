@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  // Source code is requested only after the user's explicit Download ZIP action.
+  // Source code requires an explicit ZIP or Git preparation action; Git uploading needs a second confirmation.
   const DOWNLOADS_READY = true;
   const status = document.querySelector('#export-status');
   const counts = document.querySelector('#export-counts');
@@ -23,6 +23,82 @@
   let objectUrl = null;
   let zipContext = null;
   let retry = null;
+  // Git comparisons and source buffers exist only in this export document, never in messages/backups.
+  const gitPrepare = document.querySelector('#git-prepare');
+  const gitComparison = document.querySelector('#git-comparison');
+  const gitConfirm = document.querySelector('#git-confirm');
+  const gitPush = document.querySelector('#git-push');
+  const gitResult = document.querySelector('#git-result');
+  let gitPlan = null;
+  let gitWriting = false;
+  let gitPreparing = false;
+  let locationValue = null;
+  let locationStale = false;
+  let confirmedConfiguration = false;
+  const layout = document.querySelector('#export-layout');
+  const locationStatus = document.querySelector('#location-status');
+  // Keep only bounded display metadata available to the Connections view in this same document.
+  globalThis.GitWorkspace?.setContextReader(() => plan ? {tenantId:plan.context.tenantId,environment:plan.environment,sourceKind:plan.sourceKind,packagesConfirmed:launch?.sourceKind==='packages' && launch.overrideConfirmed===true} : null);
+  function currentLayout() {
+    return plan?.sourceKind==='designer' && locationValue ? GitLocations.preferences(GitLocations.card(locationValue,plan.context.tenantId,plan.environment,'designer')) : null;
+  }
+  function allowedEntry(entry) { const options=currentLayout();return !options || !entry.state || options.exportVersions[entry.state]; }
+  async function requireConfiguration(snapshot=plan) {
+    if(!snapshot?.sourceKind)return;
+    const value=await GitLocations.read();
+    const records=(await chrome.storage.local.get({[GitLocations.CONFIRM_KEY]:{}}))[GitLocations.CONFIRM_KEY];
+    const signature=GitLocations.signature(value,snapshot.context.tenantId,snapshot.environment,snapshot.sourceKind);
+    if(records?.[snapshot.context.tenantId.toLowerCase()+':'+snapshot.sourceKind]!==signature || snapshot.configurationSignature && snapshot.configurationSignature!==signature) throw Error('Export configuration changed. Review and save it before continuing.');
+  }
+  function exportSnapshot() {
+    return {...plan,entries:selectedEntries(),formatted:plan.sourceKind==='designer'||plan.sourceKind==='api-designer' ? false : formatted.checked,layout:currentLayout(),root:plan.sourceKind ? GitLocations.card(locationValue,plan.context.tenantId,plan.environment,plan.sourceKind).folder : '',configurationSignature:plan.sourceKind ? GitLocations.signature(locationValue,plan.context.tenantId,plan.environment,plan.sourceKind) : ''};
+  }
+
+  // Build metadata-only destinations before any source download, using indentation instead of branch lines.
+  function renderDestination() {
+    if (!layout || !plan?.sourceKind || !locationValue) return;
+    layout.hidden = false;
+    document.querySelector('#location-tenant').textContent = `${plan.environment===plan.context.tenantId ? 'Tenant ID' : plan.environment}: ${plan.context.tenantId}`;
+    try {
+      const dummy = {provider:'github',repository:'preview/preview',branch:'preview',folder:'Preview'};
+      const folder = GitLocations.destination(dummy,plan.context.tenantId,plan.environment,plan.sourceKind,locationValue).folder;
+      const files = PipelineExportSession.paths(selectedEntries(),plan.sourceKind==='designer'||plan.sourceKind==='api-designer' ? false : formatted.checked,currentLayout()).map(path=>folder+'/'+path);
+      document.querySelector('#location-tree').textContent = files.length ? GitLocations.tree(files) : 'No files selected.';
+    } catch { document.querySelector('#location-tree').textContent = 'Set a safe folder for this tenant in Export Configuration.'; }
+  }
+
+  // Read only applied settings for Export; staged edits remain in Export Configuration.
+  async function loadLocations() {
+    if (!layout || !plan?.sourceKind) return;
+    locationValue = await GitLocations.read();
+    const records=(await chrome.storage.local.get({[GitLocations.CONFIRM_KEY]:{}}))[GitLocations.CONFIRM_KEY];
+    confirmedConfiguration=records?.[plan.context.tenantId.toLowerCase()+':'+plan.sourceKind]===GitLocations.signature(locationValue,plan.context.tenantId,plan.environment,plan.sourceKind);
+    locationStale = false;
+    if(locationStatus)locationStatus.textContent=confirmedConfiguration ? 'Export configuration confirmed for this tenant and card.' : 'Review and save Export Configuration before downloading or preparing Git changes.';
+    renderPackages(false);
+    renderDestination();
+  }
+
+  // Expose only this export's non-secret identity to an explicitly targeted trusted Connections tab.
+  chrome.runtime.onMessage?.addListener((message,sender,respond)=>{
+    if (message?.type!=='git-location-context' || sender.id!==chrome.runtime.id || sender.url?.split('#')[0]!==chrome.runtime.getURL('git-connection.html') || sender.frameId!==0) return;
+    (async()=>{
+      const current=await chrome.tabs.getCurrent();
+      if (current?.id!==message.exportTabId) return;
+      respond(plan ? {tenantId:plan.context.tenantId,environment:plan.environment,sourceKind:plan.sourceKind,packagesConfirmed:launch?.sourceKind==='packages' && launch.overrideConfirmed===true} : null);
+    })().catch(()=>{});
+    return true;
+  });
+
+  // Any selection/layout/source change invalidates confirmation and drops all prepared Git payloads.
+  function discardGit() {
+    gitPlan = null;
+    if (!gitComparison) return;
+    gitComparison.hidden = true;
+    gitConfirm.checked = false;
+    gitPush.disabled = true;
+    document.querySelector('#git-changes').replaceChildren();
+  }
 
   // Keep the blob URL off the visible control so modified clicks cannot bypass source-context verification.
   save.setAttribute('role', 'button');
@@ -41,6 +117,7 @@
 
   // A changed selection or new download must not leave a Save link pointing to an older archive.
   function discardZip() {
+    discardGit();
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     objectUrl = null;
     zipContext = null;
@@ -53,6 +130,8 @@
   // Clear only temporary output and selection, leaving favorites/source observations untouched.
   function discard() {
     discardZip();
+    confirmedConfiguration=false;
+    locationValue=null;
     plan = null;
     selected.clear();
     groups.clear();
@@ -61,11 +140,13 @@
     packages.replaceChildren();
     counts.textContent = '';
     download.disabled = true;
+    if (gitPrepare) gitPrepare.disabled = true;
+    if (layout) layout.hidden = true;
   }
 
   // Checkbox choices only narrow the authorized plan; hidden/collapsed rows never remove eligible records.
   function selectedEntries() {
-    return (plan?.entries || []).filter((entry, index) => selected.has(index));
+    return (plan?.entries || []).filter((entry, index) => selected.has(index) && allowedEntry(entry));
   }
 
   // Revoke an already-created ZIP when its selection changes instead of leaving a misleading Save link.
@@ -89,15 +170,167 @@
       group.count.textContent = `${count} of ${group.items.length} selected${details ? ` (${details})` : ''}`;
       for (const item of group.items) if (item.checkbox) item.checkbox.checked = selected.has(item.index);
     }
-    selectAll.checked = selected.size === plan.entries.length;
+    const available=plan.entries.filter(allowedEntry).length;
+    selectAll.checked = selectedEntries().length === available;
     selectAll.indeterminate = selected.size > 0 && selected.size < plan.entries.length;
     // Count checked artifacts by type so independent major versions and non-pipeline files are visible.
     const byType = { pipeline: 0, 'sub-pipeline': 0, api: 0, transformer: 0 };
     for (const entry of selectedEntries()) byType[entry.type] += 1;
-    counts.textContent = `${selectedPackages} of ${groups.size} packages · ${selected.size} of ${plan.entries.length} files selected (Pipelines: ${byType.pipeline}, Sub-Pipelines: ${byType['sub-pipeline']}, APIs: ${byType.api}, Transformers: ${byType.transformer}) · ${plan.skipped} unrecorded records in inspected packages skipped`;
-    download.disabled = !DOWNLOADS_READY || !selected.size || Boolean(controller);
-    if (changed) status.textContent = selected.size ? 'Selection updated. Select Download ZIP to retrieve checked records.' : 'No files selected. Check a package or file to download.';
+    // Only Packages uses saved-source eligibility; direct Designer inventories have no unrecorded skip count.
+    counts.textContent = `${selectedPackages} of ${groups.size} packages · ${selected.size} of ${plan.entries.length} files selected (Pipelines: ${byType.pipeline}, Sub-Pipelines: ${byType['sub-pipeline']}, APIs: ${byType.api}, Transformers: ${byType.transformer})` +
+      (!plan.sourceKind || plan.sourceKind === 'packages' ? ` · ${plan.skipped} unrecorded records in inspected packages skipped` : '');
+    download.disabled = !DOWNLOADS_READY || !selectedEntries().length || Boolean(controller) || Boolean(plan.sourceKind && !confirmedConfiguration);
+    if (gitPrepare) gitPrepare.disabled = !selectedEntries().length || Boolean(controller) || !globalThis.GitProvider || !globalThis.GitVault || Boolean(plan.sourceKind && !confirmedConfiguration);
+    if (changed) status.textContent = selected.size ? 'Selection updated. Choose Download ZIP or Preview Git Changes to retrieve checked records.' : 'No files selected. Check a package or file to export.';
+    renderDestination();
   }
+
+  // Verify both the original native source context and the still-unlocked saved Git destination.
+  async function verifyGit(snapshot, connection, signal) {
+    await requireConfiguration(snapshot);
+    if (signal.aborted) throw new Error('Git operation cancelled.');
+    const source = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'verify', context: snapshot.context });
+    if (!source?.ok || (await GitVault.info())?.revision !== connection.revision) throw new Error('Source or connection changed. Prepare a new Git preview.');
+    const origin = connection.config.provider === 'github' ? 'https://api.github.com' : connection.config.server;
+    if (!await chrome.permissions.contains({ origins: [origin + '/*'] })) throw new Error('Git server permission is missing. Open Manage Connection.');
+    // Rechecking unlock before every request makes Lock/Forget stop unsent requests in other tabs too.
+    await GitVault.token(connection.revision);
+    // A location edit in another tab invalidates the reviewed destination before any unsent request.
+    if (snapshot.gitFolder && (await gitDestination(snapshot,connection)).folder!==snapshot.gitFolder) throw new Error('Tenant destination changed. Prepare and confirm a new Git preview.');
+    if (signal.aborted) throw new Error('Git operation cancelled.');
+  }
+
+  // Resolve the current tenant's folder once per preparation and again before the confirmed push.
+  async function gitDestination(snapshot, connection) {
+    // Tenant-first source destinations no longer depend on saved source labels or favorites.
+    if (snapshot.sourceKind) return GitLocations.destination(connection.config,snapshot.context.tenantId,snapshot.environment,snapshot.sourceKind,await GitLocations.read());
+    const saved = await chrome.storage.local.get({ designerOwnershipCache: {} });
+    return GitProvider.tenantDestination(connection.config, snapshot.context.tenantId, saved.designerOwnershipCache, snapshot.sourceKind);
+  }
+
+  // Display only application-owned messages; no provider response body or credential can appear here.
+  function gitFailure(error) {
+    // Preserve only fixed source-reader failure codes, never native errors or source payloads.
+    const sourceReasons = {
+      'version-mismatch': 'The service did not confirm the selected published version.',
+      'version-unverified': 'The service did not provide a verifiable published version.',
+      'source-unavailable': 'Published source was unavailable or access was denied.',
+      'source-mismatch': 'The returned artifact did not match the selected type.',
+      'requests-stalled': 'Earlier source requests are still running.',
+      'request-timeout': 'The published source service timed out.',
+      'context-changed': 'The source page, tenant, or consent changed.',
+      'preview-expired': 'The export session expired.',
+      'session-unavailable': 'Temporary export storage is unavailable.',
+      'entry-unavailable': 'The selected artifact no longer matches the package preview.',
+    };
+    // These failures occur during local preparation, before any Git preview or upload.
+    if (Object.hasOwn(sourceReasons, error?.sourceReason)) return `${sourceReasons[error.sourceReason]} No files were uploaded to Git. Refresh preview or reopen export from settings.`;
+    if (error?.message==='Invalid export locations. Use unique Name: Tenant ID keys and safe relative folders.') return 'Check this tenant\'s paths in Advanced Export Locations.';
+    const known = new Set(['Tenant name is unavailable. Refresh sources in Designer, then reopen export.', 'The saved tenant name cannot be used as a Git folder. Check the Designer environment name.', 'Multiple saved tenants have the same name. Resolve the environment names before Git export.', 'Tenant destination changed. Prepare and confirm a new Git preview.', 'Git operation cancelled.', 'Source or connection changed. Prepare a new Git preview.', 'Git server permission is missing. Open Manage Connection.', 'Connection changed. Prepare a new preview.', 'Connection is locked or unavailable. Open Manage Connection.',
+      'Git authentication failed. Reconnect with a valid token.', 'Git access was denied or rate limited. Check permissions and branch protection.', 'Git repository, branch, or file was not found.', 'Git changed or rejected this commit. Refresh Git preview.', 'Git rejected this change. Check branch protection and refresh preview.', 'Git rate limit reached. Wait before preparing another preview.', 'Git could not be reached. Check the server and connection.',
+      'Select at least one file for Git export.', 'Repository tree is too large to compare safely.', 'Git repository visibility could not be verified.', 'Git destination has a file or link where a folder is needed.', 'Git destination collides with a folder, executable, link, or submodule.', 'Git file changed. Refresh Git preview.', 'Remote branch changed. Prepare and confirm a new Git preview.',
+      'Git branch was not advanced by this export, but uploaded Git objects may remain. Prepare a fresh preview before retrying.', 'Git result is uncertain. Check the remote branch/history before any new push.']);
+    return known.has(error?.message) ? error.message : 'Git export stopped. Check the connection and source page, then prepare a new comparison. Do not retry an uncertain write without checking remote history.';
+  }
+
+  // Collect exactly the current selected files locally, then perform read-only remote comparisons.
+  gitPrepare?.addEventListener('click', async () => {
+    if (!selected.size || controller || !plan) return;
+    if (locationStale) { gitResult.textContent='Locations changed. Refresh preview before preparing Git changes.'; return; }
+    if(plan.sourceKind && !confirmedConfiguration)return;
+    const snapshot = exportSnapshot();
+    const current = ++generation;
+    discardZip();
+    gitPreparing = true;
+    controller = new AbortController();
+    const signal = controller.signal;
+    download.disabled = true; gitPrepare.disabled = true; refresh.disabled = true; selection.disabled = true;
+    progress.hidden = false; progress.max = snapshot.entries.length; progress.value = 0;
+    gitResult.textContent = 'Preparing selected files locally. No source files uploaded.';
+    try {
+      const connection = await GitVault.info();
+      if (!connection) throw new Error('Git server permission is missing. Open Manage Connection.');
+      // Treat the saved connection folder as a base; never reuse Test's fixed target for another tenant.
+      const destination = await gitDestination(snapshot, connection);
+      snapshot.gitFolder = destination.folder;
+      const check = () => verifyGit(snapshot, connection, signal);
+      await check();
+      const files = await PipelineExportSession.collectFiles(snapshot.entries, {
+        verify: check, signal, formatted: snapshot.formatted, environment: snapshot.environment,layout:snapshot.layout,
+        read: async entry => {
+          const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'read', context: snapshot.context, entry });
+          // Retain the bridge's bounded reason so a version failure does not become a vague Git error.
+          if (!result?.ok) throw Object.assign(new Error('Published source unavailable.'), { sourceReason: result?.reason });
+          return result.data;
+        },
+        onProgress: ({ completed }) => { if (current === generation) { progress.value = completed; gitResult.textContent = `Preparing ${completed} of ${snapshot.entries.length} locally…`; } },
+      });
+      const comparison = await GitProvider.preview(destination, files, await GitVault.token(connection.revision), { check, signal });
+      await check();
+      if (current !== generation) return;
+      gitPlan = { comparison, connection, snapshot, created: Date.now() };
+      const c = comparison.config;
+      document.querySelector('#git-destination').textContent = `${c.server} · ${c.repository} · Branch: ${c.branch} · Folder: ${c.folder} · Visibility: ${comparison.visibility}`;
+      document.querySelector('#git-remote-head').textContent = `Compared commit: ${comparison.head}. ${comparison.total - comparison.changes.length} unchanged; ${comparison.changes.length} additions/updates. No deletions.`;
+      for (const file of comparison.changes) {
+        const row = document.createElement('li'); row.textContent = `${file.action === 'create' ? 'Add' : 'Update'} · ${file.path} · ${file.bytes.length} bytes`;
+        document.querySelector('#git-changes').append(row);
+      }
+      gitComparison.hidden = false;
+      gitResult.textContent = comparison.changes.length ? 'Review and confirm below. Nothing has been uploaded. Keep this tab open until push completes.' : 'Everything selected already matches Git. No commit is needed.';
+    } catch (error) {
+      if (current === generation) { discardGit(); gitResult.textContent = gitFailure(error); }
+    } finally {
+      gitPreparing = false; controller = null; refresh.disabled = false; selection.disabled = !plan; progress.hidden = true;
+      if (plan && current === generation) updateSelection();
+    }
+  });
+
+  // A second explicit action confirms a single immutable comparison; never silently rebuild and push it.
+  gitConfirm?.addEventListener('change', () => { gitPush.disabled = !gitConfirm.checked || !gitPlan?.comparison.changes.length || Boolean(controller); });
+  gitPush?.addEventListener('click', async () => {
+    if (!gitPlan || !gitConfirm.checked || controller || !gitPlan.comparison.changes.length) return;
+    const job = gitPlan;
+    gitPlan = null;
+    controller = new AbortController();
+    const signal = controller.signal;
+    gitWriting = true;
+    gitPush.disabled = true; gitPrepare.disabled = true; download.disabled = true; refresh.disabled = true; selection.disabled = true;
+    gitResult.textContent = 'Pushing confirmed changes. Keep this tab open; closing or cancelling cannot undo requests already sent.';
+    try {
+      if (Date.now() - job.created > 10 * 60 * 1000) throw new Error('Source or connection changed. Prepare a new Git preview.');
+      const check = () => verifyGit(job.snapshot, job.connection, signal);
+      await check();
+      // A renamed/ambiguous/missing source label requires another reviewed destination, not a silent redirect.
+      if ((await gitDestination(job.snapshot, job.connection)).folder !== job.comparison.config.folder) throw new Error('Tenant destination changed. Prepare and confirm a new Git preview.');
+      const result = await GitProvider.push(job.comparison, await GitVault.token(job.connection.revision), { check, signal });
+      gitResult.replaceChildren(document.createTextNode(`${result.count} files committed. `));
+      if (result.commit) {
+        const link = document.createElement('a'); link.href = GitProvider.commitUrl(job.connection.config, result.commit);
+        link.textContent = 'View Commit on ' + (job.comparison.config.provider === 'github' ? 'GitHub' : 'GitLab'); link.target = '_blank'; link.rel = 'noopener noreferrer'; gitResult.append(link);
+        // Browser website authentication is separate from the extension's saved API credential.
+        if (job.comparison.visibility !== 'public') gitResult.append(document.createTextNode(' Private repositories require you to sign in to GitHub or GitLab in this browser to view the commit.'));
+        try { await GitVault.receipt(job.connection.revision, { ...result, folder: job.comparison.config.folder, route:job.snapshot.sourceKind ? {tenantId:job.snapshot.context.tenantId,environment:job.snapshot.environment,kind:job.snapshot.sourceKind} : null }); }
+        catch { gitResult.append(document.createTextNode(' Commit succeeded, but its local receipt could not be saved.')); }
+      }
+    } catch (error) { gitResult.textContent = gitFailure(error); }
+    finally {
+      gitWriting = false; controller = null; discardGit(); refresh.disabled = false; selection.disabled = !plan;
+      if (plan) updateSelection();
+    }
+  });
+  document.querySelector('#git-dismiss')?.addEventListener('click', () => { if (!controller) { discardGit(); gitResult.textContent = 'Git preview discarded. No files uploaded.'; } });
+  async function openConnection(advanced = false) {
+    // Keep: view switches retain the claimed document, selected records and prepared bytes (3.1.4).
+    if (globalThis.GitWorkspace) { GitWorkspace.show(advanced ? 'configuration' : 'connections'); return; }
+    try {
+      // Bind return navigation to this export, even when another export is also open.
+      const current = await chrome.tabs.getCurrent();
+      await chrome.tabs.create({ url: chrome.runtime.getURL('git-connection.html')+(advanced ? '#location-advanced' : ''), openerTabId: current.id });
+    } catch { gitResult.textContent = 'Could not open connection settings.'; }
+  }
+  document.querySelector('#git-manage')?.addEventListener('click',()=>openConnection());
+  document.querySelector('#location-edit')?.addEventListener('click',()=>openConnection(true));
 
   // Create all rows of an expanded package once; no Show More cap can hide records within it.
   function expandGroup(group) {
@@ -107,7 +340,7 @@
     wrapper.className = 'pipeline-list';
     const table = document.createElement('table');
     const head = table.createTHead().insertRow();
-    for (const label of ['Select', 'Name', 'Type', 'Version']) {
+    for (const label of ['Select', 'Name', 'Type', 'Version', 'State']) {
       const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = label; head.append(cell);
     }
     const body = table.createTBody();
@@ -119,7 +352,7 @@
       checkbox.checked = selected.has(item.index);
       item.checkbox = checkbox;
       row.insertCell().append(checkbox);
-      for (const value of [item.entry.name, item.entry.type === 'transformer' ? 'Transformer' : item.entry.type === 'api' ? 'API' : item.entry.type === 'sub-pipeline' ? 'Sub-Pipeline' : 'Integration', item.entry.version.replace(/^v/u, '')]) row.insertCell().textContent = value;
+      for (const value of [item.entry.name, item.entry.type === 'transformer' ? 'Transformer' : item.entry.type === 'api' ? 'API' : item.entry.type === 'sub-pipeline' ? 'Sub-Pipeline' : 'Integration', item.entry.version.replace(/^v/u, ''), item.entry.state === 'draft' ? 'Draft' : 'Published']) row.insertCell().textContent = value;
       checkbox.addEventListener('change', () => { if (checkbox.checked) selected.add(item.index); else selected.delete(item.index); updateSelection(true); });
     }
     wrapper.append(table);
@@ -127,15 +360,19 @@
   }
 
   // List every package immediately, with lazy pipeline rendering and native keyboard-accessible disclosure.
-  function renderPackages() {
+  function renderPackages(initial=true) {
+    const opened=new Set([...groups].filter(([,group])=>group.details?.open).map(([name])=>name));
+    groups.clear();packages.replaceChildren();
     plan.entries.forEach((entry, index) => {
+      if(!allowedEntry(entry)) {selected.delete(index);return;}
       if (!groups.has(entry.packageName)) groups.set(entry.packageName, { items: [], built: false });
       groups.get(entry.packageName).items.push({ entry, index });
-      selected.add(index);
+      if(initial)selected.add(index);
     });
     const fragment = document.createDocumentFragment();
     for (const [name, group] of groups) {
       const details = document.createElement('details'); details.className = 'export-package';
+      details.open=opened.has(name);
       const summary = document.createElement('summary');
       const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'package-checkbox';
       checkbox.setAttribute('aria-label', `Select Package: ${name}`);
@@ -158,6 +395,9 @@
 
   // Refresh preview metadata only, never source code or ownership observations.
   async function preview() {
+    if (globalThis.FeatureTools) {
+      try { await FeatureTools.requireExport(); } catch { status.textContent = 'Enable Export Tools in General.'; return; }
+    }
     const current = ++generation;
     discard();
     refresh.disabled = true;
@@ -168,22 +408,34 @@
       if (!launch) {
         launch = await chrome.runtime.sendMessage({ type: 'pipeline-export-claim', ticket: location.hash.slice(1) });
         if (!launch?.ok) { launch = null; throw new Error('Preview expired. Reopen export from settings.'); }
+        // Open a requested setup tab only after this exact export document has claimed its source ticket.
+        if (['connections','configuration'].includes(launch.initialView)) globalThis.GitWorkspace?.show(launch.initialView);
       }
       // Require saved consent/setup before even requesting the page's existing metadata.
-      const saved = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
+      const saved = launch.sourceKind ? {} : await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
       if (current !== generation) return;
       const options = { sharedFromEnabled: saved.sharedFromEnabled === true, overrideConfirmed: launch.overrideConfirmed };
-      PipelineExportCore.buildPlan([], saved.designerOwnershipCache, options);
+      if (launch.sourceKind === 'packages' && !launch.overrideConfirmed) {
+        status.textContent = 'Reopen Packages export with Shift+D.'; return;
+      }
+      if (!launch.sourceKind || launch.sourceKind === 'packages') PipelineExportCore.buildPlan([], saved.designerOwnershipCache, options);
       // The worker derives the original source and consent from this created document's claimed grant.
       const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'preview', overrideConfirmed: launch.overrideConfirmed });
       if (current !== generation) return;
       if (!result?.ok) throw new Error(result?.reason === 'session-unavailable' ? 'Temporary export storage is unavailable. Reload the extension, refresh Packages, and reopen export.' : result?.reason === 'preview-expired' ? 'Preview expired. Reopen export from settings.' : result?.reason === 'context-changed' ? 'Source page changed. Reopen export from settings.' : result?.reason === 'open-packages' ? 'Open Integration Packages, then reopen export from settings.' : result?.reason === 'requests-stalled' ? 'Earlier service requests are still running. Wait, then refresh preview.' : 'Package metadata is unavailable. Refresh the original page, then reopen export from settings.');
       // Default exact-name eligibility is computed in the extension, not in untrusted page code.
-      plan = { ...result.plan, context: result.context, environment: result.environment || result.context.tenantId };
-      document.querySelector('#export-mode').textContent = launch.overrideConfirmed ? 'Temporary advanced mode: all accessible content. No additional permissions are granted.' : 'Designer-recorded content only. Saved source observations may be stale.';
+      plan = { ...result.plan, context: result.context, environment: result.environment || result.context.tenantId, sourceKind:result.sourceKind };
+      document.querySelector('#legacy-formatted').hidden=plan.sourceKind==='designer'||plan.sourceKind==='api-designer';
+      document.querySelector('#export-mode').textContent = launch.sourceKind === 'api-designer' ? 'API Designer · Published definitions, each major version.' : launch.sourceKind === 'designer' ? 'Integration Designer · ' + launch.exportMode + '. The package README identifies draft and published files.' : launch.overrideConfirmed ? 'Temporary advanced mode: all accessible content. No additional permissions are granted.' : 'Designer-recorded content only. Saved source observations may be stale.';
+      document.dispatchEvent(new Event('export-context-ready'));
       renderPackages();
-      download.disabled = !DOWNLOADS_READY || !plan.entries.length;
-      status.textContent = plan.entries.length ? 'Preview ready. Select Download ZIP to retrieve these published records.' : 'No eligible published files found. Refresh Shared From in the source Designer first.';
+      // Source preview remains usable for ZIP if optional Git-location settings cannot be read.
+      try { await loadLocations(); }
+      catch { locationValue=null; if (layout) layout.hidden=false; if (locationStatus) locationStatus.textContent='Could not read export locations. Refresh preview to retry.'; }
+      updateSelection();
+      // Draft/API exports must not direct users to an unrelated Shared From setup step.
+      status.textContent = plan.entries.length ? 'Preview ready. Choose Download ZIP or Preview Git Changes to retrieve these definitions.' :
+        'No definitions found for the selected source and versions.';
     } catch (error) {
       if (current === generation) {
         // Display only our fixed validation messages, never arbitrary native service exceptions.
@@ -199,7 +451,8 @@
   // Keep source download separate from metadata preview and backup/import actions.
   download.addEventListener('click', async () => {
     if (!DOWNLOADS_READY || !selected.size || controller) return;
-    const snapshot = { ...plan, entries: selectedEntries(), formatted: formatted.checked };
+    if(plan.sourceKind && !confirmedConfiguration)return;
+    const snapshot = exportSnapshot();
     const current = ++generation;
     discardZip();
     controller = new AbortController();
@@ -210,12 +463,13 @@
     progress.max = snapshot.entries.length;
     progress.value = 0;
     const verify = async () => {
+      await requireConfiguration(snapshot);
       const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'verify', context: snapshot.context });
       if (!result?.ok) throw Object.assign(new Error('Export context changed.'), { reason: result?.reason });
     };
     try {
       const zip = await PipelineExportSession.collect(snapshot.entries, {
-        signal: controller.signal, verify, formatted: snapshot.formatted, environment: snapshot.environment,
+        signal: controller.signal, verify, formatted: snapshot.formatted, environment: snapshot.environment,layout:snapshot.layout,root:snapshot.root,
         read: async (entry) => {
           const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'read', context: snapshot.context, entry });
           if (!result?.ok) throw Object.assign(new Error('Published JSON unavailable.'), { reason: result?.reason });
@@ -260,6 +514,7 @@
     save.setAttribute('aria-busy', 'true');
     try {
       const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'verify', context: attempt.context });
+      await requireConfiguration();
       // Selection, formatting, cancellation, consent, or a new preview/archive invalidates a pending retry.
       if (retry !== attempt || objectUrl !== attempt.url || generation !== attempt.generation) return;
       if (!result?.ok) throw new Error('context-changed');
@@ -291,23 +546,42 @@
     discard();
     progress.hidden = true;
     refresh.disabled = Boolean(controller);
-    status.textContent = 'Cancelled. Existing browser downloads are unchanged.';
+    status.textContent = gitWriting ? 'Git cancellation requested. An already-sent request may have committed; check remote history before another push.' : 'Cancelled. Existing browser downloads are unchanged.';
   });
   selectAll.addEventListener('change', () => {
-    plan.entries.forEach((entry, index) => { if (selectAll.checked) selected.add(index); else selected.delete(index); });
+    plan.entries.forEach((entry, index) => { if (selectAll.checked && allowedEntry(entry)) selected.add(index); else selected.delete(index); });
     updateSelection(true);
   });
   // A changed layout must not leave Download Again pointing at the previous archive format.
   formatted.addEventListener('change', () => updateSelection(true));
   refresh.addEventListener('click', preview);
   // A default export loses eligibility immediately when the user withdraws Shared From consent.
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || launch?.overrideConfirmed) return;
+  chrome.storage.onChanged.addListener(async (changes, area) => {
+    if (area==='local' && globalThis.GitLocations && (changes[GitLocations.KEY] || changes[GitLocations.CONFIRM_KEY])) {
+      // Cancel prepared work immediately; do not erase unsaved text or silently update its destination.
+      if (controller) controller.abort();
+      discardZip();
+      confirmedConfiguration=false;
+      locationStale = true;
+      if (gitWriting) gitResult.textContent='Locations changed. An already-sent Git write may have committed; check remote history.';
+      // Reload only routing metadata; preserve package selections and do not restart source collection.
+      try { await loadLocations(); if(locationStatus) locationStatus.textContent='Locations updated. Prepare a new Git comparison.'; }
+      catch { if(locationStatus) locationStatus.textContent='Could not read locations. Refresh preview to retry.'; }
+    }
+    if (area !== 'local' || launch?.overrideConfirmed || launch?.sourceKind && launch.sourceKind !== 'packages') return;
     const known = changes.designerOwnershipCache ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue) : null;
     const knownTransforms = known ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue, 'transformer') : null;
     // Removed eligibility revokes even a completed local Save ZIP link; timestamp-only refreshes do not.
     if (changes.sharedFromEnabled?.newValue === false || known && plan?.entries.some((entry) => !(entry.type === 'transformer' ? knownTransforms : known).get(entry.packageName)?.has(entry.name))) cancel.click();
   });
   window.addEventListener('pagehide', () => { controller?.abort(); if (launch) chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'cancel', release: true }).catch(() => {}); discard(); launch = null; });
+  // Opt-out aborts unsent work, removes prepared blobs/confirmations, and retains saved connections.
+  globalThis.FeatureTools?.subscribe(state => {
+    if (!state.export) {
+      cancel.click();
+      refresh.disabled = true; download.disabled = true; gitPrepare.disabled = true;
+      if (!gitWriting) status.textContent = 'Enable Export Tools in General.';
+    } else refresh.disabled = Boolean(controller);
+  });
   preview();
 })();

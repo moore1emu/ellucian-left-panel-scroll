@@ -30,6 +30,7 @@
       <!-- Keep task tabs visible while only their active content scrolls. -->
       <p id="settings-context" class="settings-context" role="status">Checking Current Page…</p>
       <nav class="settings-tabs" role="tablist" aria-label="Settings Tasks">
+        <button id="tab-general" type="button" role="tab" aria-controls="panel-general" aria-selected="false" tabindex="-1">General</button>
         <button id="tab-navigation" type="button" role="tab" aria-controls="panel-navigation" aria-selected="true">Navigation</button>
         <button id="tab-sharing" type="button" role="tab" aria-controls="panel-sharing" aria-selected="false" tabindex="-1">Sharing</button>
         <button id="tab-appearance" type="button" role="tab" aria-controls="panel-appearance" aria-selected="false" tabindex="-1">Appearance</button>
@@ -37,7 +38,21 @@
         <button id="tab-export" type="button" role="tab" aria-controls="panel-export" aria-selected="false" tabindex="-1">Export</button>
       </nav>
       <div class="settings-panels">
+        <section id="panel-general" class="settings-card settings-panel" role="tabpanel" aria-labelledby="tab-general" hidden>
+          <!-- Independent groups may be used alone or together without clearing saved preferences. -->
+          <label class="setting-row" for="navigation-tools-enabled">
+            <span class="setting-copy"><span class="setting-title">Navigation Tools</span><span class="setting-description">Favorites, search, layout and sharing.</span></span>
+            <span class="switch"><input id="navigation-tools-enabled" type="checkbox" disabled /><span class="switch-track" aria-hidden="true"></span></span>
+          </label>
+          <label class="setting-row" for="export-tools-enabled">
+            <span class="setting-copy"><span class="setting-title">Export Tools</span><span class="setting-description">Definition downloads and Git export.</span></span>
+            <span class="switch"><input id="export-tools-enabled" type="checkbox" disabled /><span class="switch-track" aria-hidden="true"></span></span>
+          </label>
+          <p class="card-description">Turning tools off keeps your saved data.</p>
+          <p id="feature-tools-status" class="icon-status" role="status" aria-live="polite"></p>
+        </section>
         <section id="panel-navigation" class="settings-card settings-panel navigation-card" role="tabpanel" aria-labelledby="tab-navigation">
+          <p id="navigation-tools-notice" class="card-description" hidden>Enable Navigation Tools in General.</p>
           <!-- Group shared controls once, rather than repeating their page scope on every row. -->
           <section class="behavior-card navigation-group" aria-labelledby="general-title">
             <h2 id="general-title" title="Applies to Integration Packages and Integration Designer.">General</h2>
@@ -247,40 +262,53 @@
         </section>
         <!-- Keep: backups remain in the final task tab, independent of page-specific source/export availability (2.1.3). -->
         <section id="panel-export" class="settings-card settings-panel backup-card" role="tabpanel" aria-labelledby="tab-export" hidden>
-          <!-- Open only metadata preview; source reads require Download ZIP in the separate export tab. -->
-          <div class="pipeline-export-section" id="pipeline-export-section">
-            <h2>Pipeline Export</h2>
-            <p class="card-description">Export published pipelines and transformers.</p>
-            <p class="export-setup-notice">Shared From setup is required.</p>
-            <button id="export-pipelines" type="button" disabled aria-describedby="pipeline-export-status">Preview Pipeline Export</button>
-            <p id="pipeline-export-status" class="icon-status" role="status" aria-live="polite"></p>
-            <div id="export-advanced" hidden>
-              <label><input id="export-all-accessible" type="checkbox" /> Include All Accessible Content</label>
-              <p class="icon-status">Temporary preview override. Not saved.</p>
+          <p id="export-tools-notice" class="card-description" hidden>Enable Export Tools in General.</p>
+          <!-- Keep the unavailable-page explanation first without moving the export actions themselves. -->
+          <p id="pipeline-export-availability" class="card-description" hidden>Open Integration Designer or API Designer to enable Preview &amp; Export.</p>
+          <!-- Put setup first in both visual and keyboard order; credentials remain in the workspace. -->
+          <div class="git-connection-section">
+            <!-- Describe connection setup separately from file configuration and export actions. -->
+            <div class="export-launcher-card">
+              <h2>Git Connections</h2>
+              <p id="git-connection-description" class="card-description">Configure your GitHub or GitLab repository and access token.</p>
+              <button id="manage-git" type="button" aria-describedby="git-connection-description">Open Git Connections</button>
+            </div>
+            <div class="export-launcher-card">
+              <h2>Export Configuration</h2>
+              <p id="export-configuration-description" class="card-description">Choose folders, file types, and versions.</p>
+              <button id="configure-export" type="button" aria-describedby="export-configuration-description">Open Export Configuration</button>
             </div>
           </div>
-          <p id="pipeline-export-availability" class="card-description">Open Integration Packages to export pipelines.</p>
+          <!-- Open metadata only; source reads require ZIP or Git preparation in the separate export tab. -->
+          <div class="pipeline-export-section export-launcher-card" id="pipeline-export-section">
+            <h2>Preview &amp; Export</h2>
+            <p class="card-description" id="export-source-description">Select records, review files, then download a ZIP or push to Git.</p>
+            <button id="export-pipelines" type="button" disabled aria-describedby="export-source-description pipeline-export-availability pipeline-export-status">Open Preview &amp; Export</button>
+            <p id="pipeline-export-status" class="icon-status" role="status" aria-live="polite"></p>
+          </div>
           <!-- JSON backups remain independent of ZIP pipeline downloads. -->
-          <h2>Backup &amp; Restore</h2>
-          <p class="card-description">Back up favorites and saved sources.</p>
-          <button id="export-shared-from" type="button" aria-label="Export Favorites and Shared From JSON" title="Back up tenant favorites and saved Designer sources">Export Backup JSON</button>
-          <button id="import-favorites" type="button">Import Backup JSON</button>
-          <input id="backup-file" type="file" accept=".json,application/json" hidden />
-          <div id="backup-preview" hidden>
-            <p id="backup-summary" class="card-description"></p>
-            <label class="search-display-control" for="backup-mode"><span>Favorites</span>
-              <select id="backup-mode"><option value="merge">Merge (Keep Existing Order)</option><option value="replace">Replace Matching Lists</option></select>
-            </label>
-            <label class="card-description"><input id="backup-sources" type="checkbox" /> Also Restore Shared From Data</label>
-            <p class="card-description">Shared From must be enabled first. No settings or site permissions change.</p>
-            <button id="confirm-backup" type="button">Import Backup</button>
-            <button id="cancel-backup" type="button">Cancel</button>
+          <div class="export-launcher-card" id="backup-restore-section">
+            <h2 id="backup-title">Backup &amp; Restore</h2>
+            <p class="card-description" id="backup-description">Back up favorites and saved sources.</p>
+            <button id="export-shared-from" type="button" aria-describedby="backup-description" aria-label="Export Favorites and Shared From JSON" title="Back up tenant favorites and saved Designer sources">Export Backup JSON</button>
+            <button id="import-favorites" type="button" aria-describedby="backup-description">Import Backup JSON</button>
+            <input id="backup-file" type="file" accept=".json,application/json" hidden />
+            <div id="backup-preview" hidden>
+              <p id="backup-summary" class="card-description"></p>
+              <label class="search-display-control" for="backup-mode"><span>Favorites</span>
+                <select id="backup-mode"><option value="merge">Merge (Keep Existing Order)</option><option value="replace">Replace Matching Lists</option></select>
+              </label>
+              <label class="card-description"><input id="backup-sources" type="checkbox" /> Also Restore Shared From Data</label>
+              <p class="card-description">Shared From must be enabled first. No settings or site permissions change.</p>
+              <button id="confirm-backup" type="button">Import Backup</button>
+              <button id="cancel-backup" type="button">Cancel</button>
+            </div>
+            <div id="legacy-favorites" hidden>
+              <p id="legacy-summary" class="card-description"></p>
+              <button id="assign-favorites" type="button">Use Old Favorites for This Tenant</button>
+            </div>
+            <p id="backup-status" class="icon-status" role="status" aria-live="polite"></p>
           </div>
-          <div id="legacy-favorites" hidden>
-            <p id="legacy-summary" class="card-description"></p>
-            <button id="assign-favorites" type="button">Use Old Favorites for This Tenant</button>
-          </div>
-          <p id="backup-status" class="icon-status" role="status" aria-live="polite"></p>
         </section>
       </div>
 
@@ -300,6 +328,7 @@
 
     <!-- Load the preference behavior after the popup controls exist. -->
     <!-- Initialize presentation-only task tabs before existing preference behaviors. -->
+    <script src="feature-tools.js"></script>
     <script src="popup-tabs.js"></script>
     <script src="icon-appearance.js"></script>
     <script src="favorite-appearance.js"></script>
@@ -312,5 +341,7 @@
     <script src="update-summary.js"></script>
     <script src="update-summary-popup.js"></script>
     <script src="pipeline-export-popup.js"></script>
+    <script src="git-popup.js"></script>
+    <script src="feature-tools-popup.js"></script>
   </body>
 </html>

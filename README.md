@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.1.9):** Adds store-submission preparation, a Chrome 106 API compatibility floor, and an explicit extension-page security policy. What's New still highlights redesigned settings and published artifact ZIP export since v1. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v3 test candidate (3.1.9):** Settings → Export has matching flat Git Connections, Export Configuration, Preview & Export and Backup & Restore sections. The red source-page hint is above all four; Preview & Export stays third. Favorites backups remain independent of export access. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). V2 remains unchanged; this is not a store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -8,6 +8,8 @@ Make Ellucian Integration Packages and Integration Designer easier to navigate i
 
 ## What It Does
 
+- Choose Navigation Tools, Export Tools, or both in General; turning a group off keeps saved data. Backup/restore always remains available.
+- V3: export Integration Designer drafts/published definitions or API Designer published definitions, with tenant-name folders matched by tenant ID. See [current source setup](docs/Git-Export.md#current-source-workflow-318).
 - Scroll and resize the package sidebar independently of the main page.
 - Search package and pipeline names, even with different spacing or separators.
 - Pin packages and published pipelines, then drag favorites into your preferred order.
@@ -83,6 +85,15 @@ node tests/published-fitting-details.cjs
 node tests/browser-profile-cleanup.cjs
 node tests/update-summary.cjs
 node tests/release-metadata.cjs
+node tests/v3-foundation.cjs
+node tests/git-provider.cjs
+node tests/git-locations.cjs
+node tests/export-configuration.cjs
+node tests/git-permissions.cjs
+node tests/git-vault-browser.cjs
+node tests/git-export-browser.cjs
+node tests/git-return-export.cjs
+node tests/git-source-feedback.cjs
 node tests/pipeline-export-core.cjs
 node tests/pipeline-export-session.cjs
 node tests/pipeline-export-formatted.cjs
@@ -92,6 +103,9 @@ node tests/pipeline-export-context.cjs
 node tests/pipeline-export-native-flow.cjs
 node tests/pipeline-export-transformers.cjs
 node tests/pipeline-export-preview.cjs
+node tests/source-export.cjs
+node tests/feature-tools.cjs
+node tests/source-export-browser.cjs
 node tests/package-artifact-majors.cjs
 node tests/v2-popup.cjs
 ```

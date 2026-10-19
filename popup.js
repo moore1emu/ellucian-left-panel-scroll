@@ -172,12 +172,14 @@
   // Keep Refresh Sources unavailable outside Integration Designer without disabling saved display preferences.
   function updateRefreshAvailability() {
     const designer = PopupTabs.page === 'designer';
-    refreshSharedFromButton.disabled = !preferencesLoaded || manualRefreshBusy || !designer || !sharedFromSwitch.checked;
+    const sources = !globalThis.FeatureTools || FeatureTools.state.navigation;
+    refreshSharedFromButton.disabled = !sources || !preferencesLoaded || manualRefreshBusy || !designer || !sharedFromSwitch.checked;
     document.querySelector('#source-refresh-block').classList.toggle('is-unavailable', !designer || !sharedFromSwitch.checked);
     refreshAvailability.textContent = !designer ? 'Open Integration Designer to refresh sources.'
       : !sharedFromSwitch.checked ? 'Enable Shared From to refresh sources.' : 'Refresh updates this Integration Designer environment only.';
   }
   document.addEventListener('settings-context-changed', updateRefreshAvailability);
+  document.addEventListener('settings-tools-changed', updateRefreshAvailability);
 
   // Preview color and initials immediately without generating artwork on every keystroke.
   function previewIcon() {

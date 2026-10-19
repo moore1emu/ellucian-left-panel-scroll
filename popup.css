@@ -12,6 +12,7 @@
   --surface: #ffffff;
   --switch-off: #8c97a3;
   --text: #17202a;
+  --unavailable-text: #9b1c1c;
 }
 
 /* Follow the operating system automatically when dark mode is preferred. */
@@ -28,6 +29,7 @@
     --surface: #272b30;
     --switch-off: #737d88;
     --text: #f1f4f6;
+    --unavailable-text: #ffb4ab;
   }
 }
 
@@ -414,8 +416,6 @@ footer {
 
 /* Keep subgroup headings consistent while preserving native form controls and themes. */
 .settings-card h2 { font-size: 14px; line-height: 1.3; margin: 10px 0 5px; }
-.pipeline-export-section { border-bottom: 1px solid var(--border); margin-bottom: 10px; padding-bottom: 10px; }
-.export-setup-notice { background: var(--purple-soft); border-radius: 5px; color: var(--text); font-size: 12px; line-height: 1.4; margin: 7px 0; padding: 7px; }
 .backup-card > button, #export-pipelines { display: block; width: 100%; }
 
 /* Keep the release summary dismissible and non-modal; it never opens a new browser tab. */
@@ -435,13 +435,14 @@ footer {
 /* Keep: reserve each full label's width so neighboring hover backgrounds cannot cover it (2.1.7). */
 .settings-tabs button {
   background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted);
-  cursor: pointer; flex: 1 0 auto; font: 12px "Segoe UI", Arial, sans-serif; min-width: max-content; padding: 9px 6px; white-space: nowrap;
+  cursor: pointer; flex: 1 0 auto; font: 12px "Segoe UI", Arial, sans-serif; min-width: max-content; padding: 9px 3px; white-space: nowrap;
 }
 .settings-tabs button[aria-selected="true"] { border-bottom-color: var(--purple); color: var(--purple); font-weight: 700; }
 .settings-tabs button:hover { background: var(--purple-soft); }
 .settings-tabs button:focus-visible { outline: 2px solid var(--purple); outline-offset: -2px; }
 .settings-panels { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
 .settings-panel { background: transparent; border: 0; border-radius: 0; padding: 0 2px 8px; overflow: visible; }
+.settings-panel[inert] { opacity: 0.55; }
 /* Indent controls, not scope headings, to make their parent group apparent without extra height. */
 .navigation-card .navigation-group { padding: 0 0 0 8px; }
 /* Keep: normal Navigation fits without scrolling; long notices still use the panel scroller (2.1.4). */
@@ -456,11 +457,16 @@ footer {
 /* Readable reasons stay outside the dimmed action block, with normal backup controls below Export. */
 .source-refresh-block { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; margin-top: 12px; padding: 10px; }
 .source-cache-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; justify-content: space-between; font-size: 12px; }
-.is-unavailable > :not(.export-setup-notice) { opacity: .55; }
+.is-unavailable > * { opacity: .55; }
 .source-refresh-block .shared-from-actions { margin-top: 8px; }
 #source-refresh-availability, #pipeline-export-availability { font-weight: 400; line-height: 1.4; margin: 8px 0; }
-.pipeline-export-section { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 10px; }
-.pipeline-export-section h2 { margin-top: 0; }
+/* Keep the reason outside the dimmed card, with readable red contrast in either theme. */
+#pipeline-export-availability { color: var(--unavailable-text); font-weight: 700; }
+/* Keep the approved group geometry without visible card chrome or shifting its controls. */
+.export-launcher-card { background: transparent; border: 1px solid transparent; border-radius: 0; margin: 0 0 8px -8px; padding: 8px 10px 8px 18px; }
+.export-launcher-card h2 { margin: 0 0 4px -8px; }
+.export-launcher-card .card-description { margin: 0; }
+.export-launcher-card button { display: block; width: 100%; min-height: 26px; margin-top: 6px; }
 .backup-card > button { display: inline-block; width: auto; }
 .update-summary-card { max-height: 140px; overflow-y: auto; }
 footer { border-top: 1px solid var(--border); padding-top: 8px; }
@@ -471,6 +477,5 @@ footer { border-top: 1px solid var(--border); padding-top: 8px; }
 .icon-appearance-card > h2, .backup-card > h2 { margin-left: -8px; }
 .favorite-appearance-controls { margin-left: -8px; padding-left: 8px; }
 .favorite-appearance-controls > .setting-title { display: block; margin-left: -8px; }
-/* Preserve the export block's original outer edge while placing its controls below its own heading. */
-.pipeline-export-section { margin-left: -8px; padding-left: 18px; }
-.pipeline-export-section h2 { margin-left: -8px; }
+/* Keep group opt-out on its existing wrapper without changing the three cards' visual order. */
+.git-connection-section { display: block; }

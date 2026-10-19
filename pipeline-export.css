@@ -27,3 +27,15 @@ button, #save-zip { padding: 9px 14px; border: 1px solid light-dark(#b9c0cc, #74
 button:disabled { opacity: .5; cursor: default; } progress { width: 100%; } .notice { color: light-dark(#75500c, #efc478); }
 /* Preserve semantic hidden state even on styled links and flexible action groups. */
 [hidden] { display: none !important; }
+/* Separate explicit off-device consent from local ZIP controls without changing the existing package list. */
+#git-comparison { margin: 24px 0; padding: 18px; border: 1px solid #8b69cb; border-radius: 10px; }
+#git-changes { max-height: 28rem; overflow: auto; padding-left: 24px; overflow-wrap: anywhere; }
+#git-result, #git-destination, #git-remote-head { overflow-wrap: anywhere; }
+#git-push:not(:disabled) { background: #6d28d9; color: #fff; border-color: #6d28d9; }
+/* Keep path editing beside its live destination, stacking naturally on smaller screens. */
+#export-layout { margin:20px 0; }
+.location-title { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.location-title h2 { margin-bottom:0; }
+.location-card { min-width:0; padding:18px; background:light-dark(#f8f7fc,#20242d); }
+.location-card p { font-size:13px; overflow-wrap:anywhere; }
+.destination-tree { font:12px/1.7 Consolas,monospace; white-space:pre; overflow:auto; max-height:360px; padding:12px; border-radius:8px; background:light-dark(#fff,#17191d); }

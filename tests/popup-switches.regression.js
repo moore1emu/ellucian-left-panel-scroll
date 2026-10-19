@@ -25,6 +25,7 @@ function installChromeStub() {
   window.chrome = {
     runtime,
     storage: {
+      onChanged: { addListener() {} },
       local: {
         get(defaults, callback) {
           const result = typeof defaults === "object" && defaults ? { ...defaults } : {};

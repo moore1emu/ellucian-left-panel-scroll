@@ -3,34 +3,151 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pipeline Export · Integration Navigator</title>
+    <title>Definition Export · Integration Navigator</title>
     <link rel="stylesheet" href="pipeline-export.css" />
+    <link rel="stylesheet" href="git-connection.css" />
   </head>
   <body>
-    <main>
-      <header><img src="icons/icon48.png" width="40" height="40" alt="" /><div><h1>Pipeline Export</h1><p>Integration Navigator</p></div></header>
-      <section aria-labelledby="preview-heading">
+    <main class="export-workspace">
+      <header><img src="icons/icon48.png" width="40" height="40" alt="" /><div><h1>Integration Navigator</h1><p>Export Workspace</p></div></header>
+        <!-- Switch views without navigating the claimed export document or losing its selection. -->
+  <div class="workspace-tabs" role="tablist" aria-label="Export workspace"><button id="workspace-export-tab" type="button" role="tab" aria-controls="workspace-export" aria-selected="true">Export</button><button id="workspace-connections-tab" type="button" role="tab" aria-controls="workspace-connections" aria-selected="false" tabindex="-1">Git Connections</button><button id="workspace-configuration-tab" type="button" role="tab" aria-controls="workspace-configuration" aria-selected="false" tabindex="-1">Export Configuration</button></div>
+      <section id="workspace-export" role="tabpanel" aria-labelledby="workspace-export-tab">
         <h2 id="preview-heading">Export Preview</h2>
-        <p>Pipelines and Sub-Pipelines include the latest published version of each major. APIs and transformers include their latest version. Default eligibility uses saved Designer sources.</p>
+        <p>Review the selected definitions and versions. Drafts and published files share their package folder; the README identifies each state.</p>
         <p id="export-mode"></p>
         <p id="export-status" role="status" aria-live="polite">Preparing preview…</p>
         <progress id="export-progress" hidden aria-label="Export progress"></progress>
         <p id="export-counts"></p>
+        <!-- Configure paths independently of saved credentials; every Git upload still requires comparison/consent. -->
+        <div id="export-layout" hidden>
+          <section class="location-card" aria-labelledby="destination-heading"><div class="location-title"><h2 id="destination-heading">Destination</h2><button id="location-edit" type="button">Export Configuration</button></div><p id="location-tenant"></p><pre class="destination-tree" tabindex="0" aria-label="Destination folder tree"><code id="location-tree"></code></pre><p id="location-tree-help">Selected files only. No source contents are downloaded for this preview.</p><p id="location-status" role="status"></p><p class="field-help">Review the destination, then save defaults or changes in Export Configuration before downloading.</p></section>
+        </div>
         <!-- Show every package heading; expanding a group creates only its pipeline rows. -->
         <fieldset id="export-selection" hidden disabled>
           <legend>Select Packages &amp; Files</legend>
           <label class="select-all"><input id="select-all" type="checkbox" /> Select All</label>
-          <p><label><input id="include-formatted" type="checkbox" /> Formatted — include Source, readable Formatted copies, and a package README</label></p>
-          <p class="selection-help">Expand a package to choose pipelines or transformers. Only checked items are downloaded.</p>
+          <label id="legacy-formatted" hidden><input id="include-formatted" type="checkbox" /> Include Source and Formatted copies</label>
+          <p class="selection-help">Expand a package to choose pipelines or transformers. Only checked items are prepared for ZIP or Git export.</p>
           <div id="export-packages"></div>
         </fieldset>
         <div class="actions"><button id="refresh-preview" type="button">Refresh Preview</button><button id="download-zip" type="button" disabled>Download ZIP</button><button id="cancel-export" type="button">Cancel</button><a id="save-zip" hidden>Download Again</a></div>
+        <!-- Git preview reads sources locally and remote metadata; uploading requires a second explicit confirmation. -->
+        <div class="actions"><button id="git-prepare" type="button" disabled>Preview Git Changes</button><button id="git-manage" type="button">Manage Git Connection</button></div>
+        <div id="git-comparison" hidden>
+          <h2>Confirm Git Push</h2><p id="git-destination"></p><p id="git-remote-head"></p>
+          <p class="notice">Selected files will leave this browser. Review them for embedded secrets. Public repositories expose the files; internal repositories may expose them to your organization. Commits can trigger CI/CD. Remote files are never deleted.</p>
+          <ul id="git-changes"></ul>
+          <p>GitHub uses a non-forced branch update. GitLab uses file-level conflict guards and a final branch check, not an atomic whole-branch lease; concurrent unrelated commits may become its parent.</p>
+          <label><input id="git-confirm" type="checkbox" /> I reviewed this destination, visibility, and file list and allow this upload.</label>
+          <div class="actions"><button id="git-push" type="button" disabled>Push to Git</button><button id="git-dismiss" type="button">Discard Git Preview</button></div>
+        </div>
+        <p id="git-result" role="status" aria-live="polite"></p>
         <p class="notice">Test build: exported code may contain confidential values. Keep downloaded files private.</p>
         <p>Opening this tab does not refresh Shared From, change favorites, or grant site access. Closing it discards temporary export state.</p>
       </section>
+  <section id="workspace-connections" hidden role="tabpanel" aria-labelledby="workspace-connections-tab">
+    <h2>Connect a Repository</h2><p class="connection-intro">Choose where exports go and how to connect.</p>
+    <!-- Credential edits remain one revision-checked form, separate from local folder preferences. -->
+    <form id="git-form"><fieldset id="git-fields" disabled>
+      <div class="connection-columns">
+        <fieldset class="connection-group"><legend>Repository</legend><div class="connection-fields">
+          <label for="git-provider">Provider</label><select id="git-provider" name="provider"><option value="github">GitHub</option><option value="gitlab">GitLab</option></select>
+          <div id="git-server-field"><label for="git-server">Server</label><input id="git-server" name="server" type="url" value="https://github.com" readonly /><label class="check compact-check"><input id="git-custom-server" type="checkbox" /> Use Custom Server</label><p class="field-help">HTTPS domain only; no paths or custom ports.</p></div>
+          <label for="git-repository">Repository</label><input id="git-repository" name="repository" required placeholder="owner/repository" autocomplete="off" spellcheck="false" /><p class="field-help" id="git-repository-help">Owner / repository</p>
+          <label for="git-branch">Existing Branch</label><input id="git-branch" name="branch" required value="exports" autocomplete="off" />
+        </div></fieldset>
+        <fieldset class="connection-group"><legend>Authentication</legend><div class="connection-fields">
+          <label for="git-token">Access Token</label><input id="git-token" name="token" type="password" required autocomplete="off" spellcheck="false" maxlength="8192" />
+          <label for="git-storage">Remember Token</label><select id="git-storage" name="storage"><option value="device">Encrypted on This Device</option><option value="password">Encrypted with Password Unlock</option><option value="session">This Browser Session Only</option></select>
+          <p id="git-storage-help" class="field-help"></p>
+          <div id="git-password-fields" hidden><label for="git-password">Unlock Password (12+ Characters)</label><input id="git-password" name="password" type="password" autocomplete="new-password" /><label for="git-password-confirm">Confirm Unlock Password</label><input id="git-password-confirm" name="password-confirm" type="password" autocomplete="new-password" /><p class="field-help">Unlock once per session. Lost passwords cannot be recovered.</p></div>
+          <!-- Both providers keep the link above a native bulleted checklist, below token retention. -->
+          <div class="git-token-guides">
+            <details id="git-github-help"><summary>Token Settings</summary>
+              <p><a id="git-github-token-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Open GitHub Token Settings ↗</a></p>
+              <ul><li><strong>Token Name:</strong> Integration Navigator Test</li><li><strong>Expiration:</strong> 7 days for testing</li><li><strong>Resource Owner:</strong> Repository owner</li><li><strong>Repository Access:</strong> Only your selected repository</li><li><strong>Contents:</strong> Read and write</li><li><strong>Other Permissions:</strong> Leave unchanged; Metadata read is automatic</li></ul>
+              <p>Organization approval may be required. Custom server token options depend on its version.</p>
+            </details>
+            <details id="git-gitlab-help" hidden><summary>Token Settings</summary>
+              <p><a id="git-gitlab-token-link" href="https://docs.gitlab.com/user/project/settings/project_access_tokens/" target="_blank" rel="noopener noreferrer">Open GitLab Token Instructions ↗</a></p>
+              <ul><li><strong>Token Name:</strong> Integration Navigator Test</li><li><strong>Expiration:</strong> 7 days from today for testing</li><li><strong>Token Type:</strong> Project access token</li><li><strong>Role:</strong> Developer, if permitted to commit to this branch</li><li><strong>Scope:</strong> api, not write_repository alone</li></ul>
+              <p>Project → Settings → Access tokens → Add new token. Creation requires Maintainer/Owner and a supported plan; organization policies apply.</p>
+            </details>
+          </div>
+        </div></fieldset>
+      </div>
+      <!-- Keep upload consent explicit and visible, never hidden inside optional instructions. -->
+      <label class="check"><input id="git-history-enabled" type="checkbox" checked /> Keep the Last 20 Successful Push Receipts</label>
+      <label class="notice check"><input id="git-consent" type="checkbox" required /> I allow selected files to be uploaded after preview and confirmation. Source may contain secrets; commits can trigger CI/CD. Token encryption does not encrypt repository contents.</label>
+      <div class="actions"><button type="submit">Save Connection</button></div>
+    </fieldset></form>
+    <p id="git-status" role="status" aria-live="polite">Loading connection…</p>
+    <div class="actions"><button id="git-allow" type="button" disabled>Allow Server Access</button><button id="git-test" type="button" disabled>Test Connection</button><button id="git-forget" type="button" disabled>Forget Connection</button><button id="git-lock" type="button" hidden>Lock</button><button id="git-return-export" type="button">Return to Export</button></div>
+    <p id="git-return-status" role="status" aria-live="polite"></p>
+    <form id="git-unlock-form" hidden><label for="git-unlock-password">Unlock Saved Connection</label><input id="git-unlock-password" name="unlock-password" type="password" autocomplete="current-password" /><button type="submit">Unlock</button></form>
+    <p class="field-help">Forget removes the local credential only. Revoke the token at your provider to invalidate it. Browser permissions and remote commits stay unchanged.</p>
+    <details class="connection-history"><summary>Recent Pushes</summary><p class="field-help">Sign in to the provider in this browser to view private commits. No tokens or source contents are recorded.</p><ul id="git-history"></ul><button id="git-clear-history" type="button">Clear Local History</button><p class="field-help">Clearing this list does not erase repository history.</p></details>
+  </section>
+    <section id="workspace-configuration" class="content" role="tabpanel" aria-labelledby="workspace-configuration-tab" hidden>
+      <h2>Export Configuration</h2>
+      <p class="intro">Defaults work out of the box. Review the folders, then save to confirm.</p>
+        <fieldset id="location-fields" class="folder-config" disabled>
+          <div class="folder-heading"><h2>Export Settings</h2><span id="location-current-tenant" class="tenant-label">No export selected</span></div>
+          <!-- Card-specific controls stay in their own keyboard-accessible tab group. -->
+          <div class="card-tabs" role="tablist" aria-label="Export card settings">
+            <button type="button" id="designer-settings-tab" role="tab" aria-controls="designer-settings" aria-selected="true">Integration Designer</button>
+            <button type="button" id="api-settings-tab" role="tab" aria-controls="api-settings" aria-selected="false" tabindex="-1">API Designer</button>
+          </div>
+          <div class="card-layout"><div class="card-controls">
+          <section id="designer-settings" class="product-panel" role="tabpanel" aria-labelledby="designer-settings-tab">
+            <div class="product-folder"><label for="designer-folder">Export Folder</label><input id="designer-folder" name="designer-folder" value="" spellcheck="false"></div>
+          <!-- Both dimensions use parent choices plus one indented, conditional folder preference. -->
+          <div class="folder-grid">
+            <fieldset><legend>Export Versions</legend><div class="folder-fields">
+              <div class="export-choice"><input id="include-draft" name="include-draft" type="checkbox" checked aria-describedby="draft-description"><label for="include-draft">Draft<small id="draft-description">Current working versions.</small></label></div>
+              <div class="export-choice"><input id="include-published" name="include-published" type="checkbox" checked aria-describedby="published-description"><label for="include-published">Published<small id="published-description">Each published major version.</small></label></div>
+              <div class="dependent-choice" id="state-layout-field"><input id="separate-states" name="separate-states" type="checkbox"><label for="separate-states">Separate Draft &amp; Published Folders</label></div>
+            </div></fieldset>
+            <fieldset><legend>Export File Types</legend><div class="folder-fields">
+              <div class="export-choice"><input id="include-source" name="include-source" type="checkbox" checked aria-describedby="source-description"><label for="include-source">Source<small id="source-description">Original files for import and sharing.</small></label></div>
+              <div class="export-choice"><input id="config-formatted" name="config-formatted" type="checkbox" checked aria-describedby="formatted-description"><label for="config-formatted">Formatted<small id="formatted-description">Readable code for easier copying, Git commit comparisons, and blame navigation. Not for import.</small></label></div>
+              <div class="dependent-choice" id="formatted-layout-field"><input id="formatted-layout" name="formatted-layout" type="checkbox" checked><label for="formatted-layout">Separate Source &amp; Formatted Folders</label></div>
+            </div></fieldset>
+          </div>
+          </section>
+          <section id="api-settings" class="product-panel" role="tabpanel" aria-labelledby="api-settings-tab" hidden>
+            <div class="product-folder"><label for="api-folder">Export Folder</label><input id="api-folder" name="api-folder" value="" spellcheck="false"></div>
+            <p class="product-note">Published API definitions. Designer version and file-type settings do not apply.</p>
+          </section>
+          </div><aside class="card-preview" aria-label="Active card folder preview">
+          <!-- The preview follows the active card without changing applied settings. -->
+          <section class="staged-preview" aria-labelledby="folder-preview-heading"><h3 id="folder-preview-heading">Folder Preview</h3><p class="hint" id="preview-state">Saved settings</p><pre id="staged-tree" tabindex="0" aria-label="Unsaved folder preview"></pre></section>
+          </aside></div>
+          <details class="manual-config"><summary>Folder Config Override (JSON)</summary>
+            <p>Optional: edit the same settings as JSON. Save to apply changes.</p>
+            <!-- Use a bundled editor; JSON never leaves the offline mockup. -->
+            <div id="json-code" aria-label="Folder Config JSON"></div>
+            <textarea hidden id="location-json" name="location-json">{&quot;tenants&quot;:{}}</textarea>
+            <p id="folder-id-note" class="hint">Use the gutter arrows to fold JSON sections. Tenant IDs control matching.</p>
+          </details>
+          <div class="folder-actions"><button type="button" id="location-save">Save Export Configuration</button><button type="button" id="location-reset">Reset to Defaults</button><button id="location-reload" type="button">Reload Saved Config</button></div>
+          <p class="field-help">Local preferences only. Shared paths may replace matching files after Git confirmation; existing files are never moved or deleted.</p>
+          <p id="location-settings-status" role="status" aria-live="polite"></p>
+        </fieldset>
+
+    </section>
     </main>
+    <script src="feature-tools.js"></script>
     <script src="pipeline-export-core.js"></script>
     <script src="pipeline-export-session.js"></script>
+    <script src="git-provider.js"></script>
+    <script src="git-locations.js"></script>
+    <script src="git-vault.js"></script>
+    <script src="export-workspace.js"></script>
     <script src="pipeline-export-tab.js"></script>
+    <script src="git-return-export.js"></script>
+    <script src="vendor/ace-1.43.3/ace.js"></script><script src="vendor/ace-1.43.3/mode-json.js"></script><script src="vendor/ace-1.43.3/theme-chrome.js"></script><script src="vendor/ace-1.43.3/theme-tomorrow_night.js"></script><script src="git-location-settings.js"></script>
+    <script src="git-connection.js"></script>
   </body>
 </html>

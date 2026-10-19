@@ -5,7 +5,7 @@
   const source = 'ellucian-left-panel-scroll';
   const pending = new Map();
   const sessions = new Map();
-  const key = (entry) => JSON.stringify([entry.packageName, entry.name, entry.type, entry.version]);
+  const key = (entry) => JSON.stringify([entry.packageName, entry.name, entry.type, entry.version, entry.state]);
   const same = (left, right) => left && right && ['url', 'tenantId', 'documentKey', 'sessionId'].every((field) => left[field] === right[field]);
   const reply = (respond, result) => { try { respond(result); } catch { /* Ignore a caller invalidated by manual extension reload. */ } };
 
@@ -22,9 +22,12 @@
     let count = 0;
     const packages = result.packages.map((pkg) => {
       if (!Array.isArray(pkg?.pipelines) || (count += pkg.pipelines.length) > 100000) throw new Error('Invalid metadata');
-      return { name: text(pkg.name), version: text(pkg.version), pipelines: pkg.pipelines.map((item) => ({ name: text(item.name), version: text(item.version), type: text(item.type) })) };
+      return { name: text(pkg.name), version: text(pkg.version), pipelines: pkg.pipelines.map((item) => ({ name: text(item.name), version: text(item.version), type: text(item.type),
+        ...(item.state === 'draft' || item.state === 'published' ? {state:item.state} : {}),
+        ...(Number.isSafeInteger(item.sharing?.observedAt) && Array.isArray(item.sharing.destinations) && item.sharing.destinations.length <= 16 ?
+          {sharing:{observedAt:item.sharing.observedAt,destinations:item.sharing.destinations.map(d=>({environment:text(d.environment),version:text(d.version)}))}} : {}) })) };
     });
-    return { ok: true, context, packages };
+    return { ok: true, context, packages, environment: typeof result.environment === 'string' ? result.environment.slice(0,500) : '' };
   }
 
   // Cancel queued native work and resolve local callers; actual native calls retain their service slots.
@@ -73,36 +76,48 @@
       if (message.sourceUrl !== window.location.href) return { ok: false, reason: 'context-changed' };
       if (message.type === 'pipeline-export-preview') {
         close(clientId);
-        if (window.location.protocol !== 'https:' || !/\/data-connect\/home\/?$/iu.test(window.location.pathname)) return { ok: false, reason: 'open-packages' };
+        const kind = message.sourceKind || 'packages';
+        const route = {packages:/\/data-connect\/home\/?$/iu,designer:/\/data-connect-designer\/?$/iu,'api-designer':/\/APIDesigner\/?$/u}[kind];
+        if (window.location.protocol !== 'https:' || !route?.test(window.location.pathname)) return { ok: false, reason: kind === 'packages' ? 'open-packages' : 'context-changed' };
         // Register before awaiting storage so immediate cancellation cannot restart metadata work afterward.
-        const session = { id: crypto.randomUUID(), clientId, override: message.overrideConfirmed === true, entries: new Map(), context: null };
+        const session = { id: crypto.randomUUID(), clientId, kind, override: kind === 'packages' && message.overrideConfirmed === true, entries: new Map(), context: null };
         sessions.set(clientId, session);
         // Read source metadata once per preview; later consent/cache changes invalidate affected sessions.
-        const saved = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
+        const filtered = kind === 'packages' && !session.override;
+        // Current exports do not read/process the Shared From list; retain the old filtered protocol only.
+        const defaults = {exportToolsEnabled:false,...(filtered ? {sharedFromEnabled:false,designerOwnershipCache:{}} : {})};
+        const saved = await chrome.storage.local.get(defaults);
         if (sessions.get(clientId) !== session) return { ok: false, reason: 'cancelled' };
+        // Register before authorization reads so opt-out/cancel cannot be overtaken by a late read.
+        if (saved.exportToolsEnabled !== true) { close(clientId); return {ok:false,reason:'tools-disabled'}; }
         const options = { sharedFromEnabled: saved.sharedFromEnabled === true, overrideConfirmed: message.overrideConfirmed === true };
-        PipelineExportCore.buildPlan([], saved.designerOwnershipCache, options);
+        if (kind === 'packages') PipelineExportCore.buildPlan([], saved.designerOwnershipCache, options);
         const result = await request(session, 'prepare', { overrideConfirmed: session.override,
-          packageNames: [...PipelineExportCore.sourceNames(saved.designerOwnershipCache).keys()] });
+          sourceKind:kind, exportMode:['draft','published','both'].includes(message.exportMode) ? message.exportMode : 'published',
+          packageNames: filtered ? [...PipelineExportCore.sourceNames(saved.designerOwnershipCache).keys()] : [] });
         if (!result?.ok || sessions.get(clientId) !== session || !result.context || result.context.url !== window.location.href) {
           // An old response must not cancel a newer preview owned by the same export client.
           if (sessions.get(clientId) === session) close(clientId);
           return { ok: false, reason: result?.reason || 'context-changed' };
         }
         // Exact cache filtering stays isolated from untrusted page code and smart-search normalization.
-        const current = await chrome.storage.local.get({ sharedFromEnabled: false, designerOwnershipCache: {} });
+        const current = await chrome.storage.local.get(defaults);
         if (sessions.get(clientId) !== session) return { ok: false, reason: 'cancelled' };
-        const plan = PipelineExportCore.buildPlan(result.packages, current.designerOwnershipCache, { ...options, sharedFromEnabled: current.sharedFromEnabled === true });
+        if (current.exportToolsEnabled !== true) { close(clientId); return {ok:false,reason:'tools-disabled'}; }
+        const plan = kind === 'packages' ? PipelineExportCore.buildPlan(result.packages, current.designerOwnershipCache, { ...options, sharedFromEnabled: current.sharedFromEnabled === true }) : PipelineExportCore.buildSourcePlan(result.packages);
         session.context = result.context;
         session.entries = new Map(plan.entries.map((entry) => [key(entry), entry]));
         // Keep: use only the saved name for this exact verified tenant ID, never page-supplied names or another tenant (2.1.1).
         const cache = current.designerOwnershipCache || {};
         const name = Object.hasOwn(cache, result.context.tenantId) ? cache[result.context.tenantId]?.environment : null;
         const environment = typeof name === 'string' && name.trim() && name.length <= 500 ? name.trim() : result.context.tenantId;
-        return { ok: true, context: result.context, environment, plan };
+        return { ok: true, context: result.context, environment:result.environment || environment, sourceKind:kind, plan };
       }
       const session = sessions.get(clientId);
       if (!session || !same(session.context, message.context) || session.context.url !== window.location.href) return { ok: false, reason: 'context-changed' };
+      const tools = await chrome.storage.local.get({exportToolsEnabled:false});
+      if (sessions.get(clientId) !== session) return {ok:false,reason:'cancelled'};
+      if (tools.exportToolsEnabled !== true) { close(clientId); return {ok:false,reason:'tools-disabled'}; }
       if (message.type === 'pipeline-export-read') {
         const entry = session.entries.get(key(message.entry));
         if (!entry) return { ok: false, reason: 'entry-unavailable' };
@@ -128,11 +143,14 @@
 
   // Cache timestamps/labels can change without interrupting a valid job; removed membership cannot.
   chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.exportToolsEnabled?.newValue !== true && changes.exportToolsEnabled) {
+      for (const id of [...sessions.keys()]) close(id);
+    }
     if (area !== 'local') return;
     const known = changes.designerOwnershipCache ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue) : null;
     const knownTransforms = known ? PipelineExportCore.sourceNames(changes.designerOwnershipCache.newValue, 'transformer') : null;
     for (const [id, session] of sessions) {
-      if (session.override) continue;
+      if (session.override || session.kind !== 'packages') continue;
       if (changes.sharedFromEnabled?.newValue === false || known && (!session.context || [...session.entries.values()].some((entry) => !(entry.type === 'transformer' ? knownTransforms : known).get(entry.packageName)?.has(entry.name)))) close(id);
     }
   });

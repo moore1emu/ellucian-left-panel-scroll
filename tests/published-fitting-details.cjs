@@ -4,7 +4,7 @@ const path = require('node:path');
 const os = require('node:os');
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
-// Resolve dependencies locally; downloaded editor code is never shipped with the extension.
+// Use a synthetic page editor; the configuration editor's bundled copy can serve as this test dependency.
 const extension = process.env.INTEGRATION_NAVIGATOR_SOURCE || path.resolve(__dirname, '..');
 const aceFile = process.env.INTEGRATION_NAVIGATOR_ACE || require.resolve('ace-builds/src-noconflict/ace.js');
 const site = 'https://experience-test.elluciancloud.com';
@@ -65,6 +65,12 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     await page.waitForFunction(() => !document.querySelector('fieldset').disabled && editor.getReadOnly() && getComputedStyle(document.querySelector('#flowItem_contentEdit')).pointerEvents === 'auto');
     // Text fields are readable/copyable while non-text and custom action controls remain locked.
     assert.deepEqual(await page.evaluate(() => ({name:document.querySelector('#name').readOnly,description:document.querySelector('#description').readOnly,check:document.querySelector('#check').disabled,reset:document.querySelector('#reset').disabled,choice:document.querySelector('#choice').disabled,custom:document.querySelector('#custom').inert,link:document.querySelector('#action-link').inert,opacity:getComputedStyle(document.querySelector('#flowItem_contentEdit')).opacity})), {name:true,description:true,check:true,reset:true,choice:true,custom:true,link:true,opacity:'1'});
+    // Group opt-out restores native locks without erasing the individual published-view preference.
+    await worker.evaluate(()=>chrome.storage.local.set({navigationToolsEnabled:false}));
+    await page.waitForFunction(()=>document.querySelector('fieldset').disabled&&getComputedStyle(document.querySelector('#flowItem_contentEdit')).opacity==='0.4');
+    assert.equal((await worker.evaluate(()=>chrome.storage.local.get('fittingDetailsEnabled'))).fittingDetailsEnabled,true);
+    await worker.evaluate(()=>chrome.storage.local.set({navigationToolsEnabled:true}));
+    await page.waitForFunction(()=>editor.getReadOnly()&&!document.querySelector('fieldset').disabled);
     // Verify actual editor focus/keyboard selection and clipboard copying, not just DOM attributes.
     await context.grantPermissions(['clipboard-read','clipboard-write'], {origin:site});
     await page.locator('#code').click({position:{x:110,y:20}});
@@ -136,6 +142,8 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     // A newer native opacity must not be overwritten by stale restoration snapshots.
     await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:true}));
     await page.waitForFunction(() => !document.querySelector('fieldset').disabled);
+    // Drain the observer's own follow-up render before simulating a separate native style change.
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     await page.evaluate(() => document.querySelector('#flowItem_contentEdit').style.opacity='0.75');
     await worker.evaluate(() => chrome.storage.local.set({fittingDetailsEnabled:false}));
     await page.waitForFunction(() => document.querySelector('fieldset').disabled);
@@ -194,7 +202,7 @@ const html = `<style>#flowItem_contentEdit{opacity:.4;pointer-events:none} #flow
     await page.waitForFunction(() => window.editor && window.__settings.length);
     assert.equal(await page.evaluate(() => document.querySelector('fieldset').disabled), true);
     const finalStore = await worker.evaluate(() => chrome.storage.local.get(null));
-    const strip = data => { const copy={...data};delete copy.fittingDetailsEnabled;return copy; };
+    const strip = data => { const copy={...data};delete copy.fittingDetailsEnabled;delete copy.navigationToolsEnabled;return copy; };
     assert.deepEqual(strip(finalStore), strip(initialStore), 'Only the new preference may be written');
     assert.ok(requests.every(url => [site + '/fixture-ace.js',site + designer,site + designer + '?existingDraft=1',site + designer + '?unknownState=1',site + '/fixture/app/all-accounts/Ellucian/data-connect/home'].includes(url)), 'No service requests');
     assert.deepEqual(errors, []);

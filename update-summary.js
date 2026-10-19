@@ -7,6 +7,84 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Describe the approved workspace without exposing the hidden Packages shortcut.
+    "3.1.4": Object.freeze([
+      "Export, Git Connections, and Export Configuration now share one tabbed workspace.",
+      "Review and save tenant-specific folders, file types, and version choices before exporting.",
+    ]),
+    // Keep location setup in Connections and the destination preview in Export.
+    "3.1.3": Object.freeze([
+      "Git connection fields are grouped into a compact form without the legacy folder control.",
+      "Edit Advanced Export Locations on Connections; Export shows the destination tree.",
+    ]),
+    // Folder preferences are separate from credentials and never move existing repository files.
+    "3.1.2": Object.freeze([
+      "Preview destinations as an indented folder tree before downloading source files.",
+      "Use tenant-name folders or customize each tenant's export paths in Advanced.",
+    ]),
+    // Group opt-ins never erase user data or replace the confirmation for hidden Packages exports.
+    "3.1.1": Object.freeze([
+      "Use Navigation Tools, Export Tools, or both; saved data stays intact when tools are off.",
+      "Packages export now uses one confirmed Shift+D shortcut, without Shared From setup.",
+    ]),
+    // Announce the expanded source workflow without advertising unfinished exporters or hidden shortcuts.
+    "3.1.0": Object.freeze([
+      "Export Designer drafts and published definitions separately, or published API Designer definitions.",
+      "Git destinations now group these exports by verified tenant ID and source tool.",
+    ]),
+    // Keep provider-specific setup concise and avoid showing irrelevant instructions.
+    "3.0.9": Object.freeze([
+      "Token help follows your selected provider, with consistent links and clear examples.",
+    ]),
+    // Keep setup concise; native collapsed examples do not change authentication requirements.
+    "3.0.8": Object.freeze([
+      "Git setup is shorter, with collapsed GitHub and GitLab token checklists.",
+      "The fresh-token reminder appears only when an empty-token Save is attempted.",
+    ]),
+    // Explain tenant routing and intentional credential/browser-login boundaries before a new export.
+    "3.0.7": Object.freeze([
+      "Git destinations automatically add the verified tenant name beneath your base folder.",
+      "Setup explains base folders and the fresh-token requirement when saving changes.",
+      "Commit links remind you to sign in to view private repositories in the browser.",
+    ]),
+    // Do not imply the owner removed source collection or provider-enforced limits.
+    "3.0.6": Object.freeze([
+      "Git export no longer applies a separate upload-size cap.",
+      "The one-commit workflow, source safeguards, timeouts, and provider limits remain.",
+    ]),
+    // Keep removal of the arbitrary Git file cap distinct from retained byte/source safeguards.
+    "3.0.5": Object.freeze([
+      "Git export no longer has a separate 500-file cap, including formatted exports.",
+      "Request-size, timeout, and existing source-export safeguards still apply.",
+    ]),
+    // Describe new commit messages without implying old provider history is rewritten.
+    "3.0.4": Object.freeze([
+      "Git commits show concise added and updated file totals without path lists.",
+      "A small Export-ID footer retains safe verification after a lost response.",
+    ]),
+    // Keep this placement-only revision distinct from the preceding compatibility release.
+    "3.0.3": Object.freeze([
+      "Return to Export now sits beside the Git connection action buttons.",
+      "Your export selection and saved connection behavior are unchanged.",
+    ]),
+    // Explain the compatibility repair without implying a completed live Git upload.
+    "3.0.2": Object.freeze([
+      "Published exports use package versions even when downloaded JSON omits its version, matching auto-sync.",
+      "Return to Export from Git Connection without resetting your selection.",
+      "Git preview reports specific source-reading failures before any upload.",
+    ]),
+    // Describe the first functional Git candidate without implying store publication or a live acceptance test.
+    "3.0.1": Object.freeze([
+      "Manually export selected files to GitHub or GitLab after reviewing and confirming changes.",
+      "Save an encrypted connection with automatic reuse or password unlock; self-hosted GitLab is supported.",
+      "ZIP exports and JSON backups remain independent. V3 is a test candidate, not a store release.",
+    ]),
+    // Keep: v3 foundation notes must not claim its planned Git connection is already usable (3.0.0).
+    "3.0.0": Object.freeze([
+      "Separate v3 development builds on v2 without changing the v2 release candidate.",
+      "Git export settings are a design preview; repository uploads are not enabled yet.",
+      "Existing local ZIP export and JSON backup remain available.",
+    ]),
     // Keep the unpublished v2 overview focused on the same major features, not submission hardening.
     "2.1.9": Object.freeze([
       "Redesigned settings with task-based tabs for easier navigation.",

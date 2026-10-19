@@ -1,10 +1,20 @@
 # User Guide
 
-> Develop's 2.1.9 test candidate adds submission preparation and an explicit security policy for extension pages. Chrome 106 is the declared API compatibility floor; use a current supported browser. What's New still highlights the major improvements since v1. No permissions or export eligibility changed. Reload the same unpacked folder and reopen settings to test. See [v2 Development](V2-Development.md).
+> This is the separate **3.1.9 Git test candidate**, based on v2.1.9. Settings → Export launches the workspace for the connected source page, or opens Git Connections/Export Configuration directly. Version/file choices are in Export Configuration; Favorites Backup & Restore stays in settings. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. The v2 release build is unchanged; live Git acceptance is still unverified.
 
 If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
 
-## Pipeline Export — v2 Test Candidate
+## Definition Export — Current v3 Candidate
+
+In General, enable Navigation Tools, Export Tools, or both. Navigation owns favorites, search, layout, sharing columns and published-fitting viewing. Turning it off hides Navigation, Sharing and Appearance tabs; their saved settings return when re-enabled. Export owns definition downloads and Git operations. New installs start with Navigation on and Export off; existing v3 upgrades keep export access. Group opt-out keeps saved data/settings and stops new group operations. General, custom sites and Export/Backup remain available. Already-sent requests or finished downloads cannot be recalled.
+
+Open Settings → Export on Integration Designer or API Designer. Designer offers Drafts, Published, or Both; API Designer keeps each published API major. Review records, then choose Download ZIP or Preview Git Changes. Drafts and published files are separate, and new-source READMEs include state plus any Shared To observations already available in the page session. Unknown sharing stays unknown; timestamps identify cached observations.
+
+One Shift+D outside inputs reveals Integration Packages after confirming all accessible published content, including vendor content. No Shared From setup is required. Designer and API Designer also read their own native lists without that eligibility cache. No shortcut grants service permissions. Draft transformers, optional SQL/GURASPC and other product exporters are not included yet.
+
+Destination shows selected files as an indented tree before source downloads. New Git roots default to TenantName/IntegrationDesigner, TenantName/IntegrationPackages or TenantName/APIDesigner. **Edit Locations** opens Connections, where **Advanced · Export Locations** saves per-tenant JSON paths keyed by readable Name: Tenant ID labels; matching uses only the ID. Aliases and existing/shared folders are allowed, with a matching-file overwrite warning. Location saves need no provider token, update open destination trees and invalidate old comparisons. Review the resolved Git path before confirmation. No existing repository folders are moved or deleted; ZIP paths are unchanged by these Git settings.
+
+## Earlier v2 Packages Export Workflow
 
 1. Enable Shared From and visit Designer in each source environment to record package/pipeline names.
 2. Open Integration Packages, then select **Export → Preview Pipeline Export** in settings.
