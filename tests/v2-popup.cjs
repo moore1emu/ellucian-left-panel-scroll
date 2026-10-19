@@ -70,6 +70,9 @@ function installStub() {
       await task('Export');
       const cards=await page.locator('.export-launcher-card').evaluateAll(nodes=>nodes.map(node=>{const style=getComputedStyle(node),button=node.querySelector('button'),box=node.getBoundingClientRect();return {left:box.left,width:box.width,padding:style.padding,border:style.borderRadius,buttonWidth:button.getBoundingClientRect().width};}));
       assert.equal(cards.length,4); for (const card of cards) assert.deepEqual(card,cards[0]);
+      // Keep the four groups visually flat in either theme without changing their geometry.
+      const decoration=await page.locator('.export-launcher-card').evaluateAll(nodes=>nodes.map(node=>{const style=getComputedStyle(node);return {background:style.backgroundColor,border:style.borderTopColor,radius:style.borderRadius};}));
+      for (const group of decoration) assert.deepEqual(group,{background:'rgba(0, 0, 0, 0)',border:'rgba(0, 0, 0, 0)',radius:'0px'});
       // Setup actions precede the source-bound launcher in reading order, not only through CSS.
       assert.deepEqual(await page.locator('#panel-export button').evaluateAll(nodes=>nodes.slice(0,3).map(node=>node.id)),['manage-git','configure-export','export-pipelines']);
 

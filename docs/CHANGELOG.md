@@ -1,5 +1,10 @@
 # Update history
 
+## 3.1.9 — October 19, 2026
+
+- Remove the Export settings groups' visible card backgrounds, outlines and rounded corners to match the other settings tabs. Preserve the headings, descriptions, button treatment, spacing and order.
+- Keep the bold red source-page hint above all groups, independent Backup & Restore, and every source/consent/configuration/credential safeguard unchanged.
+
 ## 3.1.8 — October 19, 2026
 
 - Style Backup & Restore as the fourth matching Export settings card, retaining its description, JSON export/import, import preview/confirmation and recovery controls. It remains available independently of Export Tools and the current source page.

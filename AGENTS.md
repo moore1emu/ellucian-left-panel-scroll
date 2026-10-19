@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- At 3.1.9 the owner removed visible card chrome from Export while retaining all four groups, their geometry, controls and order. Keep the bold red page hint at the top, independent backups and all existing source/consent/configuration/credential guards. Next checkpoint is 3.2.0; no main/store change.
+
 - At 3.1.8 the owner made Backup & Restore the fourth matching Export card and moved only the existing bold red page hint above all cards. Keep Preview & Export third, stable control IDs, independent backup availability/data/confirmation/recovery behavior and existing source/consent/credential guards. Next checkpoint is 3.1.9; no main/store change.
 
 - At 3.1.7 the owner approved Preview & Export as the popup action name and three matching Git Connections / Export Configuration / Preview & Export cards, each with a concise explanation and Open button. Connection setup selects repository/token; configuration controls folders/types/versions; Preview & Export selects/reviews records and starts ZIP or separately confirmed Git export. Keep stable button IDs/descriptions, visual/keyboard order, bold red page hint, existing source/consent gates and independent backups. Next checkpoint is 3.1.8; no authorization change or main/store update.

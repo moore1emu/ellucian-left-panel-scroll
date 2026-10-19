@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v3 test candidate (3.1.8):** Settings → Export has matching Git Connections, Export Configuration, Preview & Export and Backup & Restore cards. The red source-page hint is above all four; Preview & Export stays third. Favorites backups remain independent of export access. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). V2 remains unchanged; this is not a store release.
+> **v3 test candidate (3.1.9):** Settings → Export has matching flat Git Connections, Export Configuration, Preview & Export and Backup & Restore sections. The red source-page hint is above all four; Preview & Export stays third. Favorites backups remain independent of export access. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). V2 remains unchanged; this is not a store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
