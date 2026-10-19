@@ -20,7 +20,7 @@
     button.disabled = opening || !allowed;
     document.querySelector('#pipeline-export-section').classList.toggle('is-unavailable', !allowed);
     // Keep: ordinary settings never advertise the hidden Packages source or shortcut (3.1.5).
-    availability.textContent = !tools ? 'Enable Export Tools in General.' : allowed ? '' : 'Open Integration Designer or API Designer to export.';
+    availability.textContent = !tools ? 'Enable Export Tools in General.' : allowed ? '' : 'Open Integration Designer or API Designer to enable Export Workspace.';
     availability.hidden = !tools || allowed;
     document.querySelector('#export-source-description').textContent = allowed ? `${kind === 'api-designer' ? 'API Designer' : packages ? 'Integration Packages' : 'Integration Designer'} · Opens in a new tab.` : 'Choose definitions, review folders, then download or push to Git.';
     return allowed;

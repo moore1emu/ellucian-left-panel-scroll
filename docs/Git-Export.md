@@ -1,6 +1,6 @@
 # Git Export — V3 Test Candidate
 
-Version 3.1.5 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.1.6 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
 
 ## Current Workspace (3.1.5)
 

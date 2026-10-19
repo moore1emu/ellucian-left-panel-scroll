@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v3 test candidate (3.1.5):** Settings → Export opens the full Export Workspace, with shortcuts to Git Connections and Export Configuration. The connected source page is detected automatically; version/file choices live in the workspace. Review/save tenant-specific defaults before ZIP or Git preparation. Favorites Backup & Restore stays in settings. V2 remains independent. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). This is not a store release.
+> **v3 test candidate (3.1.6):** Settings → Export puts Git Connections and Export Configuration above Open Export Workspace. The connected source page is detected automatically; version/file choices live in the workspace. Review/save tenant-specific defaults before ZIP or Git preparation. Favorites Backup & Restore stays in settings. V2 remains independent. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). This is not a store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 

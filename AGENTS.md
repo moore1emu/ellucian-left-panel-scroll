@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- At 3.1.6 the owner moved Git Connections and Export Configuration above the popup workspace launcher. Preserve DOM/keyboard order with that layout, existing source gates and confirmed hidden Shift+D Packages access. This is a placement change, not permission to enable unbound exports. Next checkpoint is 3.1.7; the 3.1.5 standalone Return to Export installed-test limitation remains recorded separately.
+
 - At 3.1.5 the owner approved the popup Export launcher: Open Export Workspace, Git Connections and Export Configuration shortcuts, with independent Backup & Restore below. Detect the connected source instead of duplicating Source/Versions selectors; Designer launches both states and saved configuration narrows them. Preserve the exact source-bound one-use ticket URL, worker-validated presentation-only initial view, first-save review and confirmed hidden Shift+D Packages consent. Setup on unrelated pages grants no source access. Next checkpoint is 3.1.6; v2/main/store remain unchanged.
 
 - At 3.1.4 the owner approved implementing the final mockup as Export / Git Connections / Export Configuration tabs, with card controls left and a visible folder preview right. Config JSON is tenant-ID-first then card-scoped. Designer defaults include both states together under package folders and both file types in separate Source/Formatted folders; draft filenames are unversioned and published majors stay versioned. Optional folder separation remains available for single choices, suffixes are JSON-only, and source bytes stay original. This supersedes earlier Connections-only placement and formatted-off defaults for Designer, not older release history.

@@ -65,6 +65,8 @@ function installStub() {
       // Task names do not repeat as headings; retain only distinct subgroup titles.
       assert.equal(await page.locator('#panel-sharing > h2, #panel-sites > h2').count(), 0);
       assert.deepEqual(await page.locator('#panel-export h2').allTextContents(), ['Export Workspace', 'Backup & Restore']);
+      // Setup actions precede the source-bound launcher in reading order, not only through CSS.
+      assert.deepEqual(await page.locator('#panel-export button').evaluateAll(nodes=>nodes.slice(0,3).map(node=>node.id)),['manage-git','configure-export','export-pipelines']);
 
       // Dismissal failures remain retryable without changing preferences.
       assert.deepEqual(await page.locator('#update-summary li').allTextContents(), [
@@ -159,6 +161,13 @@ function installStub() {
         }
         await task('Export');
         assert.equal(await page.locator('#export-pipelines').isDisabled(), current !== 'designer');
+        // Keep the explanatory hint readable before the unavailable card, not below its action.
+        if (current !== 'designer') {
+          assert.equal(await page.locator('#pipeline-export-availability').innerText(),'Open Integration Designer or API Designer to enable Export Workspace.');
+          assert.equal(await page.evaluate(()=>document.querySelector('#pipeline-export-availability').getBoundingClientRect().bottom <= document.querySelector('#pipeline-export-section').getBoundingClientRect().top),true);
+          const noticeStyle=await page.locator('#pipeline-export-availability').evaluate(node=>{const style=getComputedStyle(node);return {weight:style.fontWeight,color:style.color};});
+          assert.deepEqual(noticeStyle,{weight:'700',color:colorScheme==='dark'?'rgb(255, 180, 171)':'rgb(155, 28, 28)'});
+        }
         assert.equal(await page.locator('#export-shared-from').isEnabled(), true);
         assert.equal(await page.locator('#import-favorites').isEnabled(), true);
       }

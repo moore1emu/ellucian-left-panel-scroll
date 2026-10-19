@@ -1,5 +1,12 @@
 # Update history
 
+## 3.1.6 — October 19, 2026
+
+- Move Git Connections and Export Configuration above Export Workspace in the settings popup, including its keyboard/reading order. Preserve existing button identities, launch behavior and independent Backup & Restore.
+- Show “Open Integration Designer or API Designer to enable Export Workspace.” above the workspace card when its source-page action is unavailable; keep the explanation outside the dimmed card.
+- Make the unavailable-page explanation bold red, using dark red in light mode and a readable lighter red in dark mode.
+- Packages export remains intentionally disabled until this popup's confirmed Shift+D gesture; the layout change does not bypass that consent or alter source/tenant/document authorization, credentials or configuration review.
+
 ## 3.1.5 — October 19, 2026
 
 - Simplify the popup Export tab to Open Export Workspace, Git Connections and Export Configuration shortcuts, with independent Backup & Restore below. Detect the connected source page instead of duplicating Source/Versions selectors.

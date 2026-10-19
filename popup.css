@@ -12,6 +12,7 @@
   --surface: #ffffff;
   --switch-off: #8c97a3;
   --text: #17202a;
+  --unavailable-text: #9b1c1c;
 }
 
 /* Follow the operating system automatically when dark mode is preferred. */
@@ -28,6 +29,7 @@
     --surface: #272b30;
     --switch-off: #737d88;
     --text: #f1f4f6;
+    --unavailable-text: #ffb4ab;
   }
 }
 
@@ -459,6 +461,8 @@ footer {
 .is-unavailable > * { opacity: .55; }
 .source-refresh-block .shared-from-actions { margin-top: 8px; }
 #source-refresh-availability, #pipeline-export-availability { font-weight: 400; line-height: 1.4; margin: 8px 0; }
+/* Keep the reason outside the dimmed card, with readable red contrast in either theme. */
+#pipeline-export-availability { color: var(--unavailable-text); font-weight: 700; }
 .pipeline-export-section { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 10px; }
 .pipeline-export-section h2 { margin-top: 0; }
 .backup-card > button { display: inline-block; width: auto; }
