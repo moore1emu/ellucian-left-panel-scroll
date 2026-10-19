@@ -4,6 +4,8 @@
   const button = document.getElementById('git-return-export');
   const status = document.getElementById('git-return-status');
   button.addEventListener('click', async () => {
+    // A same-document Export tab needs no browser lookup or URL navigation.
+    if (document.getElementById('workspace-export') && globalThis.GitWorkspace) { GitWorkspace.show('export'); return; }
     // Suppress double clicks while resolving the original export document.
     button.disabled = true;
     try {

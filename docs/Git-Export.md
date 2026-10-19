@@ -1,6 +1,26 @@
 # Git Export — V3 Test Candidate
 
-Version 3.1.3 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.1.4 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+
+## Current Workspace (3.1.4)
+
+Export, Git Connections and Export Configuration are tabs in one extension-owned workspace. Switching tabs keeps the source document grant and selection; opening Git setup independently still works. GitHub currently supports github.com; GitLab supports gitlab.com and custom HTTPS origins. No credential is copied into the JSON editor.
+
+Before downloading or preparing Git changes, open Export Configuration and save the defaults or your changes for the current tenant/card. Each tenant/card requires its own confirmation. The destination tree on Export shows actual selected paths from metadata only. Configuration's right-side preview uses example files. Configuration saves require no provider token and do not upload, move or delete repository files.
+
+Integration Designer defaults include Draft and Published together under the package, with Source and Formatted in separate folders. Source is original importable JSON/JavaScript. Formatted is a readable review copy for copying, comparisons and blame; it is not importable. Choose either/both file types and either/both versions. Separate Draft/Published or Source/Formatted folders may remain enabled even when only one item is chosen. Draft filenames have no version suffix; published majors retain theirs. The original launch scope limits available records: reopen export with Both if a Draft-only launch omitted published records.
+
+ZIP and Git use the same configured tenant/card root and physical file plan. State and sharing observations appear in package READMEs. Optional naming suffixes are JSON-only; combined copies default to _formatted to avoid collisions. Unsafe paths, duplicate IDs, unsupported settings and colliding files are rejected. Reset stages defaults for this card; Save applies them. Stale writes from another tab fail instead of overwriting newer preferences.
+
+Folder Config Override (JSON) uses pinned, locally bundled Ace 1.43.3 with JSON colors, guides, folding and undo. It makes no CDN/worker requests. Its BSD license is included under vendor/ace-1.43.3/LICENSE. JSON is matched by trailing tenant ID, with the readable name for navigation. Example:
+
+```json
+{"tenants":{"ExampleTest: 11111111-2222-4333-8444-555555555555":{"IntegrationDesigner":{"folder":"Test/IntegrationDesigner","exportVersions":{"draft":true,"published":true},"exportFileTypes":{"source":true,"formatted":true},"folderStructure":{"separateDraftAndPublished":false,"separateSourceAndFormatted":true},"filenameSuffixes":{"draft":"","published":"","source":"","formatted":""}},"APIDesigner":{"folder":"Test/APIDesigner"}}}}
+```
+
+IntegrationPackages stays absent until the session's confirmed Shift+D reveal. Existing hidden settings survive ordinary saves/reset. Its configuration card supports its root folder; the existing optional Packages formatted-copy choice stays on its Export view. API Designer has a folder setting only. Source consent, six-reader budget and separate reviewed Git upload confirmation are unchanged.
+
+The older checkpoint sections below describe earlier releases where placement/default behavior differs; this section is authoritative for 3.1.4.
 
 ## Repository Locations
 
@@ -44,7 +64,7 @@ Every save requires re-entering the access token, including changes to the base 
 
 GitHub Token Settings and GitLab Token Instructions expand optional setup checklists; both start collapsed. GitHub uses a selected-repository fine-grained token with Contents read/write. The GitLab example uses a project token with api scope and Developer access to an unprotected export branch; creating it requires Maintainer/Owner, and GitLab.com project tokens require Premium/Ultimate. Your organization's restrictions still apply. Token values belong only in the extension field, never support messages.
 
-## Current Source Workflow (3.1.3)
+## Current Source Workflow (3.1.4)
 
 Enable Export Tools in General first. Navigation Tools may stay off; export uses native lists/identity without adding favorites, search or sharing columns. Disabling Export keeps encrypted connections but blocks new source/provider requests and clears transient previews. It cannot recall requests already sent. Backup/restore stays usable with either group off.
 

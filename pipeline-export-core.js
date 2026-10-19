@@ -107,7 +107,8 @@
 
   // Give independent Pipeline/Sub-Pipeline majors stable filenames without rewriting source JSON.
   function filePath(entry) {
-    const suffix = entry.state === 'draft' ? '_draft' : entry.type === 'pipeline' || entry.type === 'sub-pipeline' || entry.type === 'api' && entry.state ? `_v${versionParts(entry.version)[0]}` : '';
+    // Keep: Designer drafts have no version/state suffix; published majors remain versioned (3.1.4).
+    const suffix = entry.state === 'draft' ? '' : entry.type === 'pipeline' || entry.type === 'sub-pipeline' || entry.type === 'api' && entry.state ? `_v${versionParts(entry.version)[0]}` : '';
     return `${folderName(entry.packageName)}/${folderName(entry.name)}${suffix}.${entry.type === 'transformer' ? 'js' : 'json'}`;
   }
 
@@ -131,7 +132,9 @@
   }
 
   // Produce a standard uncompressed ZIP locally; the browser adapter owns download hand-off.
-  function makeZip(files) {
+  function makeZip(files, root = '') {
+    // Only validated relative configuration folders may prefix an otherwise unchanged archive plan.
+    if (typeof root!=='string' || root && (root.length>500 || root.split('/').some(part=>!(/^[\p{L}\p{N}_][\p{L}\p{N} ._-]{0,99}$/u.test(part)) || /[. ]$/u.test(part)))) throw new Error('Invalid export folder.');
     if (!Array.isArray(files) || files.length > MAX_FILES) throw new Error("Too many export files.");
     const parts = [];
     const directory = [];
@@ -146,7 +149,7 @@
       seen.add(key);
       payloadBytes += file.bytes.length;
       if (payloadBytes > MAX_BYTES) throw new Error("Export exceeds the 64 MB development limit.");
-      const name = encoder.encode(file.path);
+      const name = encoder.encode((root ? root+'/' : '')+file.path);
       if (name.length > 65535) throw new Error("Export filename is too long.");
       const checksum = crc32(file.bytes);
 

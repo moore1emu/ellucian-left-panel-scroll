@@ -4,7 +4,7 @@ const path = require('node:path');
 const os = require('node:os');
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
-// Resolve dependencies locally; downloaded editor code is never shipped with the extension.
+// Use a synthetic page editor; the configuration editor's bundled copy can serve as this test dependency.
 const extension = process.env.INTEGRATION_NAVIGATOR_SOURCE || path.resolve(__dirname, '..');
 const aceFile = process.env.INTEGRATION_NAVIGATOR_ACE || require.resolve('ace-builds/src-noconflict/ace.js');
 const site = 'https://experience-test.elluciancloud.com';

@@ -45,6 +45,12 @@ const reserve = (provider, from = sender) => new Promise(resolve => {
   const racing=await Promise.all([saveLocations('Test/Designer'),saveLocations('Other/Designer')]);
   assert.equal(racing.filter(result=>result.ok).length,1);
   assert.equal(saved.gitTenantLocations.tenants['Test: '+id].IntegrationDesigner,'Test/Designer');
-  for(const from of [{...locationSender,url:'https://experience.test/'},{...locationSender,url:'chrome-extension://fixture/pipeline-export.html#ticket'},{...locationSender,frameId:1},{...locationSender,id:'other'}]) assert.equal(await saveLocations('Blocked',from),null);
+  // Review confirmation is exact to a card/signature and committed with the same serialized preference write.
+  const expected=structuredClone(saved.gitTenantLocations);
+  const confirmMessage={type:'git-save-locations',expected,value:expected,confirm:{tenantId:id,environment:'Test',kind:'designer'}};
+  const confirmed=await new Promise(resolve=>listeners.some(listener=>listener(confirmMessage,{...sender,url:'chrome-extension://fixture/pipeline-export.html#ticket'},resolve)));
+  assert.equal(confirmed.ok,true);
+  assert.equal(saved.gitExportConfirmations[id+':designer'],sandbox.GitLocations.signature(expected,id,'Test','designer'));
+  for(const from of [{...locationSender,url:'https://experience.test/'},{...locationSender,frameId:1},{...locationSender,id:'other'}]) assert.equal(await saveLocations('Blocked',from),null);
   console.log('PASS Git permissions: serialized reservations, exact trusted sender, no Git content-script injection, interrupted Experience grant recovery, and unchanged favorites');
 })().catch(error => { console.error(error); process.exitCode = 1; });

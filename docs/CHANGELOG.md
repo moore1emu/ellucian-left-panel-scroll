@@ -1,5 +1,14 @@
 # Update history
 
+## 3.1.4 — October 18, 2026
+
+- Match the approved workspace mockup: Export, Git Connections and Export Configuration tabs, compact Repository/Authentication panels, card-specific controls left and visible folder preview right.
+- Add tenant-ID/card-scoped configuration with explicit Save confirmation before ZIP or Git preparation, including defaults. Existing path-only records remain readable; credentials, favorites and source observations are untouched. Other tenants/cards and hidden Packages configuration survive ordinary saves.
+- Designer defaults include Draft and Published together in the package folder, with Source and Formatted in separate folders. Draft filenames are unversioned; published majors retain their suffix. Support optional state/type folder separation and JSON-only suffix overrides. Preserve original Source bytes, per-package README state/version/sharing metadata, preflight collisions and all-or-nothing collection.
+- ZIP and Git use the same saved destination/file plan. Invalid/stale edits cannot replace applied settings; configuration changes invalidate prepared files/comparisons and are checked before unsent operations. Selection remains metadata-only; the launch's native version scope still limits available records.
+- Bundle pinned Ace 1.43.3 JSON editing, folding, line numbers, indentation guides and light/dark themes with retained BSD license. No CDN, worker, eval allowance, new permissions, automatic provider writes or remote migration.
+- Preserve hidden Packages reveal/consent and its existing optional formatted output. GitHub stays cloud-hosted; GitLab supports cloud/custom HTTPS origins. This is an isolated v3 manual-test candidate, not a merge or store release.
+
 ## 3.1.3 — October 18, 2026
 
 - Keep IntegrationPackages absent from ordinary generated defaults and visible existing configuration until temporary Shift+D confirmation. Explain in that prompt that the hidden configuration entry is being added; Save Locations persists explicit path edits, not the reveal. Preserve existing hidden Packages paths during ordinary edits/resets without deleting them or showing them. A confirmed Packages export carries only its existing UI confirmation into the targeted Connections view; revealing configuration alone grants no source/service access.

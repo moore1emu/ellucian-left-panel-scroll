@@ -75,6 +75,37 @@ window.webpackChunkdata_connect_designer=[];window.webpackChunkdata_connect_desi
         assert.match(await exported.locator('table').innerText(),/Published/);
       }
       if(artifacts)await exported.screenshot({path:path.join(path.resolve(artifacts),kind+'-preview.png'),fullPage:true});
+      // Defaults require explicit confirmation for each verified tenant/card before source reads.
+      assert.equal(await exported.locator('#download-zip').isDisabled(),true);
+      await exported.locator('#location-edit').click();
+      await exported.waitForFunction(()=>!document.querySelector('#location-fields').disabled);
+      assert.equal(await exported.locator('#workspace-configuration').isVisible(),true);
+      assert.deepEqual(await exported.locator('.workspace-tabs [role="tab"]').allTextContents(),['Export','Git Connections','Export Configuration']);
+      assert.equal(await exported.evaluate(()=>{const ids=[...document.querySelectorAll('[id]')].map(e=>e.id);return new Set(ids).size===ids.length;}),true);
+      assert.equal((await exported.locator('#location-json').inputValue()).includes('IntegrationPackages'),false);
+      const controls=await exported.locator('.card-controls').boundingBox();
+      const preview=await exported.locator('.card-preview').boundingBox();
+      assert.ok(controls.x+controls.width<=preview.x);
+      // Friendly controls update staged JSON/preview, never applied paths or source definitions.
+      if(kind==='designer'){
+        const applied=await exported.locator('#location-tree').textContent();
+        await exported.locator('#formatted-layout').uncheck();
+        assert.match(await exported.locator('#staged-tree').textContent(),/_formatted.json/);
+        assert.equal(await exported.locator('#location-tree').textContent(),applied);
+        await exported.locator('#formatted-layout').check();
+        assert.equal(await source.evaluate(()=>fixtureStats.reads),0);
+      }
+      await exported.locator('#location-save').click();
+      await exported.waitForFunction(()=>document.querySelector('#location-settings-status').textContent.startsWith('Export configuration saved'));
+      if(artifacts){
+        await exported.locator('.manual-config>summary').click();
+        for(const theme of ['light','dark']){
+          await exported.emulateMedia({colorScheme:theme});
+          await exported.screenshot({path:path.join(path.resolve(artifacts),kind+'-config-'+theme+'.png'),fullPage:true});
+        }
+      }
+      await exported.locator('#workspace-export-tab').click();
+      await exported.waitForFunction(()=>!document.querySelector('#download-zip').disabled);
       // Verify the existing ZIP path invokes each selected native reader once after user action.
       const download=exported.waitForEvent('download');
       await exported.locator('#download-zip').click();

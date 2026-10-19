@@ -1,6 +1,6 @@
 # v3 Development — Git Export
 
-Checkpoint: **3.1.3 functional Git test candidate**, not a store release. Connections groups its identity fields and holds Advanced JSON location setup; Export keeps the indented destination preview and Edit Locations navigation. The legacy base control is removed without rewriting saved credentials. Native source guards and manual preview/confirmed push remain. Existing repository content is not moved or deleted; see [Git Export](Git-Export.md). Earlier placement/ID-first/deferred-location statements below are historical. Live disposable-repository acceptance remains a separate check.
+Checkpoint: **3.1.4 functional Git test candidate**, not a store release. The approved workspace now has Export, Git Connections and Export Configuration tabs. Tenant/card settings control shared ZIP/Git destinations, explicit first-save confirmation, Designer version/file choices and optional folder separation/suffixes. Local Ace JSON editing is bundled offline. Credentials, native guards and separate Git upload confirmation remain intact. Earlier placement/ID-first/default-formatting notes below are historical; see [Git Export](Git-Export.md) for current behavior.
 
 ## Branch and Release Boundaries
 

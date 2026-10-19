@@ -28,7 +28,13 @@
   // Show only the selected provider's native help, including after a saved connection loads.
   function providerHelp() {
     const provider = $('git-provider').value;
-    $('git-server-field').hidden = provider !== 'gitlab';
+    $('git-server-field').hidden = false;
+    // GitHub remains its supported cloud host; GitLab supports an explicit custom HTTPS origin.
+    $('git-custom-server').disabled = provider==='github';
+    if(provider==='github'){$('git-server').value='https://github.com';$('git-custom-server').checked=false;}
+    else if(!$('git-custom-server').checked)$('git-server').value='https://gitlab.com';
+    $('git-server').readOnly=provider==='github'||!$('git-custom-server').checked;
+    $('git-repository-help').textContent=provider==='gitlab'?'Group / project, including subgroups':'Owner / repository';
     for (const name of ['github', 'gitlab']) {
       const help = $('git-' + name + '-help');
       help.hidden = provider !== name;
@@ -58,6 +64,7 @@
     if (saved) {
       const c = GitProvider.config(saved.config);
       for (const key of ['provider', 'server', 'repository', 'branch']) $('git-' + key).value = c[key];
+      $('git-custom-server').checked=c.provider==='gitlab' && c.server!=='https://gitlab.com';
       $('git-storage').value = saved.mode; $('git-history-enabled').checked = saved.history;
     }
     providerHelp();
@@ -68,6 +75,7 @@
   }
 
   $('git-provider').addEventListener('change', providerHelp);
+  $('git-custom-server').addEventListener('change',providerHelp);
   $('git-storage').addEventListener('change', storageHelp);
   // Explain the intentional fresh-token requirement when native required-field validation blocks submission.
   $('git-token').addEventListener('invalid', () => {

@@ -34,8 +34,25 @@
   let gitPreparing = false;
   let locationValue = null;
   let locationStale = false;
+  let confirmedConfiguration = false;
   const layout = document.querySelector('#export-layout');
   const locationStatus = document.querySelector('#location-status');
+  // Keep only bounded display metadata available to the Connections view in this same document.
+  globalThis.GitWorkspace?.setContextReader(() => plan ? {tenantId:plan.context.tenantId,environment:plan.environment,sourceKind:plan.sourceKind,packagesConfirmed:launch?.sourceKind==='packages' && launch.overrideConfirmed===true} : null);
+  function currentLayout() {
+    return plan?.sourceKind==='designer' && locationValue ? GitLocations.preferences(GitLocations.card(locationValue,plan.context.tenantId,plan.environment,'designer')) : null;
+  }
+  function allowedEntry(entry) { const options=currentLayout();return !options || !entry.state || options.exportVersions[entry.state]; }
+  async function requireConfiguration(snapshot=plan) {
+    if(!snapshot?.sourceKind)return;
+    const value=await GitLocations.read();
+    const records=(await chrome.storage.local.get({[GitLocations.CONFIRM_KEY]:{}}))[GitLocations.CONFIRM_KEY];
+    const signature=GitLocations.signature(value,snapshot.context.tenantId,snapshot.environment,snapshot.sourceKind);
+    if(records?.[snapshot.context.tenantId.toLowerCase()+':'+snapshot.sourceKind]!==signature || snapshot.configurationSignature && snapshot.configurationSignature!==signature) throw Error('Export configuration changed. Review and save it before continuing.');
+  }
+  function exportSnapshot() {
+    return {...plan,entries:selectedEntries(),formatted:plan.sourceKind==='designer'||plan.sourceKind==='api-designer' ? false : formatted.checked,layout:currentLayout(),root:plan.sourceKind ? GitLocations.card(locationValue,plan.context.tenantId,plan.environment,plan.sourceKind).folder : '',configurationSignature:plan.sourceKind ? GitLocations.signature(locationValue,plan.context.tenantId,plan.environment,plan.sourceKind) : ''};
+  }
 
   // Build metadata-only destinations before any source download, using indentation instead of branch lines.
   function renderDestination() {
@@ -45,16 +62,20 @@
     try {
       const dummy = {provider:'github',repository:'preview/preview',branch:'preview',folder:'Preview'};
       const folder = GitLocations.destination(dummy,plan.context.tenantId,plan.environment,plan.sourceKind,locationValue).folder;
-      const files = PipelineExportSession.paths(selectedEntries(),formatted.checked).map(path=>folder+'/'+path);
+      const files = PipelineExportSession.paths(selectedEntries(),plan.sourceKind==='designer'||plan.sourceKind==='api-designer' ? false : formatted.checked,currentLayout()).map(path=>folder+'/'+path);
       document.querySelector('#location-tree').textContent = files.length ? GitLocations.tree(files) : 'No files selected.';
-    } catch { document.querySelector('#location-tree').textContent = 'Set a safe folder for this tenant in Advanced.'; }
+    } catch { document.querySelector('#location-tree').textContent = 'Set a safe folder for this tenant in Export Configuration.'; }
   }
 
-  // Read saved routing for the preview; all editing now belongs to the Connections page.
+  // Read only applied settings for Export; staged edits remain in Export Configuration.
   async function loadLocations() {
     if (!layout || !plan?.sourceKind) return;
     locationValue = await GitLocations.read();
+    const records=(await chrome.storage.local.get({[GitLocations.CONFIRM_KEY]:{}}))[GitLocations.CONFIRM_KEY];
+    confirmedConfiguration=records?.[plan.context.tenantId.toLowerCase()+':'+plan.sourceKind]===GitLocations.signature(locationValue,plan.context.tenantId,plan.environment,plan.sourceKind);
     locationStale = false;
+    if(locationStatus)locationStatus.textContent=confirmedConfiguration ? 'Export configuration confirmed for this tenant and card.' : 'Review and save Export Configuration before downloading or preparing Git changes.';
+    renderPackages(false);
     renderDestination();
   }
 
@@ -64,7 +85,7 @@
     (async()=>{
       const current=await chrome.tabs.getCurrent();
       if (current?.id!==message.exportTabId) return;
-      respond(plan ? {tenantId:plan.context.tenantId,environment:plan.environment,packagesConfirmed:launch?.sourceKind==='packages' && launch.overrideConfirmed===true} : null);
+      respond(plan ? {tenantId:plan.context.tenantId,environment:plan.environment,sourceKind:plan.sourceKind,packagesConfirmed:launch?.sourceKind==='packages' && launch.overrideConfirmed===true} : null);
     })().catch(()=>{});
     return true;
   });
@@ -109,6 +130,8 @@
   // Clear only temporary output and selection, leaving favorites/source observations untouched.
   function discard() {
     discardZip();
+    confirmedConfiguration=false;
+    locationValue=null;
     plan = null;
     selected.clear();
     groups.clear();
@@ -123,7 +146,7 @@
 
   // Checkbox choices only narrow the authorized plan; hidden/collapsed rows never remove eligible records.
   function selectedEntries() {
-    return (plan?.entries || []).filter((entry, index) => selected.has(index));
+    return (plan?.entries || []).filter((entry, index) => selected.has(index) && allowedEntry(entry));
   }
 
   // Revoke an already-created ZIP when its selection changes instead of leaving a misleading Save link.
@@ -147,7 +170,8 @@
       group.count.textContent = `${count} of ${group.items.length} selected${details ? ` (${details})` : ''}`;
       for (const item of group.items) if (item.checkbox) item.checkbox.checked = selected.has(item.index);
     }
-    selectAll.checked = selected.size === plan.entries.length;
+    const available=plan.entries.filter(allowedEntry).length;
+    selectAll.checked = selectedEntries().length === available;
     selectAll.indeterminate = selected.size > 0 && selected.size < plan.entries.length;
     // Count checked artifacts by type so independent major versions and non-pipeline files are visible.
     const byType = { pipeline: 0, 'sub-pipeline': 0, api: 0, transformer: 0 };
@@ -155,14 +179,15 @@
     // Only Packages uses saved-source eligibility; direct Designer inventories have no unrecorded skip count.
     counts.textContent = `${selectedPackages} of ${groups.size} packages · ${selected.size} of ${plan.entries.length} files selected (Pipelines: ${byType.pipeline}, Sub-Pipelines: ${byType['sub-pipeline']}, APIs: ${byType.api}, Transformers: ${byType.transformer})` +
       (!plan.sourceKind || plan.sourceKind === 'packages' ? ` · ${plan.skipped} unrecorded records in inspected packages skipped` : '');
-    download.disabled = !DOWNLOADS_READY || !selected.size || Boolean(controller);
-    if (gitPrepare) gitPrepare.disabled = !selected.size || Boolean(controller) || !globalThis.GitProvider || !globalThis.GitVault;
+    download.disabled = !DOWNLOADS_READY || !selectedEntries().length || Boolean(controller) || Boolean(plan.sourceKind && !confirmedConfiguration);
+    if (gitPrepare) gitPrepare.disabled = !selectedEntries().length || Boolean(controller) || !globalThis.GitProvider || !globalThis.GitVault || Boolean(plan.sourceKind && !confirmedConfiguration);
     if (changed) status.textContent = selected.size ? 'Selection updated. Choose Download ZIP or Preview Git Changes to retrieve checked records.' : 'No files selected. Check a package or file to export.';
     renderDestination();
   }
 
   // Verify both the original native source context and the still-unlocked saved Git destination.
   async function verifyGit(snapshot, connection, signal) {
+    await requireConfiguration(snapshot);
     if (signal.aborted) throw new Error('Git operation cancelled.');
     const source = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'verify', context: snapshot.context });
     if (!source?.ok || (await GitVault.info())?.revision !== connection.revision) throw new Error('Source or connection changed. Prepare a new Git preview.');
@@ -212,7 +237,8 @@
   gitPrepare?.addEventListener('click', async () => {
     if (!selected.size || controller || !plan) return;
     if (locationStale) { gitResult.textContent='Locations changed. Refresh preview before preparing Git changes.'; return; }
-    const snapshot = { ...plan, entries: selectedEntries(), formatted: formatted.checked };
+    if(plan.sourceKind && !confirmedConfiguration)return;
+    const snapshot = exportSnapshot();
     const current = ++generation;
     discardZip();
     gitPreparing = true;
@@ -230,7 +256,7 @@
       const check = () => verifyGit(snapshot, connection, signal);
       await check();
       const files = await PipelineExportSession.collectFiles(snapshot.entries, {
-        verify: check, signal, formatted: snapshot.formatted, environment: snapshot.environment,
+        verify: check, signal, formatted: snapshot.formatted, environment: snapshot.environment,layout:snapshot.layout,
         read: async entry => {
           const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'read', context: snapshot.context, entry });
           // Retain the bridge's bounded reason so a version failure does not become a vague Git error.
@@ -295,6 +321,8 @@
   });
   document.querySelector('#git-dismiss')?.addEventListener('click', () => { if (!controller) { discardGit(); gitResult.textContent = 'Git preview discarded. No files uploaded.'; } });
   async function openConnection(advanced = false) {
+    // Keep: view switches retain the claimed document, selected records and prepared bytes (3.1.4).
+    if (globalThis.GitWorkspace) { GitWorkspace.show(advanced ? 'configuration' : 'connections'); return; }
     try {
       // Bind return navigation to this export, even when another export is also open.
       const current = await chrome.tabs.getCurrent();
@@ -332,15 +360,19 @@
   }
 
   // List every package immediately, with lazy pipeline rendering and native keyboard-accessible disclosure.
-  function renderPackages() {
+  function renderPackages(initial=true) {
+    const opened=new Set([...groups].filter(([,group])=>group.details?.open).map(([name])=>name));
+    groups.clear();packages.replaceChildren();
     plan.entries.forEach((entry, index) => {
+      if(!allowedEntry(entry)) {selected.delete(index);return;}
       if (!groups.has(entry.packageName)) groups.set(entry.packageName, { items: [], built: false });
       groups.get(entry.packageName).items.push({ entry, index });
-      selected.add(index);
+      if(initial)selected.add(index);
     });
     const fragment = document.createDocumentFragment();
     for (const [name, group] of groups) {
       const details = document.createElement('details'); details.className = 'export-package';
+      details.open=opened.has(name);
       const summary = document.createElement('summary');
       const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'package-checkbox';
       checkbox.setAttribute('aria-label', `Select Package: ${name}`);
@@ -391,12 +423,14 @@
       if (!result?.ok) throw new Error(result?.reason === 'session-unavailable' ? 'Temporary export storage is unavailable. Reload the extension, refresh Packages, and reopen export.' : result?.reason === 'preview-expired' ? 'Preview expired. Reopen export from settings.' : result?.reason === 'context-changed' ? 'Source page changed. Reopen export from settings.' : result?.reason === 'open-packages' ? 'Open Integration Packages, then reopen export from settings.' : result?.reason === 'requests-stalled' ? 'Earlier service requests are still running. Wait, then refresh preview.' : 'Package metadata is unavailable. Refresh the original page, then reopen export from settings.');
       // Default exact-name eligibility is computed in the extension, not in untrusted page code.
       plan = { ...result.plan, context: result.context, environment: result.environment || result.context.tenantId, sourceKind:result.sourceKind };
-      document.querySelector('#export-mode').textContent = launch.sourceKind === 'api-designer' ? 'API Designer · Published definitions, each major version.' : launch.sourceKind === 'designer' ? 'Integration Designer · ' + launch.exportMode + '. Drafts and published files are kept separate.' : launch.overrideConfirmed ? 'Temporary advanced mode: all accessible content. No additional permissions are granted.' : 'Designer-recorded content only. Saved source observations may be stale.';
+      document.querySelector('#legacy-formatted').hidden=plan.sourceKind==='designer'||plan.sourceKind==='api-designer';
+      document.querySelector('#export-mode').textContent = launch.sourceKind === 'api-designer' ? 'API Designer · Published definitions, each major version.' : launch.sourceKind === 'designer' ? 'Integration Designer · ' + launch.exportMode + '. The package README identifies draft and published files.' : launch.overrideConfirmed ? 'Temporary advanced mode: all accessible content. No additional permissions are granted.' : 'Designer-recorded content only. Saved source observations may be stale.';
+      document.dispatchEvent(new Event('export-context-ready'));
       renderPackages();
       // Source preview remains usable for ZIP if optional Git-location settings cannot be read.
       try { await loadLocations(); }
       catch { locationValue=null; if (layout) layout.hidden=false; if (locationStatus) locationStatus.textContent='Could not read export locations. Refresh preview to retry.'; }
-      download.disabled = !DOWNLOADS_READY || !plan.entries.length;
+      updateSelection();
       // Draft/API exports must not direct users to an unrelated Shared From setup step.
       status.textContent = plan.entries.length ? 'Preview ready. Choose Download ZIP or Preview Git Changes to retrieve these definitions.' :
         'No definitions found for the selected source and versions.';
@@ -415,7 +449,8 @@
   // Keep source download separate from metadata preview and backup/import actions.
   download.addEventListener('click', async () => {
     if (!DOWNLOADS_READY || !selected.size || controller) return;
-    const snapshot = { ...plan, entries: selectedEntries(), formatted: formatted.checked };
+    if(plan.sourceKind && !confirmedConfiguration)return;
+    const snapshot = exportSnapshot();
     const current = ++generation;
     discardZip();
     controller = new AbortController();
@@ -426,12 +461,13 @@
     progress.max = snapshot.entries.length;
     progress.value = 0;
     const verify = async () => {
+      await requireConfiguration(snapshot);
       const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'verify', context: snapshot.context });
       if (!result?.ok) throw Object.assign(new Error('Export context changed.'), { reason: result?.reason });
     };
     try {
       const zip = await PipelineExportSession.collect(snapshot.entries, {
-        signal: controller.signal, verify, formatted: snapshot.formatted, environment: snapshot.environment,
+        signal: controller.signal, verify, formatted: snapshot.formatted, environment: snapshot.environment,layout:snapshot.layout,root:snapshot.root,
         read: async (entry) => {
           const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'read', context: snapshot.context, entry });
           if (!result?.ok) throw Object.assign(new Error('Published JSON unavailable.'), { reason: result?.reason });
@@ -476,6 +512,7 @@
     save.setAttribute('aria-busy', 'true');
     try {
       const result = await chrome.runtime.sendMessage({ type: 'pipeline-export-relay', operation: 'verify', context: attempt.context });
+      await requireConfiguration();
       // Selection, formatting, cancellation, consent, or a new preview/archive invalidates a pending retry.
       if (retry !== attempt || objectUrl !== attempt.url || generation !== attempt.generation) return;
       if (!result?.ok) throw new Error('context-changed');
@@ -510,7 +547,7 @@
     status.textContent = gitWriting ? 'Git cancellation requested. An already-sent request may have committed; check remote history before another push.' : 'Cancelled. Existing browser downloads are unchanged.';
   });
   selectAll.addEventListener('change', () => {
-    plan.entries.forEach((entry, index) => { if (selectAll.checked) selected.add(index); else selected.delete(index); });
+    plan.entries.forEach((entry, index) => { if (selectAll.checked && allowedEntry(entry)) selected.add(index); else selected.delete(index); });
     updateSelection(true);
   });
   // A changed layout must not leave Download Again pointing at the previous archive format.
@@ -518,10 +555,11 @@
   refresh.addEventListener('click', preview);
   // A default export loses eligibility immediately when the user withdraws Shared From consent.
   chrome.storage.onChanged.addListener(async (changes, area) => {
-    if (area==='local' && globalThis.GitLocations && changes[GitLocations.KEY]) {
+    if (area==='local' && globalThis.GitLocations && (changes[GitLocations.KEY] || changes[GitLocations.CONFIRM_KEY])) {
       // Cancel prepared work immediately; do not erase unsaved text or silently update its destination.
-      if (gitPreparing || gitWriting) controller?.abort();
-      discardGit();
+      if (controller) controller.abort();
+      discardZip();
+      confirmedConfiguration=false;
       locationStale = true;
       if (gitWriting) gitResult.textContent='Locations changed. An already-sent Git write may have committed; check remote history.';
       // Reload only routing metadata; preserve package selections and do not restart source collection.

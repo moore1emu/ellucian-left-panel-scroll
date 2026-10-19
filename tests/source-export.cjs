@@ -51,10 +51,10 @@ for (const file of ['pipeline-export-native.js','pipeline-export-core.js','pipel
   assert.equal(calls.filter(x=>x[0]==='published').length,2);
   assert.equal(calls.filter(x=>x[0]==='draft').length,1);
   const files=await box.PipelineExportSession.collectFiles(designerPlan.entries,{read:entry=>designer.read(entry),verify,environment:'Synthetic'});
-  assert.ok(files.some(f=>f.path==='Draft/Owned/Flow_draft.json'));
-  assert.ok(files.some(f=>f.path==='Published/Owned/Flow_v1.json'));
-  assert.ok(files.some(f=>f.path==='Published/Owned/Flow_v2.json'));
-  assert.ok(files.some(f=>f.path==='Draft/Owned/README.md'));
+  assert.ok(files.some(f=>f.path==='Owned/Flow.json'));
+  assert.ok(files.some(f=>f.path==='Owned/Flow_v1.json'));
+  assert.ok(files.some(f=>f.path==='Owned/Flow_v2.json'));
+  assert.ok(files.some(f=>f.path==='Owned/README.md'));
   assert.ok(box.PipelineExportCore.makeZip(files).size>0);
 
   // Reject edited drafts and cross-package IDs rather than exporting a changed selection.

@@ -88,21 +88,16 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     const opened = context.waitForEvent('page'); await popup.locator('#manage-git').click();
     const connection = await opened; await connection.waitForFunction(() => !document.querySelector('#git-fields').disabled);
     assert.equal(await connection.locator('#git-folder, #git-legacy-folder').count(),0);
-    assert.equal(await connection.locator('#location-advanced').isVisible(),true);
     await connection.waitForFunction(()=>!document.getElementById('location-fields').disabled);
     assert.equal((await connection.locator('#location-json').inputValue()).includes('IntegrationPackages'),false);
-    // The top-level Advanced link navigates to and expands the single Connections editor by keyboard.
-    await connection.locator('#git-open-locations').focus();
-    await connection.keyboard.press('Enter');
-    assert.equal(await connection.locator('#location-advanced').evaluate(element=>element.open),true);
-    assert.ok(connection.url().endsWith('#location-advanced'));
-    // Desktop identity controls share a compact row; mobile stacks without hiding labels or adding overflow.
+    // Tabs preserve one connection surface; repository and authentication groups sit side by side.
     for(const width of [390,1280]) {
       await connection.setViewportSize({width,height:900});
       assert.equal(await connection.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
       if(width===1280) {
-        const boxes=await Promise.all(['git-provider','git-repository','git-branch'].map(id=>connection.locator('#'+id).boundingBox()));
-        assert.ok(boxes.every(box=>Math.abs(box.y-boxes[0].y)<2));
+        const left=await connection.locator('.connection-group').nth(0).boundingBox();
+        const right=await connection.locator('.connection-group').nth(1).boundingBox();
+        assert.ok(left.x+left.width<=right.x);
       }
     }
     assert.equal(await connection.locator('#git-token-help').count(), 0, 'Fresh-token reminder belongs to Save validation, not a permanent paragraph');
@@ -119,7 +114,7 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       assert.ok(await help.locator('li').count() >= 5);
       assert.equal(await help.locator('summary a, summary button').count(), 0);
       assert.equal(await help.locator('p').first().locator('a').count(), 1, 'Both provider links belong at the top');
-      assert.match(await help.innerText(), /Token name: e.g. Integration Navigator Test/);
+      assert.match(await help.innerText(), /Token Name: Integration Navigator Test/);
       assert.match(await help.innerText(), /Expiration:.*7 days/);
       await help.locator('summary').press('Enter');
       assert.equal(await help.evaluate(element => element.open), false);
@@ -130,7 +125,7 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     for (const provider of ['github', 'gitlab']) {
       remote = old; remoteFiles = []; writes = []; uploaded.clear(); failHead = false;
       await connection.locator('#git-provider').selectOption(provider);
-      if (provider === 'gitlab') await connection.locator('#git-server').fill('https://git.example.edu');
+      if (provider === 'gitlab') { await connection.locator('#git-custom-server').check(); await connection.locator('#git-server').fill('https://git.example.edu'); }
       await connection.locator('#git-repository').fill(provider === 'github' ? 'owner/repo' : 'group/project');
       await connection.locator('#git-token').fill(synthetic);
       if (provider === 'gitlab') {
@@ -194,29 +189,29 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       await exported.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
       // Saving a readable alias changes this tenant only, without re-entering or changing the saved token.
       const readsBeforeLocations=await source.evaluate(()=>stats.sources);
-      const locationOpening=context.waitForEvent('page');
       await exported.locator('#location-edit').click();
-      const locationPage=await locationOpening;
+      const locationPage=exported;
       await locationPage.waitForFunction(()=>!document.getElementById('location-fields').disabled);
-      assert.equal(await locationPage.locator('#location-advanced').evaluate(element=>element.open),true);
-      assert.equal(await exported.locator('#location-json').count(),0);
+      assert.equal(await locationPage.locator('#workspace-configuration').isVisible(),true);
       const connectionBeforePaths=await locationPage.evaluate(()=>GitVault.info());
       const locations=JSON.parse(await locationPage.locator('#location-json').inputValue());
       const tenantKey=Object.keys(locations.tenants).find(key=>key.endsWith('11111111-2222-4333-8444-555555555555'));
-      locations.tenants[tenantKey].IntegrationPackages='Test/IntegrationPackages';
-      await locationPage.locator('#location-json').fill(JSON.stringify(locations,null,2));
+      locations.tenants[tenantKey].IntegrationPackages={folder:'Test/IntegrationPackages'};
+      await locationPage.evaluate(value=>ace.edit('json-code').setValue(value,-1),JSON.stringify(locations,null,2));
       await locationPage.locator('#location-save').click();
-      await locationPage.locator('#location-status').filter({hasText:'Locations saved.'}).waitFor();
+      await locationPage.locator('#location-settings-status').filter({hasText:'Export configuration saved.'}).waitFor();
       assert.deepEqual(await locationPage.evaluate(()=>GitVault.info()),connectionBeforePaths);
       await exported.waitForFunction(()=>document.getElementById('location-tree').textContent.startsWith('Test/'));
-      // Invalid JSON preserves the last saved paths and leaves the independent connection credential untouched.
+      // Invalid JSON cannot change saved paths or credentials.
       const acceptedLocations=await worker.evaluate(()=>chrome.storage.local.get('gitTenantLocations'));
-      await locationPage.locator('#location-json').fill('{broken');
+      await locationPage.evaluate(()=>ace.edit('json-code').setValue('{broken',-1));
       await locationPage.locator('#location-save').click();
-      await locationPage.locator('#location-status').filter({hasText:'Invalid JSON.'}).waitFor();
+      await locationPage.locator('#location-settings-status').filter({hasText:'Could not save.'}).waitFor();
       assert.deepEqual(await worker.evaluate(()=>chrome.storage.local.get('gitTenantLocations')),acceptedLocations);
       assert.deepEqual(await locationPage.evaluate(()=>GitVault.info()),connectionBeforePaths);
-      await locationPage.close();
+      locationPage.once('dialog',dialog=>dialog.accept());
+      await locationPage.locator('#location-reload').click();
+      await exported.locator('#workspace-export-tab').click();
       assert.equal(await source.evaluate(()=>stats.sources),readsBeforeLocations,'Location setup reads no source definitions');
       assert.match(await exported.locator('#location-tree').innerText(),/^Test\/\n  IntegrationPackages\//);
       assert.doesNotMatch(await exported.locator('#location-tree').innerText(),/[├└│]/);
@@ -293,18 +288,17 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
       const prodExport = await prodOpening;
       await prodExport.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
       // Override the other synthetic environment independently; no source-cache name is needed.
-      const prodLocationOpening=context.waitForEvent('page');
       await prodExport.locator('#location-edit').click();
-      const prodLocationPage=await prodLocationOpening;
+      const prodLocationPage=prodExport;
       await prodLocationPage.waitForFunction(()=>!document.getElementById('location-fields').disabled);
       const prodLocations=JSON.parse(await prodLocationPage.locator('#location-json').inputValue());
       const prodKey=Object.keys(prodLocations.tenants).find(key=>key.endsWith('aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'));
-      prodLocations.tenants[prodKey].IntegrationPackages='Production/IntegrationPackages';
-      await prodLocationPage.locator('#location-json').fill(JSON.stringify(prodLocations));
+      prodLocations.tenants[prodKey].IntegrationPackages={folder:'Production/IntegrationPackages'};
+      await prodLocationPage.evaluate(value=>ace.edit('json-code').setValue(value,-1),JSON.stringify(prodLocations));
       await prodLocationPage.locator('#location-save').click();
-      await prodLocationPage.locator('#location-status').filter({hasText:'Locations saved.'}).waitFor();
+      await prodLocationPage.locator('#location-settings-status').filter({hasText:'Export configuration saved.'}).waitFor();
       await prodExport.waitForFunction(()=>document.getElementById('location-tree').textContent.startsWith('Production/'));
-      await prodLocationPage.close();
+      await prodExport.locator('#workspace-export-tab').click();
       await prodExport.evaluate(() => { chrome.permissions.contains = async () => true; });
       const beforeProd = writes.length;
       await prodExport.locator('#git-prepare').click(); await prodExport.locator('#git-comparison').waitFor({ state: 'visible' });
@@ -321,12 +315,13 @@ window.webpackChunkexperience_exchange_extension=[];window.webpackChunkexperienc
     const hiddenBefore=await worker.evaluate(()=>chrome.storage.local.get('gitTenantLocations'));
     const ordinaryLocations=JSON.parse(await connection.locator('#location-json').inputValue());
     const ordinaryKey=Object.keys(ordinaryLocations.tenants)[0];
-    ordinaryLocations.tenants[ordinaryKey].IntegrationDesigner='Custom/IntegrationDesigner';
-    await connection.locator('#location-json').fill(JSON.stringify(ordinaryLocations));
+    ordinaryLocations.tenants[ordinaryKey].IntegrationDesigner={folder:'Custom/IntegrationDesigner'};
+    await connection.locator('#workspace-configuration-tab').click();
+    await connection.evaluate(value=>ace.edit('json-code').setValue(value,-1),JSON.stringify(ordinaryLocations));
     await connection.locator('#location-save').click();
-    await connection.locator('#location-status').filter({hasText:'Locations saved.'}).waitFor();
+    await connection.locator('#location-settings-status').filter({hasText:'Export configuration saved.'}).waitFor();
     const hiddenAfter=await worker.evaluate(()=>chrome.storage.local.get('gitTenantLocations'));
-    for(const [key,mapping] of Object.entries(hiddenBefore.gitTenantLocations.tenants)) assert.equal(hiddenAfter.gitTenantLocations.tenants[key].IntegrationPackages,mapping.IntegrationPackages);
+    for(const [key,mapping] of Object.entries(hiddenBefore.gitTenantLocations.tenants)) assert.deepEqual(hiddenAfter.gitTenantLocations.tenants[key].IntegrationPackages,mapping.IntegrationPackages);
     assert.equal((await connection.locator('#location-json').inputValue()).includes('IntegrationPackages'),false);
     // Cancel keeps the entry hidden; confirmed Shift+D explicitly explains the config addition, not native access.
     await connection.locator('h1').click();

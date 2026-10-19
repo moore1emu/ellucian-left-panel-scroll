@@ -7,6 +7,11 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    // Describe the approved workspace without exposing the hidden Packages shortcut.
+    "3.1.4": Object.freeze([
+      "Export, Git Connections, and Export Configuration now share one tabbed workspace.",
+      "Review and save tenant-specific folders, file types, and version choices before exporting.",
+    ]),
     // Keep location setup in Connections and the destination preview in Export.
     "3.1.3": Object.freeze([
       "Git connection fields are grouped into a compact form without the legacy folder control.",

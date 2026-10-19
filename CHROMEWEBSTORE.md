@@ -1,6 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-18 · Candidate: 3.1.3 · Status: Git layout test candidate, not submitted
+Updated: 2026-10-18 · Candidate: 3.1.4 · Status: Git layout test candidate, not submitted
+
+Current preparation: approved three-tab export workspace, tenant/card configuration and first-save review, shared ZIP/Git paths, Designer Source/Formatted defaults and local folding JSON editor. No new permissions or remote editor code. Refresh workspace screenshots before any future submission. Earlier placement/default notes below are historical; this update is not authorization to publish.
 
 Reviewer clarification for 3.1.3: ordinary generated and visible existing location config omits the hidden Packages source. Shift+D confirmation explains revealing/adding its configuration entry, without granting access. Existing hidden paths are preserved during ordinary saves. Keep this explanation in reviewer/GitHub guidance, not the public listing description.
 

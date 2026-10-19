@@ -1,6 +1,6 @@
 # User Guide
 
-> This is the separate **3.1.3 Git test candidate**, based on v2.1.9. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. ZIP/JSON backups below remain independent; the v2 release build is unchanged. Live Git acceptance is still unverified.
+> This is the separate **3.1.4 Git test candidate**, based on v2.1.9. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. ZIP/JSON backups below remain independent; the v2 release build is unchanged. Live Git acceptance is still unverified.
 
 If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
 

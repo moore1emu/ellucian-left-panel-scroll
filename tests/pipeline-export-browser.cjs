@@ -18,9 +18,9 @@ const owned={name:'Owned Package',nameAndExtension:'owned.json',pipelines:[{name
   {name:'Sub',version:'v1.0.4',type:'subpipeline'},{name:'Sub',version:'v1.0.5',type:'subpipeline'},{name:'Sub',version:'v2.0.5',type:'subpipeline'}],transformFunctions:[{name:'Function',version:'v1.0.0'}]};
 const supplied={name:'Supplier Package',nameAndExtension:'supplier.json',pipelines:[{name:'Supplier',version:'v1.0.0',type:'api'}]};
 window.stats={lists:0,packages:0,sources:0};
-window.__PRELOADED_STATE__={tenant:'synthetic-tenant'};
-window.owner={context:{tenantId:'synthetic-tenant',getJwt:()=>{throw Error('Session callback must remain native-owned');}},
-  state:{currentTenant:'synthetic-tenant',menu:[{'package-element':owned},{'package-element':supplied}]}};
+window.__PRELOADED_STATE__={tenant:'11111111-2222-4333-8444-555555555555'};
+window.owner={context:{tenantId:'11111111-2222-4333-8444-555555555555',getJwt:()=>{throw Error('Session callback must remain native-owned');}},
+  state:{currentTenant:'11111111-2222-4333-8444-555555555555',menu:[{'package-element':owned},{'package-element':supplied}]}};
 const row=document.querySelector('li');row.__reactFiber$fixture={return:{stateNode:owner}};
 row.__reactProps$fixture={'package-element':owned};
 const opaque={};
@@ -30,7 +30,7 @@ const server={G9:async(callback,tenant,expand)=>{if(expand!==false)throw Error('
  B0:async(callback,tenant,version,name)=>{stats.sources++;if(name==='Sub'&&!['1','2'].includes(version))throw Error('Wrong Sub-Pipeline route');return {name,version:name==='Sub'?null:version.replace(/^v/,''),requestedRoute:version,fittings:[]};}};
 window.webpackChunkexperience_exchange_extension=[];
 // The actual adapter passes opaque native configuration to this fixed-endpoint text reader unchanged.
-const http={get:async(url,config)=>{if(config!==opaque||url!=='https://semver-s3-service.prod.10005.elluciancloud.com/artifact/synthetic-tenant/transformFunction/latest/Function.js')throw Error('Unexpected transformer request');stats.sources++;return {status:200,data:'// Synthetic source\\nfunction transform(message) { return message; }\\n'};}};
+const http={get:async(url,config)=>{if(config!==opaque||url!=='https://semver-s3-service.prod.10005.elluciancloud.com/artifact/11111111-2222-4333-8444-555555555555/transformFunction/latest/Function.js')throw Error('Unexpected transformer request');stats.sources++;return {status:200,data:'// Synthetic source\\nfunction transform(message) { return message; }\\n'};}};
 window.webpackChunkexperience_exchange_extension.push=entry=>entry[2](name=>name==='./src/server/ServerHelper.js'?server:name==='./node_modules/axios/lib/axios.js'?{A:http}:{});
 window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEvent(new Event('ellucian-left-panel-dom-changed'));};
 </script>`;
@@ -53,7 +53,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     let worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     await worker.evaluate(() => pendingOwnershipUpdate);
     await worker.evaluate(() => chrome.storage.local.set({ exportToolsEnabled:true, sharedFromEnabled: true, designerOwnershipCache: {
-      'synthetic-tenant': { environment: 'synthetic-production', packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
+      '11111111-2222-4333-8444-555555555555': { environment: 'synthetic-production', packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
     }, syntheticPreserve: { favorites: ['untouched'] } }));
     const id = new URL(worker.url()).host;
     const source = await context.newPage();
@@ -107,6 +107,12 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
       page.setDefaultTimeout(15000);
       await page.waitForFunction(() => document.querySelector('#export-progress')?.hidden === true);
       await page.locator('#export-status').filter({ hasText: 'Preview ready' }).waitFor();
+      await page.locator('#location-edit').click();
+      await page.waitForFunction(()=>!document.getElementById('location-fields').disabled);
+      await page.locator('#location-save').click();
+      await page.locator('#location-settings-status').filter({hasText:'Export configuration saved.'}).waitFor();
+      await page.locator('#workspace-export-tab').click();
+      await page.waitForFunction(()=>!document.getElementById('download-zip').disabled);
       return page;
     }
 
@@ -135,7 +141,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     const downloadEvent = exported.waitForEvent('download');
     await exported.locator('#download-zip').click();
     const downloaded = await downloadEvent;
-    assert.equal(downloaded.suggestedFilename(), 'integration-navigator-synthetic-tenant.zip');
+    assert.equal(downloaded.suggestedFilename(), 'integration-navigator-11111111-2222-4333-8444-555555555555.zip');
     await exported.locator('#save-zip').waitFor();
     worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 15000 });
     const chunks = [];
@@ -165,8 +171,8 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
         assert.equal(data.version, null);
         assert.equal(data.requestedRoute, /_v(\d+)\.json$/.exec(name)[1]);
       }
-      if (name === 'Owned Package/Integration_v0.json') assert.equal(JSON.parse(bytes.subarray(start, start + size)).version, '0.9.0');
-      if (name === 'Owned Package/Integration_v1.json') assert.equal(JSON.parse(bytes.subarray(start, start + size)).version, '1.0.0');
+      if (name.endsWith('/Owned Package/Integration_v0.json')) assert.equal(JSON.parse(bytes.subarray(start, start + size)).version, '0.9.0');
+      if (name.endsWith('/Owned Package/Integration_v1.json')) assert.equal(JSON.parse(bytes.subarray(start, start + size)).version, '1.0.0');
       if (name === 'Owned Package/Function.js') assert.equal(bytes.subarray(start, start + size).toString(), '// Synthetic source\nfunction transform(message) { return message; }\n');
       offset = start + size;
     }
@@ -201,7 +207,7 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     // A source reload cannot silently retarget an existing launch to the replacement document.
     // Opt-out deliberately clears saved observations; restore only this synthetic fixture for the next case.
     await worker.evaluate(() => chrome.storage.local.set({ sharedFromEnabled: true, designerOwnershipCache: {
-      'synthetic-tenant': { environment: 'synthetic-production', packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
+      '11111111-2222-4333-8444-555555555555': { environment: 'synthetic-production', packages: [{ name: 'Owned Package', pipelines: ['Integration', 'API', 'Sub'], transformFunctions: ['Function'] }] },
     } }));
     const stale = await openExport();
     const staleDownload = stale.waitForEvent('download');
@@ -217,12 +223,12 @@ window.enterPackages=()=>{history.pushState({},'','${packagesPath}');dispatchEve
     const switchedDownload = switched.waitForEvent('download');
     await switched.locator('#download-zip').click();
     await switchedDownload;
-    await source.evaluate(() => { owner.context.tenantId = 'different-synthetic-tenant'; });
+    await source.evaluate(() => { owner.context.tenantId = 'different-11111111-2222-4333-8444-555555555555'; });
     await switched.locator('#save-zip').click();
     await switched.locator('#export-status').filter({ hasText: 'The source page, tenant, or consent changed.' }).waitFor();
     assert.equal(await switched.locator('#save-zip').isHidden(), true);
     assert.equal(await source.evaluate(() => stats.sources), 7);
-    await source.evaluate(() => { owner.context.tenantId = 'synthetic-tenant'; });
+    await source.evaluate(() => { owner.context.tenantId = '11111111-2222-4333-8444-555555555555'; });
     // Closing the original tab retires its worker grant; retry cannot escape through a local blob link.
     const closed = await openExport();
     const closedDownload = closed.waitForEvent('download');
