@@ -64,7 +64,12 @@ function installStub() {
       assert.equal(await page.locator('.favorite-appearance-controls > .setting-title').textContent(), 'Favorites');
       // Task names do not repeat as headings; retain only distinct subgroup titles.
       assert.equal(await page.locator('#panel-sharing > h2, #panel-sites > h2').count(), 0);
-      assert.deepEqual(await page.locator('#panel-export h2').allTextContents(), ['Export Workspace', 'Backup & Restore']);
+      assert.deepEqual(await page.locator('#panel-export h2').allTextContents(), ['Git Connections', 'Export Configuration', 'Preview & Export', 'Backup & Restore']);
+      assert.deepEqual(await page.locator('.export-launcher-card > .card-description').allTextContents(),['Configure your GitHub or GitLab repository and access token.','Choose folders, file types, and versions.','Select records, review files, then download a ZIP or push to Git.']);
+      // Compare shared geometry and button treatment, allowing descriptions to wrap naturally.
+      await task('Export');
+      const cards=await page.locator('.export-launcher-card').evaluateAll(nodes=>nodes.map(node=>{const style=getComputedStyle(node),button=node.querySelector('button'),box=node.getBoundingClientRect();return {left:box.left,width:box.width,padding:style.padding,border:style.borderRadius,buttonWidth:button.getBoundingClientRect().width};}));
+      assert.equal(cards.length,3); assert.deepEqual(cards[0],cards[1]); assert.deepEqual(cards[1],cards[2]);
       // Setup actions precede the source-bound launcher in reading order, not only through CSS.
       assert.deepEqual(await page.locator('#panel-export button').evaluateAll(nodes=>nodes.slice(0,3).map(node=>node.id)),['manage-git','configure-export','export-pipelines']);
 
@@ -163,7 +168,7 @@ function installStub() {
         assert.equal(await page.locator('#export-pipelines').isDisabled(), current !== 'designer');
         // Keep the explanatory hint readable before the unavailable card, not below its action.
         if (current !== 'designer') {
-          assert.equal(await page.locator('#pipeline-export-availability').innerText(),'Open Integration Designer or API Designer to enable Export Workspace.');
+          assert.equal(await page.locator('#pipeline-export-availability').innerText(),'Open Integration Designer or API Designer to enable Preview & Export.');
           assert.equal(await page.evaluate(()=>document.querySelector('#pipeline-export-availability').getBoundingClientRect().bottom <= document.querySelector('#pipeline-export-section').getBoundingClientRect().top),true);
           const noticeStyle=await page.locator('#pipeline-export-availability').evaluate(node=>{const style=getComputedStyle(node);return {weight:style.fontWeight,color:style.color};});
           assert.deepEqual(noticeStyle,{weight:'700',color:colorScheme==='dark'?'rgb(255, 180, 171)':'rgb(155, 28, 28)'});

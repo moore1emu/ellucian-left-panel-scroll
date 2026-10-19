@@ -20,9 +20,9 @@
     button.disabled = opening || !allowed;
     document.querySelector('#pipeline-export-section').classList.toggle('is-unavailable', !allowed);
     // Keep: ordinary settings never advertise the hidden Packages source or shortcut (3.1.5).
-    availability.textContent = !tools ? 'Enable Export Tools in General.' : allowed ? '' : 'Open Integration Designer or API Designer to enable Export Workspace.';
+    availability.textContent = !tools ? 'Enable Export Tools in General.' : allowed ? '' : 'Open Integration Designer or API Designer to enable Preview & Export.';
     availability.hidden = !tools || allowed;
-    document.querySelector('#export-source-description').textContent = allowed ? `${kind === 'api-designer' ? 'API Designer' : packages ? 'Integration Packages' : 'Integration Designer'} · Opens in a new tab.` : 'Choose definitions, review folders, then download or push to Git.';
+    // Report presentation availability only; worker/document checks remain authoritative.
     return allowed;
   }
   document.addEventListener('settings-context-changed', updateAvailability);
@@ -56,11 +56,11 @@
       const response = await chrome.runtime.sendMessage({ type: 'pipeline-export-open', sourceKind:kind, exportMode:kind === 'designer' ? 'both' : 'published',
         initialView:view, packagesRevealed:packagesConfirmed, overrideConfirmed:kind === 'packages' && packagesConfirmed });
       if (!response?.ok) throw new Error('open-failed');
-      status.textContent = 'Export workspace opened in a new tab.';
+      status.textContent = 'Preview & Export opened in a new tab.';
       packagesConfirmed = false;
     } catch {
       // Do not print service errors, URLs, names, or credentials into diagnostic logs.
-      status.textContent = 'Could not open export workspace. Refresh the source page, then reopen settings.';
+      status.textContent = 'Could not open Preview & Export. Refresh the source page, then reopen settings.';
     } finally {
       opening = false;
       updateAvailability();

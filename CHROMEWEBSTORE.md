@@ -1,6 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-19 · Candidate: 3.1.6 · Status: Git layout test candidate, not submitted
+Updated: 2026-10-19 · Candidate: 3.1.7 · Status: Git layout test candidate, not submitted
+
+3.1.7 preparation: matching popup cards explain Git Connections, Export Configuration and Preview & Export, with consistent Open buttons. This clarifies connection setup, file configuration and the export workflow without changing permissions, consent, credentials or source/provider operations. Refresh popup screenshots before a future submission; no store update is authorized.
 
 3.1.6 preparation: Git Connections and Export Configuration now precede the workspace launcher in popup visual/keyboard order. Consent, authorization, permissions, credentials and backup behavior are unchanged. Refresh the popup screenshot before any future submission.
 

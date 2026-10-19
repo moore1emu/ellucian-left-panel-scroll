@@ -1,5 +1,11 @@
 # Update history
 
+## 3.1.7 — October 19, 2026
+
+- Rename the popup action to Preview & Export. Use three matching cards with headings, short task descriptions and full-width Open buttons: Git Connections for the repository/token, Export Configuration for folders/file types/versions, and Preview & Export for record selection, file review, ZIP download and reviewed Git push.
+- Keep task descriptions stable while the popup header identifies the connected page. Associate each button with its description for assistive technology; preserve card order, the bold red unavailable-page hint above Preview & Export, hidden confirmed Packages access and independent Backup & Restore.
+- Preserve button IDs, source-bound tickets, first-save configuration review, credentials, favorites and all export/provider safeguards. This is a presentation change, not an authorization change or store release.
+
 ## 3.1.6 — October 19, 2026
 
 - Move Git Connections and Export Configuration above Export Workspace in the settings popup, including its keyboard/reading order. Preserve existing button identities, launch behavior and independent Backup & Restore.

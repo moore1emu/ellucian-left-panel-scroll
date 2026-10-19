@@ -45,7 +45,8 @@ window.webpackChunkdata_connect_designer=[];window.webpackChunkdata_connect_desi
       await popup.evaluate(async()=>{await PopupTabs.refreshContext();PopupTabs.select('export');});
       await popup.waitForFunction(()=>!document.querySelector('#export-pipelines').disabled);
       assert.equal(await popup.locator('#export-source, #export-version-mode').count(),0,'Source and version controls belong to the workspace');
-      assert.match(await popup.locator('#export-source-description').innerText(),kind==='designer'?/Integration Designer/:/API Designer/);
+      assert.match(await popup.locator('#settings-context').innerText(),kind==='designer'?/Integration Designer/:/API Designer/);
+      assert.equal(await popup.locator('#export-source-description').innerText(),'Select records, review files, then download a ZIP or push to Git.');
       // Retain requested visual checks outside the shared repository; normal runs create no images.
       const artifacts=process.env.INTEGRATION_NAVIGATOR_SCREENSHOTS;
       if(artifacts){

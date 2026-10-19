@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v3 test candidate (3.1.6):** Settings → Export puts Git Connections and Export Configuration above Open Export Workspace. The connected source page is detected automatically; version/file choices live in the workspace. Review/save tenant-specific defaults before ZIP or Git preparation. Favorites Backup & Restore stays in settings. V2 remains independent. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). This is not a store release.
+> **v3 test candidate (3.1.7):** Settings → Export explains Git Connections, Export Configuration and Preview & Export in three matching cards. Configure your repository/token, choose folders/file types/versions, then select and review records before ZIP download or Git push. Favorites Backup & Restore stays independent. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). V2 remains unchanged; this is not a store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -9,7 +9,7 @@ Make Ellucian Integration Packages and Integration Designer easier to navigate i
 ## What It Does
 
 - Choose Navigation Tools, Export Tools, or both in General; turning a group off keeps saved data. Backup/restore always remains available.
-- V3: export Integration Designer drafts/published definitions or API Designer published definitions, with tenant-name folders matched by tenant ID. See [current source setup](docs/Git-Export.md#current-source-workflow-315).
+- V3: export Integration Designer drafts/published definitions or API Designer published definitions, with tenant-name folders matched by tenant ID. See [current source setup](docs/Git-Export.md#current-source-workflow-317).
 - Scroll and resize the package sidebar independently of the main page.
 - Search package and pipeline names, even with different spacing or separators.
 - Pin packages and published pipelines, then drag favorites into your preferred order.
