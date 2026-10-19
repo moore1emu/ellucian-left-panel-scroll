@@ -1,6 +1,6 @@
 # v3 Development — Git Export
 
-Checkpoint: **3.1.7 functional Git test candidate**, not a store release. The popup now launches the workspace for its connected source, with direct Git Connections/Export Configuration shortcuts and independent Backup & Restore. Designer launches both states; reviewed configuration narrows them. Source-bound tickets, first-save review, hidden Packages consent, native guards, credentials and separate Git upload confirmation remain intact. Earlier placement/ID-first/default-formatting notes below are historical; see [Git Export](Git-Export.md) for current behavior.
+Checkpoint: **3.1.8 functional Git test candidate**, not a store release. The popup now launches the workspace for its connected source, with direct Git Connections/Export Configuration shortcuts and independent Backup & Restore. Designer launches both states; reviewed configuration narrows them. Source-bound tickets, first-save review, hidden Packages consent, native guards, credentials and separate Git upload confirmation remain intact. Earlier placement/ID-first/default-formatting notes below are historical; see [Git Export](Git-Export.md) for current behavior.
 
 ## Branch and Release Boundaries
 

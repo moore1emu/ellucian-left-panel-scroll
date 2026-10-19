@@ -1,12 +1,12 @@
 # Git Export — V3 Test Candidate
 
-Version 3.1.7 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
+Version 3.1.8 is the manual GitHub/GitLab export test candidate. It is separate from v2 and is not published to the store. Automated tests use synthetic services; a live push requires the owner's separate approval.
 
-## Current Workspace (3.1.7)
+## Current Workspace (3.1.8)
 
-Settings → Export has three matching cards. Git Connections configures the GitHub/GitLab repository and access token. Export Configuration chooses folders, file types and versions; it does not download or push files. Preview & Export selects records, previews their files and starts a ZIP download or separately confirmed Git push. Each card has its own Open button; Git is optional for ZIP downloads.
+Settings → Export has matching Git Connections, Export Configuration, Preview & Export and Backup & Restore cards, in that order. Git Connections configures the GitHub/GitLab repository and access token. Export Configuration chooses folders, file types and versions; it does not download or push files. Preview & Export selects records, previews their files and starts a ZIP download or separately confirmed Git push. Backup & Restore retains independent JSON export/import and confirmation controls. Git is optional for ZIP downloads.
 
-Open Preview & Export detects the connected Integration Designer or API Designer page and opens a normal browser tab. Setup shortcuts keep that verified source attached when available; on other pages they open setup only, without source access. Favorites/saved-source Backup & Restore stays in settings and works independently of Export Tools. A bold red hint above Preview & Export explains when a supported source page is needed; hidden Packages export still requires confirmed Shift+D.
+Open Preview & Export detects the connected Integration Designer or API Designer page and opens a normal browser tab. Setup shortcuts keep that verified source attached when available; on other pages they open setup only, without source access. Favorites/saved-source Backup & Restore stays in settings and works independently of Export Tools. A bold red hint at the top of the Export panel explains when a supported source page is needed; hidden Packages export still requires confirmed Shift+D.
 
 Export, Git Connections and Export Configuration are tabs in one extension-owned workspace. Switching tabs keeps the source document grant and selection; opening Git setup independently still works. GitHub currently supports github.com; GitLab supports gitlab.com and custom HTTPS origins. No credential is copied into the JSON editor.
 
@@ -24,7 +24,7 @@ Folder Config Override (JSON) uses pinned, locally bundled Ace 1.43.3 with JSON 
 
 IntegrationPackages stays absent until the session's confirmed Shift+D reveal. Existing hidden settings survive ordinary saves/reset. Its configuration card supports its root folder; the existing optional Packages formatted-copy choice stays on its Export view. API Designer has a folder setting only. Source consent, six-reader budget and separate reviewed Git upload confirmation are unchanged.
 
-The older checkpoint sections below describe earlier releases where placement/default behavior differs; this section is authoritative for 3.1.7.
+The older checkpoint sections below describe earlier releases where placement/default behavior differs; this section is authoritative for 3.1.8.
 
 ## Repository Locations
 
@@ -68,7 +68,7 @@ Every save requires re-entering the access token, including changes to the base 
 
 GitHub Token Settings and GitLab Token Instructions expand optional setup checklists; both start collapsed. GitHub uses a selected-repository fine-grained token with Contents read/write. The GitLab example uses a project token with api scope and Developer access to an unprotected export branch; creating it requires Maintainer/Owner, and GitLab.com project tokens require Premium/Ultimate. Your organization's restrictions still apply. Token values belong only in the extension field, never support messages.
 
-## Current Source Workflow (3.1.7)
+## Current Source Workflow (3.1.8)
 
 Enable Export Tools in General first. Navigation Tools may stay off; export uses native lists/identity without adding favorites, search or sharing columns. Disabling Export keeps encrypted connections but blocks new source/provider requests and clears transient previews. It cannot recall requests already sent. Backup/restore stays usable with either group off.
 

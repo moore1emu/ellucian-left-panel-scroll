@@ -1,5 +1,10 @@
 # Update history
 
+## 3.1.8 — October 19, 2026
+
+- Style Backup & Restore as the fourth matching Export settings card, retaining its description, JSON export/import, import preview/confirmation and recovery controls. It remains available independently of Export Tools and the current source page.
+- Move the existing bold red unavailable-page hint to the top of the Export panel. Keep Git Connections, Export Configuration, Preview & Export and Backup & Restore in their existing order; Preview & Export stays third. No source/consent/configuration/credential/backup-data behavior changes.
+
 ## 3.1.7 — October 19, 2026
 
 - Rename the popup action to Preview & Export. Use three matching cards with headings, short task descriptions and full-width Open buttons: Git Connections for the repository/token, Export Configuration for folders/file types/versions, and Preview & Export for record selection, file review, ZIP download and reviewed Git push.

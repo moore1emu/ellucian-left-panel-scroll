@@ -1,6 +1,8 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-19 · Candidate: 3.1.7 · Status: Git layout test candidate, not submitted
+Updated: 2026-10-19 · Candidate: 3.1.8 · Status: Git layout test candidate, not submitted
+
+3.1.8 preparation: Backup & Restore shares the matching Export card treatment; the red unavailable-page hint moves above all cards. Preview & Export remains third. No data, permission, consent, credential or source/provider behavior changes. Refresh settings screenshots before future submission; no store action is authorized.
 
 3.1.7 preparation: matching popup cards explain Git Connections, Export Configuration and Preview & Export, with consistent Open buttons. This clarifies connection setup, file configuration and the export workflow without changing permissions, consent, credentials or source/provider operations. Refresh popup screenshots before a future submission; no store update is authorized.
 

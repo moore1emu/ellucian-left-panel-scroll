@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- At 3.1.8 the owner made Backup & Restore the fourth matching Export card and moved only the existing bold red page hint above all cards. Keep Preview & Export third, stable control IDs, independent backup availability/data/confirmation/recovery behavior and existing source/consent/credential guards. Next checkpoint is 3.1.9; no main/store change.
+
 - At 3.1.7 the owner approved Preview & Export as the popup action name and three matching Git Connections / Export Configuration / Preview & Export cards, each with a concise explanation and Open button. Connection setup selects repository/token; configuration controls folders/types/versions; Preview & Export selects/reviews records and starts ZIP or separately confirmed Git export. Keep stable button IDs/descriptions, visual/keyboard order, bold red page hint, existing source/consent gates and independent backups. Next checkpoint is 3.1.8; no authorization change or main/store update.
 
 - At 3.1.6 the owner moved Git Connections and Export Configuration above the popup workspace launcher. Preserve DOM/keyboard order with that layout, existing source gates and confirmed hidden Shift+D Packages access. This is a placement change, not permission to enable unbound exports. Next checkpoint is 3.1.7; the 3.1.5 standalone Return to Export installed-test limitation remains recorded separately.

@@ -263,6 +263,8 @@
         <!-- Keep: backups remain in the final task tab, independent of page-specific source/export availability (2.1.3). -->
         <section id="panel-export" class="settings-card settings-panel backup-card" role="tabpanel" aria-labelledby="tab-export" hidden>
           <p id="export-tools-notice" class="card-description" hidden>Enable Export Tools in General.</p>
+          <!-- Keep the unavailable-page explanation first without moving the export actions themselves. -->
+          <p id="pipeline-export-availability" class="card-description" hidden>Open Integration Designer or API Designer to enable Preview &amp; Export.</p>
           <!-- Put setup first in both visual and keyboard order; credentials remain in the workspace. -->
           <div class="git-connection-section">
             <!-- Describe connection setup separately from file configuration and export actions. -->
@@ -277,8 +279,6 @@
               <button id="configure-export" type="button" aria-describedby="export-configuration-description">Open Export Configuration</button>
             </div>
           </div>
-          <!-- Explain the unavailable action before its dimmed card, without revealing hidden source access. -->
-          <p id="pipeline-export-availability" class="card-description" hidden>Open Integration Designer or API Designer to enable Preview &amp; Export.</p>
           <!-- Open metadata only; source reads require ZIP or Git preparation in the separate export tab. -->
           <div class="pipeline-export-section export-launcher-card" id="pipeline-export-section">
             <h2>Preview &amp; Export</h2>
@@ -287,26 +287,28 @@
             <p id="pipeline-export-status" class="icon-status" role="status" aria-live="polite"></p>
           </div>
           <!-- JSON backups remain independent of ZIP pipeline downloads. -->
-          <h2 id="backup-title">Backup &amp; Restore</h2>
-          <p class="card-description">Back up favorites and saved sources.</p>
-          <button id="export-shared-from" type="button" aria-label="Export Favorites and Shared From JSON" title="Back up tenant favorites and saved Designer sources">Export Backup JSON</button>
-          <button id="import-favorites" type="button">Import Backup JSON</button>
-          <input id="backup-file" type="file" accept=".json,application/json" hidden />
-          <div id="backup-preview" hidden>
-            <p id="backup-summary" class="card-description"></p>
-            <label class="search-display-control" for="backup-mode"><span>Favorites</span>
-              <select id="backup-mode"><option value="merge">Merge (Keep Existing Order)</option><option value="replace">Replace Matching Lists</option></select>
-            </label>
-            <label class="card-description"><input id="backup-sources" type="checkbox" /> Also Restore Shared From Data</label>
-            <p class="card-description">Shared From must be enabled first. No settings or site permissions change.</p>
-            <button id="confirm-backup" type="button">Import Backup</button>
-            <button id="cancel-backup" type="button">Cancel</button>
+          <div class="export-launcher-card" id="backup-restore-section">
+            <h2 id="backup-title">Backup &amp; Restore</h2>
+            <p class="card-description" id="backup-description">Back up favorites and saved sources.</p>
+            <button id="export-shared-from" type="button" aria-describedby="backup-description" aria-label="Export Favorites and Shared From JSON" title="Back up tenant favorites and saved Designer sources">Export Backup JSON</button>
+            <button id="import-favorites" type="button" aria-describedby="backup-description">Import Backup JSON</button>
+            <input id="backup-file" type="file" accept=".json,application/json" hidden />
+            <div id="backup-preview" hidden>
+              <p id="backup-summary" class="card-description"></p>
+              <label class="search-display-control" for="backup-mode"><span>Favorites</span>
+                <select id="backup-mode"><option value="merge">Merge (Keep Existing Order)</option><option value="replace">Replace Matching Lists</option></select>
+              </label>
+              <label class="card-description"><input id="backup-sources" type="checkbox" /> Also Restore Shared From Data</label>
+              <p class="card-description">Shared From must be enabled first. No settings or site permissions change.</p>
+              <button id="confirm-backup" type="button">Import Backup</button>
+              <button id="cancel-backup" type="button">Cancel</button>
+            </div>
+            <div id="legacy-favorites" hidden>
+              <p id="legacy-summary" class="card-description"></p>
+              <button id="assign-favorites" type="button">Use Old Favorites for This Tenant</button>
+            </div>
+            <p id="backup-status" class="icon-status" role="status" aria-live="polite"></p>
           </div>
-          <div id="legacy-favorites" hidden>
-            <p id="legacy-summary" class="card-description"></p>
-            <button id="assign-favorites" type="button">Use Old Favorites for This Tenant</button>
-          </div>
-          <p id="backup-status" class="icon-status" role="status" aria-live="polite"></p>
         </section>
       </div>
 
