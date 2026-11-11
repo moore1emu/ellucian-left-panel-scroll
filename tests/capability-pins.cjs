@@ -7,9 +7,11 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const origin = 'https://experience-test.elluciancloud.com';
+const customOrigin = 'https://experience.school.example';
+const unapproved = 'https://other.experience.school.example';
 
 // Model the native header, lazy drawer and SVG sprite observed on Experience Home and its capability pages.
-function fixture(base, homeOverlay = false) {
+function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
   const apps = [
     ['Designer', base + 'app/all-accounts/Ellucian/data-connect-designer/', 'design'],
     ['Packages', base + 'app/all-accounts/Ellucian/data-connect/home', 'packages'],
@@ -18,10 +20,11 @@ function fixture(base, homeOverlay = false) {
     ['Parameter link', base + 'app/all-accounts/example?state=example', 'missing'],
     ['Other tenant', '/different/app/all-accounts/example', 'missing']
   ];
-  return '<!doctype html><meta charset="utf-8"><style>#experience-header,#actions{display:flex;align-items:center}#spacer{flex:1}#home-cover{position:absolute;inset:0 0 auto;height:44px}#actions,#experience-header>a{position:relative;z-index:1}[role=presentation]{position:relative;z-index:2}</style>' +
+  return '<!doctype html><meta charset="utf-8"><base target="_blank"><script>window.__PRELOADED_STATE__='+JSON.stringify({tenant})+'</script>' +
+    '<style>#experience-header,#actions{display:flex;align-items:center}#actions>div{margin-inline:8px}#actions button{box-sizing:border-box;width:40px;height:40px}#spacer{flex:1}#home-cover{position:absolute;inset:0 0 auto;height:44px}#actions,#experience-header>a{position:relative;z-index:1}[role=presentation]{position:relative;z-index:2}</style>' +
     '<svg width="0" height="0"><defs><symbol id="ds-icon-design" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></symbol>' +
     '<symbol id="ds-icon-packages" viewBox="0 0 24 24"><rect width="24" height="24"/></symbol></defs></svg>' +
-    '<div id="experience-header"><a aria-label="Home home" href="'+base+'">Home</a><span id="spacer"></span>' +
+    '<div id="experience-header"><a aria-label="Home home" target="_self" href="'+base+'">Home</a><span id="spacer"></span>' +
     '<div id="actions"><div><button id="calendar-btn">Tasks</button></div><div><button id="notifications-btn">Notifications</button></div>' +
     '<div><button id="grid-btn">Capabilities</button></div></div><button>Account</button></div><main></main>' + (homeOverlay ? '<div id="home-cover"></div>' : '') +
     '<template id="drawer"><div role="presentation"><section><header><h2 id="applicationsHeader">Capabilities</h2><button id="close">Close</button></header><ul>' +
@@ -35,18 +38,37 @@ function fixture(base, homeOverlay = false) {
   const profile = fs.mkdtempSync(path.join(temp, 'navigator-capabilities-'));
   let context;
   try {
+    // Install the production scripts with a disposable manifest that pre-grants just the synthetic school site.
+    // The actual worker must register its scripts dynamically; no static match is added for the school.
+    const extension = path.join(profile, 'fixture-extension');
+    fs.mkdirSync(extension);
+    for (const name of fs.readdirSync(root)) {
+      if (!name.startsWith('.env') && /\.(css|html|js|json)$/.test(name)) fs.copyFileSync(path.join(root,name), path.join(extension,name));
+    }
+    fs.cpSync(path.join(root,'icons'), path.join(extension,'icons'), {recursive:true});
+    const manifestFile = path.join(extension,'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestFile,'utf8'));
+    manifest.permissions.push('scripting');
+    manifest.optional_permissions = manifest.optional_permissions.filter(name => name !== 'scripting');
+    manifest.host_permissions = [customOrigin+'/*'];
+    fs.writeFileSync(manifestFile,JSON.stringify(manifest));
     context = await chromium.launchPersistentContext(profile, {
       headless: true,
       ...(process.env.INTEGRATION_NAVIGATOR_BROWSER ? { channel: process.env.INTEGRATION_NAVIGATOR_BROWSER } : {}),
-      args: ['--disable-extensions-except='+root, '--load-extension='+root]
+      args: ['--disable-extensions-except='+extension, '--load-extension='+extension]
     });
     // Fulfill synthetic Experience documents locally and reject any extra network request.
     const unexpected = [];
+    let rootTenant = 'school-one';
     await context.route('**/*', route => {
       const url = new URL(route.request().url());
       if (url.protocol === 'chrome-extension:') return route.continue();
       if (url.origin === origin && route.request().isNavigationRequest()) {
         return route.fulfill({ contentType: 'text/html', body: fixture('/'+url.pathname.split('/')[1]+'/', /^\/[^/]+\/?$/.test(url.pathname)) });
+      }
+      if ([customOrigin, unapproved].includes(url.origin) && route.request().isNavigationRequest()) {
+        const mount = url.pathname.startsWith('/portal/east/') ? '/portal/east/' : '/';
+        return route.fulfill({contentType:'text/html', body:fixture(mount,url.pathname===mount,rootTenant)});
       }
       unexpected.push(url.origin);
       return route.abort();
@@ -77,6 +99,14 @@ function fixture(base, homeOverlay = false) {
     assert.equal(await shortcut(home,'Reports').innerText(), 'Reports');
     assert.equal(await shortcut(home,'Designer').getAttribute('title'), 'Designer');
     await home.getByRole('button',{name:'Close'}).click();
+    // The last favorite and Tasks must be as far apart as Tasks and Notifications.
+    const spacing = await home.evaluate(() => {
+      const boxes = [...document.querySelectorAll('.inav-cap-pins a, #calendar-btn, #notifications-btn')].map(el=>el.getBoundingClientRect());
+      const icon = document.querySelector('.inav-cap-pins svg');
+      return [boxes[1].left-boxes[0].right, boxes[2].left-boxes[1].right, boxes[3].left-boxes[2].right,
+        icon.parentElement.getBoundingClientRect().width, icon.getBoundingClientRect().width];
+    });
+    assert.deepEqual(spacing,[16,16,16,40,24]);
     await home.reload();
     await shortcut(home,'Designer').waitFor();
     await shortcut(home,'Designer').focus();
@@ -133,6 +163,64 @@ function fixture(base, homeOverlay = false) {
     await star(home,'Reports').click();
     await packages.locator('.inav-cap-pins').waitFor({state:'detached'});
 
+    // Exercise the actual worker registration on a granted custom domain and deny its unapproved subdomain.
+    const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
+    const registered = await worker.evaluate(async custom => {
+      await CustomSites.sync();
+      const entries = await chrome.scripting.getRegisteredContentScripts();
+      return entries.some(entry => entry.matches.includes(custom+'/*') &&
+        entry.js?.includes('capability-pins.js') && entry.css?.includes('capability-pins.css'));
+    },customOrigin);
+    assert.ok(registered);
+    const college = await context.newPage();
+    college.setDefaultTimeout(6000);
+    const tabCount = context.pages().length;
+    await college.goto(customOrigin+'/');
+    await college.getByRole('button',{name:'Capabilities'}).click();
+    await star(college,'Reports').click();
+    await shortcut(college,'Reports').waitFor();
+    await college.getByRole('button',{name:'Close'}).click();
+    await shortcut(college,'Reports').click();
+    await college.waitForURL(customOrigin+'/app/all-accounts/Ellucian/Insights%20Reporting/browseInsights');
+    await shortcut(college,'Reports').waitFor();
+    assert.equal(context.pages().length,tabCount);
+    await college.getByRole('button',{name:'Capabilities'}).click();
+    const nativePackages = college.getByRole('link',{name:'Packages',exact:true});
+    await nativePackages.press('Enter');
+    await college.waitForURL(customOrigin+'/app/all-accounts/Ellucian/data-connect/home');
+    assert.equal(context.pages().length,tabCount);
+    await shortcut(college,'Reports').waitFor();
+    // Two tenants can share the same root URL. Neither a new tenant nor a missing identity inherits a pin.
+    rootTenant = 'school-two';
+    await college.goto(customOrigin+'/');
+    await college.getByRole('button',{name:'Capabilities'}).click();
+    await star(college,'Reports').waitFor();
+    assert.equal(await star(college,'Reports').getAttribute('aria-pressed'),'false');
+    assert.equal(await shortcut(college,'Reports').count(),0);
+    rootTenant = '';
+    await college.reload();
+    await college.getByRole('button',{name:'Capabilities'}).click();
+    await college.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(await college.locator('.inav-cap-star,.inav-cap-pins').count(),0);
+    rootTenant = 'school-one';
+    await college.goto(customOrigin+'/');
+    await shortcut(college,'Reports').waitFor();
+    // A nested Home path on the same custom host has its own list and does not need a root-site identity.
+    rootTenant = '';
+    await college.goto(customOrigin+'/portal/east/');
+    await college.getByRole('button',{name:'Capabilities'}).click();
+    await star(college,'Designer').click();
+    await shortcut(college,'Designer').waitFor();
+    assert.equal(await shortcut(college,'Reports').count(),0);
+    await college.getByRole('button',{name:'Close'}).click();
+    await shortcut(college,'Designer').press('Enter');
+    await college.waitForURL(customOrigin+'/portal/east/app/all-accounts/Ellucian/data-connect-designer/');
+    await shortcut(college,'Designer').waitFor();
+    assert.equal(context.pages().length,tabCount);
+    await college.goto(unapproved+'/portal/east/');
+    await college.getByRole('button',{name:'Capabilities'}).click();
+    assert.equal(await college.locator('.inav-cap-star,.inav-cap-pins').count(),0);
+
     // Repeat a pin after a failed write, using the production script with a failing storage fixture.
     const failed = await context.newPage();
     await failed.route('https://viewer.invalid/sample/', route => route.fulfill({contentType:'text/html',body:fixture(base)}));
@@ -176,7 +264,7 @@ function fixture(base, homeOverlay = false) {
     await shortcut(failed,'Designer').waitFor();
 
     assert.deepEqual(unexpected, []);
-    console.log('PASS Capabilities: independent stars, SVG and name shortcuts, keyboard navigation, reload, both concurrent pins, Home overlay, Reporting and other capability routes, tenant separation, header replacement, native controls and unpin.');
+    console.log('PASS Capabilities: independent stars, SVG and name shortcuts, keyboard navigation, reload, both concurrent pins, custom-site registration, root and nested Home paths, same-tab navigation, native icon spacing, Home overlay, Reporting and other capability routes, tenant separation, header replacement, native controls and unpin.');
   } finally {
     try { await context?.close(); }
     finally {

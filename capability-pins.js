@@ -7,16 +7,55 @@
   let pins = null, appearance, iconAppearance, strip = null, signature = '';
   const pending = new WeakSet();
 
-  // Use the same tenant Home link on the landing page and throughout the native Capabilities apps.
-  function currentScope(header) {
+  let scopeCheck = 0;
+  let pendingRootRead;
+
+  // On a custom site with Home at "/", the path alone cannot distinguish tenants.
+  // Reuse the extension's existing same-document tenant lookup. Only the tenant ID crosses worlds.
+  function rootTenant(url) {
+    if (pendingRootRead?.url === url) return pendingRootRead.result;
+    const requestId = crypto.randomUUID();
+    const source = 'ellucian-left-panel-scroll';
+    const result = new Promise(resolve => {
+      function finish(tenant) {
+        clearTimeout(timeout);
+        window.removeEventListener('message', receive);
+        if (pendingRootRead?.requestId === requestId) pendingRootRead = null;
+        resolve(tenant);
+      }
+      function receive(event) {
+        const data = event.data;
+        if (event.source !== window || event.origin !== location.origin || data?.source !== source ||
+            data.type !== 'favorite-context-response' || data.requestId !== requestId) return;
+        const tenant = data.pageUrl === url && location.href === url && typeof data.tenantId === 'string' ? data.tenantId.trim() : '';
+        finish(tenant);
+      }
+      const timeout = setTimeout(() => finish(''), 1000);
+      window.addEventListener('message', receive);
+      window.postMessage({ source, type: 'favorite-context-request', requestId }, location.origin);
+    });
+    pendingRootRead = { url, requestId, result };
+    return result;
+  }
+
+  // Follow the native Home link so a custom domain may mount Experience at any depth.
+  function capabilityBase(header) {
     const home = header?.querySelector(':scope > a[href]');
-    if (!home || home.origin !== location.origin || home.protocol !== 'https:') return null;
+    if (!home || home.origin !== location.origin || home.protocol !== 'https:' || home.username || home.password) return null;
     const base = home.pathname.replace(/\/?$/, '/');
-    if (!/^\/[^/]+\/$/.test(base)) return null;
+    if (base.includes('//')) return null;
     const path = location.pathname;
     const isHome = path.replace(/\/?$/, '/') === base;
     if (!isHome && !path.startsWith(base + 'app/')) return null;
-    return { base, key: 'capabilityPins:' + location.origin + base };
+    return base;
+  }
+  async function currentScope(header) {
+    const base = capabilityBase(header);
+    if (!base) return null;
+    const key = 'capabilityPins:' + location.origin + base;
+    if (base !== '/') return { base, key };
+    const tenant = await rootTenant(location.href);
+    return tenant ? { base, key: key + ':tenant:' + tenant } : null;
   }
 
   // Only reuse ordinary app paths from this tenant. Never save URL parameters, fragments or remote icons.
@@ -66,7 +105,9 @@
     const focused = strip.contains(document.activeElement) ? document.activeElement.pathname : null;
     const links = items.map(item => {
       const link = document.createElement('a');
-      link.href = item.path;
+      link.href = new URL(item.path, location.origin).href;
+      // Experience can set the document-wide default to open links in a new tab.
+      link.target = '_self';
       link.title = item.name;
       link.setAttribute('aria-label', item.name);
       if (item.icon) {
@@ -89,7 +130,7 @@
   // Read the latest list inside a same-origin lock so clicks in two tabs cannot overwrite one another.
   async function toggle(event, button, link) {
     if (!event.isTrusted || pending.has(button) || !pins || !link?.isConnected) return;
-    const site = currentScope(document.getElementById('experience-header'));
+    const site = await currentScope(document.getElementById('experience-header'));
     if (!site || site.key !== scope?.key) return;
     const item = menuItem(link, site);
     if (!item) return;
@@ -111,6 +152,17 @@
       button.removeAttribute('aria-busy');
     }
   }
+
+  // A newly opened drawer can receive a click or Enter before its first animation frame.
+  // Set the native anchor's target at activation and leave the browser's modifier-key behavior intact.
+  document.addEventListener('click', event => {
+    const link = event.target.closest?.('li > a[href]');
+    const drawer = link?.closest('[role="presentation"]');
+    if (!drawer || !drawer.querySelector('#applicationsHeader')) return;
+    const header = document.getElementById('experience-header');
+    const base = header?.querySelector('#grid-btn') && capabilityBase(header);
+    if (base && menuItem(link, {base})) link.target = '_self';
+  }, true);
 
   // Attach a separate button so starring an app never activates the native link.
   function renderMenu() {
@@ -144,7 +196,10 @@
     frame = 0;
     const header = document.getElementById('experience-header');
     const grid = header?.querySelector('#grid-btn');
-    const site = grid ? currentScope(header) : null;
+    const check = ++scopeCheck;
+    const url = location.href;
+    const site = grid ? await currentScope(header) : null;
+    if (check !== scopeCheck || location.href !== url || (grid && !grid.isConnected)) return;
     if (scope?.key !== site?.key) {
       scope = site;
       pins = null;

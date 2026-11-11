@@ -4,7 +4,7 @@
 
 ## Capabilities favorites
 
-Open the nine-dot **Capabilities** menu on Experience Home or in a capability app such as Integration Packages, Integration Designer or Reporting & Analytics. Select the star beside an app to pin it. The app appears to the left of **Tasks** on Home and the other capability pages for that Experience site and tenant. Hover over its icon or focus it with the keyboard to see its name. If the icon is unavailable, the shortcut shows the app name. Select the shortcut to open the app. Select its star again to unpin it. Header favorites stay in this browser profile and use the tenant path in the Home link. The JSON backup covers package and pipeline favorites and saved sharing sources.
+Open the nine-dot **Capabilities** menu on Experience Home or in a capability app such as Integration Packages, Integration Designer or Reporting & Analytics. Select the star beside an app to pin it. The app appears to the left of **Tasks** on Home and the other capability pages for that Experience site and tenant. Hover over its icon or focus it with the keyboard to see its name. If the icon is unavailable, the shortcut shows the app name. Select a shortcut or a Capabilities menu link to open the app in the current tab. Select its star again to unpin it. Header favorites stay in this browser profile for the current site and Home path. When Home is at the domain root, the extension uses the tenant ID provided by Experience. The JSON backup covers package and pipeline favorites and saved sharing sources.
 
 ## Job Run Files
 
@@ -114,7 +114,7 @@ The previews reflect your choices. **Reset** restores the toolbar default; **Res
 
 ### Custom Sites
 
-Add your university's HTTPS Experience URL and allow access when prompted, then refresh the page. Setup finishes in the background even if settings close. Custom sites must use the normal Integration Packages/Designer page paths.
+Add your university's HTTPS Experience URL and allow access when prompted, then refresh the page. Setup finishes in the background even if settings close. The Capabilities stars and header shortcuts use your site's own Home link and app paths. For a site with Home at the domain root, Experience must provide the current tenant ID. The Packages and Designer tools use their normal page paths.
 
 Saved custom sites have a **Remove** button. Removing one revokes its optional access; refresh open pages to clear already-loaded controls. Its favorites and widths are retained if you add it again. Adding a different domain does not transfer another domain's favorites or widths. The two standard Experience sites stay enabled.
 
