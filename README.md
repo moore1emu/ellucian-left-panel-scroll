@@ -4,7 +4,7 @@ For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for deliv
 
 Make Ellucian Integration Packages and Integration Designer easier to navigate in Chrome and Microsoft Edge.
 
-After updating to **1.24.1**, open the toolbar popup for **What’s New** since the last store release. Dismiss the card when you’re done.
+After updating to **1.24.2**, open the toolbar popup for **What’s New** since the last store release. Dismiss the card when you’re done.
 
 Select the star to the left of an app’s icon in the nine-dot **Capabilities** menu to add its shortcut beside **Tasks** on Experience Home and across the tenant’s capability apps, including Reporting & Analytics, and on pages opened from Experience cards. The shortcuts match the native icon spacing and open in the current tab. The same controls work on Experience domains enabled under **Custom Sites**. Star an app again to remove it.
 

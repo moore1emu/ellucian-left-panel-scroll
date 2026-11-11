@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.24.2 — 2026-11-11
+
+- Shortened the What’s New notice to three bullets covering Capabilities favorites, the JSON and CSV viewer, and bug fixes.
+
 ## 1.24.1 — 2026-11-11
 
 - The settings popup now shows **What’s New** after an update, with highlights since the last store release. Select **Dismiss** to hide the notes for this version.
