@@ -1,5 +1,7 @@
 # Privacy Policy
 
+Job Run Files formats the preview already loaded by Ellucian in page memory. The browser stores only the Formatted view preference for this feature. File contents stay in the viewer.
+
 Current v3.1.4 configuration stores non-secret tenant/card folder preferences, version/file choices and explicit review-confirmation signatures locally, separately from credentials and favorites/source backups. ZIP and Git share these configured destinations, defaulting to tenant-name folders matched only by verified tenant ID. The bundled JSON editor runs locally without remote editor services or source uploads. Configuration editing never uploads files; Git still needs its separate reviewed confirmation. Older ID-first routing notes below describe historical candidates.
 
 This policy describes the separate v3.1.1 test candidate. Its optional Git workflow adds the consented uploads and credential storage below. The earlier offline design mockup remains a simulation, not the functional connection page. V2's release/policy and the live store listing are unchanged by this branch.

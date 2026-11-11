@@ -1,6 +1,6 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-19 · Candidate: 3.1.9 · Status: Git layout test candidate, not submitted
+Updated: 2026-11-11 · Candidate: 3.2.0 · Status: manual-test candidate
 
 3.1.9 preparation: Export uses matching flat task sections without card backgrounds, visible outlines or rounded corners. The red unavailable-page hint remains above all groups; Preview & Export stays third. No data, permission, consent, credential or source/provider behavior changes. Refresh settings screenshots before future submission; no store action is authorized.
 
@@ -102,6 +102,8 @@ Canonical policy: [PRIVACY.md](PRIVACY.md). Intended existing store policy URL: 
 No analytics, advertising, sale of data, unrelated use, or credit/lending use. No student records or execution data are requested. Review the current dashboard's data-use questions against this processing description; local use of website content must not be confused with an assertion that the extension never accesses content. Do not automatically submit certifications or infer unchecked data categories from the absence of publisher uploads.
 
 ## Reviewer Instructions
+
+Open a CSV or JSON in Job Run Files and toggle Formatted view. Reopen a preview to verify the remembered choice.
 
 These notes are for the reviewer/testing field and GitHub documentation, not the public store description. Do not provide real credentials, tokens, institution exports, or student data in this file. If the reviewer needs an account or institution-specific access, coordinate an approved test arrangement with the owner; do not invent one.
 

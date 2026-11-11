@@ -1,8 +1,12 @@
 # User Guide
 
-> This is the separate **3.1.9 Git test candidate**, based on v2.1.9. Settings → Export launches the workspace for the connected source page, or opens Git Connections/Export Configuration directly. Version/file choices are in Export Configuration; Favorites Backup & Restore stays in settings. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. The v2 release build is unchanged; live Git acceptance is still unverified.
+> This is the separate **3.2.0 Git test candidate**, based on v2.1.9. Settings → Export launches the workspace for the connected source page, or opens Git Connections/Export Configuration directly. Version/file choices are in Export Configuration; Favorites Backup & Restore stays in settings. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. Live Git acceptance is still unverified.
 
 If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
+
+## Job Run Files
+
+Open **View File** for a CSV or JSON job output. **Formatted view** starts on. CSV uses the first record for column headings and preserves quoted fields. Expand JSON objects and arrays to read their contents. Turn the switch off for the original text. Your browser remembers the choice for the next file. Large or invalid previews fall back to the original text. This viewer is part of **Navigation Tools**.
 
 ## Definition Export — Current v3 Candidate
 

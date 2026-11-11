@@ -7,6 +7,9 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "3.2.0": Object.freeze([
+      "Job Run Files displays CSV tables and collapsible JSON. Formatted view remembers your last choice.",
+    ]),
     // Describe the approved workspace without exposing the hidden Packages shortcut.
     "3.1.4": Object.freeze([
       "Export, Git Connections, and Export Configuration now share one tabbed workspace.",

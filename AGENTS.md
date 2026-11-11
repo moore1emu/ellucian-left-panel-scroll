@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- In 3.2.0, Job Run Files uses the open native editor for JSON and CSV. Keep the default-on Formatted view choice in local extension storage and preserve the original file for raw view.
+
 - At 3.1.9 the owner removed visible card chrome from Export while retaining all four groups, their geometry, controls and order. Keep the bold red page hint at the top, independent backups and all existing source/consent/configuration/credential guards. Next checkpoint is 3.2.0; no main/store change.
 
 - At 3.1.8 the owner made Backup & Restore the fourth matching Export card and moved only the existing bold red page hint above all cards. Keep Preview & Export third, stable control IDs, independent backup availability/data/confirmation/recovery behavior and existing source/consent/credential guards. Next checkpoint is 3.1.9; no main/store change.

@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v3 test candidate (3.1.9):** Settings → Export has matching flat Git Connections, Export Configuration, Preview & Export and Backup & Restore sections. The red source-page hint is above all four; Preview & Export stays third. Favorites backups remain independent of export access. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). V2 remains unchanged; this is not a store release.
+> **v3 test candidate (3.2.0):** Job Run Files now offers formatted CSV and JSON previews. Settings → Export has matching flat Git Connections, Export Configuration, Preview & Export and Backup & Restore sections. The red source-page hint is above all four; Preview & Export stays third. Favorites backups remain independent of export access. See [Git Setup](docs/Git-Export.md) and [v3 Development](docs/V3-Development.md). This candidate is available for manual testing.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -80,6 +80,7 @@ node tests/favorites-races.cjs
 node tests/backup-read-races.cjs
 node tests/settings-failures.cjs
 node tests/tenant-context.cjs
+node tests/job-file-viewer.cjs
 node tests/tenant-favorites-browser.cjs
 node tests/published-fitting-details.cjs
 node tests/browser-profile-cleanup.cjs

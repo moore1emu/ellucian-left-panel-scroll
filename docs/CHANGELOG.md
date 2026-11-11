@@ -1,5 +1,9 @@
 # Update history
 
+## 3.2.0 — 2026-11-11
+
+- Job Run Files opens CSV previews as tables and JSON previews with collapsible objects and arrays. The Formatted view switch defaults to on and remembers the last choice in this browser profile.
+
 ## 3.1.9 — October 19, 2026
 
 - Remove the Export settings groups' visible card backgrounds, outlines and rounded corners to match the other settings tabs. Preserve the headings, descriptions, button treatment, spacing and order.
