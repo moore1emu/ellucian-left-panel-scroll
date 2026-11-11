@@ -4,7 +4,7 @@
 
 ## Job Run Files
 
-Open **View File** for a CSV or JSON job output. **Formatted view** starts on. CSV uses the first record for column headings and preserves quoted fields. Expand JSON objects and arrays to read their contents. Turn the switch off for the original text. Your browser remembers the choice for the next file. Large or invalid previews fall back to the original text.
+Open **View File** for a CSV or JSON job output. **Formatted view** starts on beside **Close** at the bottom of the dialog. Scroll across wide files, or select **Wrap text** to fit long values to the available width. Wrapping starts off. CSV uses the first record for column headings and preserves quoted fields. Expand JSON objects and arrays to read their contents. Turn the switch off for the original text. Your browser remembers both choices for the next file. Large or invalid previews fall back to the original text.
 
 ## Getting Started
 

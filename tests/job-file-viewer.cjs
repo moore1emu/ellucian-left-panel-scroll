@@ -16,7 +16,7 @@ const html = '<!doctype html><meta charset="utf-8"><body><script src="/fixture-a
 async function checkStorageFailures(context) {
   const page = await context.newPage();
   const fixture = 'https://viewer.invalid/data-connect/jobDetail/test';
-  const markup = '<div role="dialog"><h2>File Output: test.csv</h2><div class="ace_editor" id="review-file">A,B</div></div>';
+  const markup = '<div role="dialog"><h2>File Output: test.csv</h2><div class="ace_editor" id="review-file">A,B</div><footer><button>Close</button></footer></div>';
   await page.route(fixture, r => r.fulfill({ contentType: 'text/html', body: markup }));
   await page.goto(fixture);
   const script = path.join(root, 'job-file-preference.js');
@@ -61,6 +61,18 @@ async function checkStorageFailures(context) {
   await control.click();
   await page.waitForFunction(() => document.querySelector('.inav-file-switch input')?.checked);
   assert.equal(await control.isEnabled(), true);
+  // A failed wrap save restores only wrapping; the native formatted-mode preference stays selected.
+  await page.reload();
+  await start('pending');
+  const wrap = page.getByRole('checkbox', {name: 'Wrap text'});
+  await wrap.check();
+  assert.equal(await wrap.isDisabled(), true);
+  await page.evaluate(() => fixtureStorage.reject(Error('Wrap save failed')));
+  await page.waitForFunction(() => {
+    const input = document.querySelector('.inav-file-switch input:not([role])');
+    return input && !input.disabled && !input.checked;
+  });
+  assert.equal(await control.isChecked(), true);
   await page.close();
 }
 
@@ -92,7 +104,7 @@ async function checkStorageFailures(context) {
       await page.evaluate(([name, source]) => {
         const outer = document.createElement('div');
         outer.setAttribute('role','dialog');
-        outer.innerHTML = '<div role="dialog"><h2>View File Output<span></span></h2><div id="review-file" style="width:600px;height:200px"></div><button>Close</button></div>';
+        outer.innerHTML = '<div role="dialog" style="width:min(560px,100%)"><h2>View File Output<span></span></h2><div id="review-file" style="width:100%;height:200px"></div><footer><button>Close</button></footer></div>';
         outer.querySelector('span').textContent = 'File Output: ' + name;
         document.body.append(outer);
         window.fixtureEditor = ace.edit('review-file');
@@ -113,8 +125,30 @@ async function checkStorageFailures(context) {
     assert.deepEqual(await panel.locator('tbody tr').first().locator('td').allTextContents(), ['Example','one, two\nthree "quotes"','']);
     assert.equal(await panel.locator('img').count(),0);
     assert.equal(await raw.isVisible(),false);
+    // The horizontal scroll range belongs to the preview; the footer stays fixed while reading wide records.
+    const wrap = page.getByRole('checkbox', {name: 'Wrap text'});
+    const footer = page.locator('footer');
+    assert.equal(await footer.getByRole('switch',{name:'Formatted view'}).count(), 1);
+    assert.equal(await footer.getByRole('button',{name:'Close'}).evaluate(b=>b.nextElementSibling?.className), 'inav-file-switch');
+    assert.equal(await wrap.isChecked(), false);
+    const wide = 'W'.repeat(300);
+    await page.evaluate(text => fixtureEditor.setValue('Key,Description\n1,'+text,-1),wide);
+    await panel.getByRole('cell',{name:wide,exact:true}).waitFor();
+    await panel.focus();
+    await page.keyboard.press('ArrowRight');
+    await page.waitForFunction(() => document.querySelector('.inav-file-output').scrollLeft > 0);
+    assert.ok(await panel.evaluate(el => el.scrollLeft > 0));
+    assert.ok(await footer.evaluate(el => el.scrollWidth <= el.clientWidth));
+    await wrap.check();
+    await page.waitForFunction(() => {
+      const el = document.querySelector('.inav-file-output');
+      return el.scrollWidth <= el.clientWidth && el.querySelector('tbody tr').getBoundingClientRect().height > 40;
+    });
+    await page.evaluate(text=>fixtureEditor.setValue(text,-1),csv);
+    await panel.getByText('Example',{exact:true}).waitFor();
     await control.uncheck();
     await raw.waitFor();
+    assert.equal(await wrap.isVisible(),false);
     assert.equal(await page.evaluate(()=>fixtureEditor.getValue()),csv);
     await page.getByRole('button',{name:'Close',exact:true}).click();
     await page.reload();
@@ -129,6 +163,24 @@ async function checkStorageFailures(context) {
     await page.keyboard.press('Enter');
     await panel.getByText('"id": 900719925474099312345,',{exact:true}).waitFor();
     assert.equal(await panel.getByText('"id": 2',{exact:true}).count(),1);
+    // Wrapping survives reopening, and toggling it reflows long JSON values without closing branches.
+    assert.equal(await wrap.isChecked(),true);
+    const wideJSON = JSON.stringify({record:{note:wide}});
+    await page.evaluate(text=>fixtureEditor.setValue(text,-1),wideJSON);
+    await panel.locator('summary').filter({hasText:'"record"'}).click();
+    await panel.getByText(wide,{exact:false}).last().waitFor();
+    const openBefore = await panel.locator('details[open]').count();
+    await wrap.uncheck();
+    await page.waitForFunction(() => {
+      const el=document.querySelector('.inav-file-output');
+      return el.scrollWidth > el.clientWidth;
+    });
+    assert.equal(await panel.locator('details[open]').count(),openBefore);
+    await wrap.check();
+    await page.waitForFunction(() => {
+      const el=document.querySelector('.inav-file-output');
+      return el.scrollWidth <= el.clientWidth;
+    });
     // Invalid, replaced and unsupported content must expose the complete original file again.
     await page.evaluate(()=>fixtureEditor.setValue('{"broken":',-1));
     await panel.getByText(/Unable to format/).waitFor();
@@ -138,6 +190,8 @@ async function checkStorageFailures(context) {
     await panel.getByRole('button',{name:'Next'}).click();
     await panel.getByText('Rows 101–200 of 250').waitFor();
     assert.equal(await panel.locator('td').first().textContent(),'100');
+    await wrap.uncheck();
+    assert.equal(await panel.getByText('Rows 101–200 of 250').count(),1);
     // Preserve the saved preference while the v3 Navigation group is disabled.
     if (JSON.parse(fs.readFileSync(path.join(root,'manifest.json'))).version.startsWith('3.')) {
       await worker.evaluate(()=>chrome.storage.local.set({navigationToolsEnabled:false}));
@@ -155,7 +209,7 @@ async function checkStorageFailures(context) {
     await checkStorageFailures(context);
     assert.deepEqual(unexpected,[]);
     assert.deepEqual(errors,[]);
-    console.log('PASS installed Job Run Files: CSV quoting and pagination, lossless JSON disclosure, preference after reload, native fallback, cleanup and zero extra requests.');
+    console.log('PASS installed Job Run Files: footer controls, horizontal scrolling, CSV and JSON wrapping, saved preferences, pagination, JSON disclosure, native fallback and zero extra requests.');
   } finally {
     try { await context?.close(); }
     finally {

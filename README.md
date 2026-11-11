@@ -4,7 +4,7 @@ For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for deliv
 
 Make Ellucian Integration Packages and Integration Designer easier to navigate in Chrome and Microsoft Edge.
 
-Version **1.23.0** adds a remembered Formatted view switch for CSV and JSON previews in Job Run Files. See the [changelog](docs/CHANGELOG.md).
+Version **1.23.1** puts **Formatted view** and **Wrap text** beside **Close** in Job Run Files. Scroll horizontally to read long CSV fields or JSON lines, or turn on wrapping to fit them to the preview. See the [changelog](docs/CHANGELOG.md).
 
 ## What It Does
 

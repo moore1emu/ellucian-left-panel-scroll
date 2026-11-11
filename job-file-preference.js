@@ -1,61 +1,82 @@
 (() => {
   'use strict';
 
-  // Only the isolated script can save the user's preference. File contents stay with the native editor.
-  const key = 'jobFilesFormattedView';
+  // Only the isolated script saves display choices. File contents stay in the native editor.
+  const formatted = { key: 'jobFilesFormattedView', initial: true, value: true, revision: 0 };
+  const wrapping = { key: 'jobFilesWrapText', initial: false, value: false, revision: 0 };
+  const preferences = [formatted, wrapping];
   const signal = 'ellucian-job-file-view-change';
-  let enabled = true, loaded = false, revision = 0, control = null, frame = 0;
+  let loaded = false, control = null, frame = 0;
   let navigation = !globalThis.FeatureTools;
   const syncPage = () => document.dispatchEvent(new Event(signal));
 
-  // Release controls when the user closes the dialog, switches file types, or leaves Packages.
+  // Release both controls when the native dialog closes or changes to an unsupported file.
   function detach() {
     if (!control) return;
-    control.label.remove();
+    control.group.remove();
     control = null;
     syncPage();
+  }
+
+  function addChoice(group, text, preference) {
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = preference.value;
+    if (preference === formatted) input.setAttribute('role', 'switch');
+    label.append(input, text);
+    group.append(label);
+
+    // Roll back only this choice if the save fails and a newer storage update has not arrived.
+    input.addEventListener('change', async event => {
+      if (!event.isTrusted || control?.group !== group) return;
+      const previous = preference.value;
+      const edit = ++preference.revision;
+      preference.value = input.checked;
+      input.disabled = true;
+      control.wrap.parentElement.hidden = !formatted.value;
+      schedule();
+      syncPage();
+      try {
+        await chrome.storage.local.set({ [preference.key]: preference.value });
+      } catch {
+        if (preference.revision === edit) preference.value = previous;
+      } finally {
+        input.disabled = false;
+        schedule();
+      }
+    });
+    return input;
   }
 
   function refresh() {
     frame = 0;
     const onPackages = /\/data-connect(?:\/|$)/iu.test(location.pathname);
     const host = navigation && loaded && onPackages && document.querySelector('[role="dialog"] #review-file.ace_editor');
-    const heading = host && host.closest('[role="dialog"]').querySelector('h1,h2,h3,[role="heading"]');
-    const format = heading?.textContent?.trim().match(/\.(csv|json)$/iu)?.[1]?.toLowerCase();
-    if (!format) { detach(); return; }
+    const dialog = host && host.closest('[role="dialog"]');
+    const heading = dialog && dialog.querySelector('h1,h2,h3,[role="heading"]');
+    if (!heading?.textContent?.trim().match(/\.(csv|json)$/iu)) { detach(); return; }
 
-    // React may reuse the same dialog for a different file or replace just its heading.
-    if (control?.host !== host || control.heading !== heading || !control.label.isConnected) {
+    // Prefer the footer's text button over the icon-only Close control in some dialog headers.
+    const close = Array.from(dialog.querySelectorAll('button,[role="button"],input[type="button"]'))
+      .find(button => (button.textContent.trim() || button.value || '').toLowerCase() === 'close');
+    if (!control || control.host !== host || !control.group.isConnected) {
       detach();
-      const label = document.createElement('label');
-      label.className = 'inav-file-switch';
-      const input = document.createElement('input');
-      input.type = 'checkbox';
-      input.setAttribute('role', 'switch');
-      label.append(input, 'Formatted view');
-      heading.after(label);
-      control = { host, heading, label, input };
-
-      // Accept only the actual user's switch action, never a synthetic page request to write storage.
-      input.addEventListener('change', async event => {
-        if (!event.isTrusted || control?.input !== input) return;
-        const previous = enabled;
-        const value = input.checked;
-        const edit = ++revision;
-        enabled = value;
-        input.disabled = true;
-        syncPage();
-        try {
-          await chrome.storage.local.set({ [key]: value });
-        } catch {
-          if (revision === edit) enabled = previous;
-        } finally {
-          input.disabled = false;
-          schedule();
-        }
-      });
+      const group = document.createElement('span');
+      group.className = 'inav-file-switch';
+      const mode = addChoice(group, 'Formatted view', formatted);
+      const wrap = addChoice(group, 'Wrap text', wrapping);
+      control = { host, group, mode, wrap };
     }
-    control.input.checked = enabled;
+    // The footer may arrive after the editor or be replaced while the same file is open.
+    if (close) {
+      if (close.nextElementSibling !== control.group) close.after(control.group);
+    } else if (!control.group.isConnected) {
+      dialog.append(control.group);
+    }
+    control.mode.checked = formatted.value;
+    control.wrap.checked = wrapping.value;
+    control.wrap.parentElement.hidden = !formatted.value;
     syncPage();
   }
 
@@ -76,16 +97,20 @@
     schedule();
   }
 
-  // Keep all open preview dialogs in sync. A delayed startup read must yield to newer choices.
+  // Apply updates independently so a wrap change cannot overwrite a newer formatted-mode choice.
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || !changes[key]) return;
-    revision++;
-    enabled = changes[key].newValue !== false;
-    schedule();
+    if (area !== 'local') return;
+    for (const preference of preferences) {
+      if (!changes[preference.key]) continue;
+      preference.revision++;
+      preference.value = changes[preference.key].newValue ?? preference.initial;
+      schedule();
+    }
   });
-  const initial = revision;
-  chrome.storage.local.get({ [key]: true }).then(settings => {
-    if (revision === initial) enabled = settings[key] !== false;
+  chrome.storage.local.get({ [formatted.key]: true, [wrapping.key]: false }).then(settings => {
+    for (const preference of preferences) {
+      if (!preference.revision) preference.value = settings[preference.key] ?? preference.initial;
+    }
     loaded = true;
     schedule();
   }).catch(() => {});
