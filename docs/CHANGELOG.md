@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.23.9 — 2026-11-11
+
+- Moved the favorite star to the left of each app icon in the **Capabilities** menu. The visual and keyboard order follows the current list as apps appear or disappear.
+
 ## 1.23.8 — 2026-11-11
 
 - Capabilities favorites now support custom domains with nested Home paths and with Home at the root when Experience supplies the tenant ID. Header shortcuts and eligible Capabilities menu links open in the current tab. Shortcut size and spacing match the native header icons.

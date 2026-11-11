@@ -168,6 +168,10 @@
   function renderMenu() {
     const drawer = document.getElementById('applicationsHeader')?.closest('[role="presentation"]');
     if (!drawer) return;
+    // The drawer may keep a row in place while removing or replacing its app link.
+    for (const star of drawer.querySelectorAll('li > .inav-cap-star')) {
+      if (!star.parentElement.querySelector(':scope > a[href]')) star.remove();
+    }
     for (const link of drawer.querySelectorAll('li > a[href]')) {
       const item = scope && pins && menuItem(link, scope);
       let button = link.parentElement.querySelector(':scope > .inav-cap-star');
@@ -181,8 +185,9 @@
         svg.setAttribute('aria-hidden', 'true');
         button.append(svg);
         button.addEventListener('click', event => toggle(event, button, button.parentElement.querySelector(':scope > a[href]')));
-        link.after(button);
       }
+      // Put the independent pin action before the native app icon in both visual and keyboard order.
+      if (button.nextElementSibling !== link) link.before(button);
       const saved = pins.some(pin => pin.path === item.path);
       button.setAttribute('aria-label', 'Favorite ' + item.name);
       button.setAttribute('aria-pressed', String(saved));

@@ -157,6 +157,45 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     await other.getByRole('button',{name:'Capabilities'}).click();
     await star(other,'Designer').waitFor();
     assert.equal(await other.locator('.inav-cap-pins').count(),0);
+    // Match each person's current permissions list, including changes while the same drawer stays open.
+    const list = other.locator('[role="presentation"] ul');
+    await list.evaluate(ul => ul.replaceChildren());
+    assert.equal(await list.getByRole('button').count(),0);
+    const addApps = (ul, names) => {
+      for (const name of names) {
+        const row = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = '/different/app/all-accounts/' + name;
+        const icon = document.createElementNS('http://www.w3.org/2000/svg','svg');
+        icon.setAttribute('width','24');
+        icon.setAttribute('height','24');
+        link.append(icon, name);
+        row.append(link);
+        ul.append(row);
+      }
+    };
+    await list.evaluate(addApps,['Library']);
+    const libraryStar = star(other,'Library');
+    const libraryLink = list.getByRole('link',{name:'Library',exact:true});
+    await libraryStar.waitFor();
+    const starBox = await libraryStar.boundingBox();
+    const iconBox = await libraryLink.locator('svg').boundingBox();
+    assert.ok(starBox.x + starBox.width <= iconBox.x, 'Star must appear to the left of the app icon');
+    await libraryStar.press('Tab');
+    assert.ok(await libraryLink.evaluate(link => link === document.activeElement));
+    await list.evaluate(addApps,Array.from({length:17},(_,i)=>'Service-'+i));
+    await star(other,'Service-16').waitFor();
+    assert.equal(await list.getByRole('button').count(),18);
+    // Ellucian may reorder its link, remove entire rows, or leave an empty row behind.
+    await list.evaluate(ul => {
+      const row = ul.firstElementChild;
+      row.prepend(row.querySelector('a'));
+      for (const extra of [...ul.children].slice(2)) extra.remove();
+      ul.lastElementChild.querySelector('a').remove();
+    });
+    await star(other,'Service-0').waitFor({state:'detached'});
+    assert.equal(await list.getByRole('button').count(),1);
+    assert.ok(await libraryLink.evaluate(link => link.previousElementSibling?.getAttribute('aria-label') === 'Favorite Library'));
     const elsewhere = await openPage(base+'non-app-page');
     await elsewhere.getByRole('button',{name:'Capabilities'}).click();
     assert.equal(await elsewhere.locator('.inav-cap-star,.inav-cap-pins').count(),0);
