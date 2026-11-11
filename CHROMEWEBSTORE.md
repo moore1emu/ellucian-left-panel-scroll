@@ -1,6 +1,6 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-11-11 · Candidate: 2.2.0 · Status: manual-test candidate
+Updated: 2026-11-11 · Candidate: 2.2.1 · Status: manual-test candidate
 
 This is the maintained preparation document, not proof of the live dashboard state. Copy only the Public Store Listing section into the public description fields. Reviewer Instructions are separate and must not be appended to that description. Publishing, changing distribution, and merging main each require owner authorization. Preserve existing account, pricing, visibility, and unrelated dashboard fields.
 

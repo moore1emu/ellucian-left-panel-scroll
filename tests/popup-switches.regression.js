@@ -52,6 +52,7 @@ function installChromeStub() {
 }
 
 const SWITCHES = [
+  { id: "job-file-viewer-enabled", key: "jobFileViewerEnabled", label: "Enable JSON and CSV viewer", status: "job-file-viewer-status" },
   { id: "remember-width", key: "rememberWidth", label: "Remember Resized Width", status: "navigation-status" },
   { id: "favorites-enabled", key: "favoritesEnabled", label: "Pinned Packages", status: "navigation-status" },
   { id: "shared-version-enabled", key: "sharedVersionEnabled", label: "Shared To", status: "shared-to-status" },

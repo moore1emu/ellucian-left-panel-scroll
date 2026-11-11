@@ -13,6 +13,7 @@
   const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
   const PACKAGE_ARTIFACTS_ENABLED_KEY = 'packageArtifactsEnabled';
   // Store only the opt-in, never the published fitting's source or values.
+  const JOB_FILE_VIEWER_ENABLED_KEY = 'jobFileViewerEnabled';
   const FITTING_DETAILS_ENABLED_KEY = 'fittingDetailsEnabled';
   const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
 
@@ -27,6 +28,8 @@
   const navigationStatus = document.querySelector('#navigation-status');
   const sharedToStatus = document.querySelector('#shared-to-status');
   // Reuse the confirmed-value switch saver for this independent Designer option.
+  const jobFileViewerSwitch = document.querySelector('#job-file-viewer-enabled');
+  const jobFileViewerStatus = document.querySelector('#job-file-viewer-status');
   const fittingDetailsSwitch = document.querySelector('#fitting-details-enabled');
   const fittingDetailsStatus = document.querySelector('#fitting-details-status');
   const sharedFromConfirmation = document.querySelector("#shared-from-confirmation");
@@ -90,6 +93,7 @@
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SHARED_FROM_ENABLED_KEY]: false,
       [PACKAGE_ARTIFACTS_ENABLED_KEY]: null,
+      [JOB_FILE_VIEWER_ENABLED_KEY]: true,
       [FITTING_DETAILS_ENABLED_KEY]: false,
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
@@ -106,6 +110,7 @@
       // Display the width preference and its explanatory status.
       rememberWidthSwitch.checked = Boolean(settings[REMEMBER_WIDTH_KEY]);
       sharedVersionSwitch.checked = settings[SHARED_VERSION_ENABLED_KEY] === true;
+      jobFileViewerSwitch.checked = settings[JOB_FILE_VIEWER_ENABLED_KEY] !== false;
       fittingDetailsSwitch.checked = settings[FITTING_DETAILS_ENABLED_KEY] === true;
       // Restore opt-in without collecting anything while the popup initializes.
       sharedFromSwitch.checked = settings[SHARED_FROM_ENABLED_KEY] === true;
@@ -133,7 +138,7 @@
         settings[FAVORITES_ENABLED_KEY] !== false;
 
       // Treat the loaded values as confirmed before allowing any switch changes.
-      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch].forEach((input) => {
+      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch, jobFileViewerSwitch].forEach((input) => {
         confirmedSwitchValues.set(input, input.checked);
         input.disabled = false;
       });
@@ -371,6 +376,10 @@
   });
 
   // Apply published viewing to open Designer pages without touching other preferences.
+  jobFileViewerSwitch.addEventListener('change', () => {
+    saveSwitch(jobFileViewerSwitch, JOB_FILE_VIEWER_ENABLED_KEY, 'Enable JSON and CSV viewer', jobFileViewerStatus);
+  });
+
   fittingDetailsSwitch.addEventListener('change', () => {
     saveSwitch(fittingDetailsSwitch, FITTING_DETAILS_ENABLED_KEY, 'View Published Fitting Details', fittingDetailsStatus);
   });

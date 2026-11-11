@@ -103,6 +103,18 @@
               </span>
             </label>
             <p id="package-artifacts-status" class="icon-status" role="status" aria-live="polite"></p>
+            <!-- Let the native text viewer take over without resetting either footer preference. -->
+            <label class="setting-row" for="job-file-viewer-enabled">
+              <span class="setting-copy">
+                <span class="setting-title" id="job-file-viewer-title">Enable JSON and CSV viewer</span>
+                <span class="setting-description" id="job-file-viewer-help">Format files in Job Run Files.</span>
+              </span>
+              <span class="switch">
+                <input id="job-file-viewer-enabled" type="checkbox" disabled aria-labelledby="job-file-viewer-title" aria-describedby="job-file-viewer-help" />
+                <span class="switch-track" aria-hidden="true"></span>
+              </span>
+            </label>
+            <p id="job-file-viewer-status" class="icon-status" role="status" aria-live="polite"></p>
           </section>
           <section class="behavior-card navigation-group designer-card" aria-labelledby="designer-title">
             <h2 id="designer-title">Integration Designer</h2>

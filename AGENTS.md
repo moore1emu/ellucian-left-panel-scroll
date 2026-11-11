@@ -2,7 +2,8 @@
 
 ## Scope and Approval
 
-- In 2.2.0, Job Run Files uses the open native editor for JSON and CSV. Keep the default-on Formatted view choice in local extension storage and preserve the original file for raw view.
+- Capabilities favorites use the native Home path and the site origin across pages with the Experience header and nine-dot menu. Root-mounted custom sites also require tenant identity. Keep launch links tenant-scoped and preserve current-tab navigation, dynamic rows and native icon spacing.
+- The Job Run Files viewer setting, Formatted view and Wrap text are independent local preferences. Keep headings on one line and preserve both footer choices when the viewer is disabled.
 
 - Make surgical changes within the owner's request. Preserve deliberate behavior and useful comments; ask before broader refactoring, architecture changes, or consequential behavior changes.
 - Use `develop` for test builds. Owner-authorized review branches may feed into develop. Keep main unchanged until the owner confirms the intended release works and explicitly authorizes merging. Testing, store submission, store approval, and GitHub merging are separate steps.
@@ -27,7 +28,7 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.2.0 is 2.2.1, while the next v1 maintenance revision after 1.23.0 is 1.23.1. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v2 candidate after 2.2.1 is 2.2.2. Do not rename historical releases.
 
 - Maintain CHROMEWEBSTORE.md for store preparation, separate public listing copy from reviewer instructions, and keep Shift+D out of the public store description while disclosing it in GitHub/reviewer documentation. Never certify live dashboard/privacy/asset state from a local draft. Keep this preparation file out of release ZIPs. Consult official Chrome guidance selectively; generic skill advice does not override these project rules or authorize tooling installation, permissions, normal-profile debugging, main merges, or publication.
 - Preserve the 2.1.9 explicit extension-page CSP and Chrome 106 API-derived minimum; verify the installed popup/export flow, including blob downloads, before changing them. Historical Chrome 106 runtime compatibility is not proven by current-browser fixtures. No extra permissions are introduced by this hardening.

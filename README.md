@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.2.0):** Job Run Files now offers formatted CSV and JSON previews. Adds store-submission preparation, a Chrome 106 API compatibility floor, and an explicit extension-page security policy. What's New still highlights redesigned settings and published artifact ZIP export since v1. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.2.1):** Pin apps from the nine-dot Capabilities menu across Experience, including card pages and approved custom sites. Job Run Files adds horizontal scrolling, optional text wrapping and a viewer switch under Navigation. Adds store-submission preparation, a Chrome 106 API compatibility floor, and an explicit extension-page security policy. What's New still highlights redesigned settings and published artifact ZIP export since v1. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 
@@ -79,6 +79,7 @@ node tests/backup-read-races.cjs
 node tests/settings-failures.cjs
 node tests/tenant-context.cjs
 node tests/job-file-viewer.cjs
+node tests/capability-pins.cjs
 node tests/tenant-favorites-browser.cjs
 node tests/published-fitting-details.cjs
 node tests/browser-profile-cleanup.cjs

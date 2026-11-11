@@ -7,6 +7,12 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.2.1": Object.freeze([
+      "Redesigned settings with task-based tabs for easier navigation.",
+      "Export published Pipelines, Sub-Pipelines, APIs, and Transformers from Integration Packages to a ZIP, with optional readable formatting.",
+      "Pin apps in the Capabilities menu to see their shortcuts throughout Experience.",
+      "Wrap wide JSON and CSV job files or switch back to the original text from Navigation settings.",
+    ]),
     "2.2.0": Object.freeze([
       "Redesigned settings with task-based tabs for easier navigation.",
       "Export published Pipelines, Sub-Pipelines, APIs, and Transformers from Integration Packages to a ZIP, with optional readable formatting.",

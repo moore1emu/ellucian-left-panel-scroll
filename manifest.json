@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Integration Navigator",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "minimum_chrome_version": "106",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none';"
@@ -57,12 +57,14 @@
       ],
       "css": [
         "styles.css",
-        "job-file-viewer.css"
+        "job-file-viewer.css",
+        "capability-pins.css"
       ],
       "js": [
         "shared.js",
         "favorites-data.js",
         "favorite-appearance.js",
+        "capability-pins.js",
         "content.js",
         "job-file-preference.js",
         "search.js",
