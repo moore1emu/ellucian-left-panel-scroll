@@ -1,6 +1,6 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-10-16 · Candidate: 2.1.9 · Status: local test candidate, not submitted
+Updated: 2026-11-11 · Candidate: 2.2.0 · Status: manual-test candidate
 
 This is the maintained preparation document, not proof of the live dashboard state. Copy only the Public Store Listing section into the public description fields. Reviewer Instructions are separate and must not be appended to that description. Publishing, changing distribution, and merging main each require owner authorization. Preserve existing account, pricing, visibility, and unrelated dashboard fields.
 
@@ -80,6 +80,8 @@ Canonical policy: [PRIVACY.md](PRIVACY.md). Intended existing store policy URL: 
 No analytics, advertising, sale of data, unrelated use, or credit/lending use. No student records or execution data are requested. Review the current dashboard's data-use questions against this processing description; local use of website content must not be confused with an assertion that the extension never accesses content. Do not automatically submit certifications or infer unchecked data categories from the absence of publisher uploads.
 
 ## Reviewer Instructions
+
+Open a CSV or JSON in Job Run Files and toggle Formatted view. Reopen a preview to verify the remembered choice.
 
 These notes are for the reviewer/testing field and GitHub documentation, not the public store description. Do not provide real credentials, tokens, institution exports, or student data in this file. If the reviewer needs an account or institution-specific access, coordinate an approved test arrangement with the owner; do not invent one.
 

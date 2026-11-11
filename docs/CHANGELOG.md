@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 2.2.0 — 2026-11-11
+
+- Job Run Files opens CSV previews as tables and JSON previews with collapsible objects and arrays. The Formatted view switch defaults to on and remembers the last choice in this browser profile.
+
 ## 2.1.9 — 2026-10-16 — Submission Preparation and Compatibility
 
 - Adds CHROMEWEBSTORE.md with draft public listing text, permission explanations, privacy/readiness checks, and separately labeled reviewer instructions. Shift+D stays out of public listing copy; GitHub documentation and reviewer notes disclose its temporary filter option. No store/dashboard action is performed.

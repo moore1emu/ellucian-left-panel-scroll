@@ -1,8 +1,12 @@
 # User Guide
 
-> Develop's 2.1.9 test candidate adds submission preparation and an explicit security policy for extension pages. Chrome 106 is the declared API compatibility floor; use a current supported browser. What's New still highlights the major improvements since v1. No permissions or export eligibility changed. Reload the same unpacked folder and reopen settings to test. See [v2 Development](V2-Development.md).
+> The 2.2.0 test candidate adds a formatted preview for JSON and CSV job run files. Chrome 106 is the declared API compatibility floor; use a current supported browser. What's New still highlights the major improvements since v1. No permissions or export eligibility changed. Reload the same unpacked folder and reopen settings to test. See [v2 Development](V2-Development.md).
 
 If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
+
+## Job Run Files
+
+Open **View File** for a CSV or JSON job output. **Formatted view** starts on. CSV uses the first record for column headings and preserves quoted fields. Expand JSON objects and arrays to read their contents. Turn the switch off for the original text. Your browser remembers the choice for the next file. Large or invalid previews fall back to the original text.
 
 ## Pipeline Export — v2 Test Candidate
 

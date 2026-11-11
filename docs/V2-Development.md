@@ -1,6 +1,6 @@
 # v2 Development
 
-This is the **2.1.9 manual-test candidate**, not an approved store release. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
+This is the **2.2.0 manual-test candidate**, not an approved store release. Job Run Files includes the default-on Formatted view switch for JSON and CSV. Both contributors use develop; main remains the confirmed 1.22.6 release. V1 fixes can branch from main and be brought into develop afterward.
 
 Submission preparation is maintained in [CHROMEWEBSTORE.md](../CHROMEWEBSTORE.md), with public description copy separate from reviewer notes. Shift+D is documented for reviewers/GitHub but excluded from public listing copy. No store fields are changed automatically. The live policy and v2 screenshots still need release-time verification.
 

@@ -7,6 +7,10 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "2.2.0": Object.freeze([
+      "Redesigned settings with task-based tabs for easier navigation.",
+      "Export published Pipelines, Sub-Pipelines, APIs, and Transformers from Integration Packages to a ZIP, with optional readable formatting.",
+    ]),
     // Keep the unpublished v2 overview focused on the same major features, not submission hardening.
     "2.1.9": Object.freeze([
       "Redesigned settings with task-based tabs for easier navigation.",
