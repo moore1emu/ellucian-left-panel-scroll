@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.23.0 — 2026-11-11
+
+- Job Run Files opens CSV previews as tables and JSON previews with collapsible objects and arrays. The Formatted view switch defaults to on and remembers the last choice in this browser profile.
+
 ## 1.22.9 — 2026-11-11
 
 - Both pipeline stars now recognize the same saved favorite when its displayed name or version changes. Unpinning removes saved duplicates for that row and preserves other major versions.

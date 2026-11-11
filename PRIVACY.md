@@ -1,5 +1,7 @@
 # Privacy Policy
 
+Job Run Files formats the preview already loaded by Ellucian in page memory. The browser stores only the Formatted view preference for this feature. File contents stay in the viewer.
+
 Integration Navigator · Updated October 13, 2026
 
 Publisher: Andrew Moore · Contact: moore.life@gmail.com

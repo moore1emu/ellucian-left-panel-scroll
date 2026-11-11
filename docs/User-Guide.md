@@ -2,6 +2,10 @@
 
 [Back to the README](../README.md) · [Troubleshooting](Troubleshooting.md)
 
+## Job Run Files
+
+Open **View File** for a CSV or JSON job output. **Formatted view** starts on. CSV uses the first record for column headings and preserves quoted fields. Expand JSON objects and arrays to read their contents. Turn the switch off for the original text. Your browser remembers the choice for the next file. Large or invalid previews fall back to the original text.
+
 ## Getting Started
 
 Install [Integration Navigator from the Chrome Web Store](https://chromewebstore.google.com/detail/integration-navigator/dbmjmmgocklhjnadhmibaldicbgoignd) in Chrome or Edge. In Edge, allow extensions from other stores if prompted, then approve the installation. [Microsoft's installation instructions](https://support.microsoft.com/en-us/edge/add-turn-off-or-remove-extensions-in-microsoft-edge) explain this option.
