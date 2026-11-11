@@ -142,17 +142,33 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     await home.getByRole('button',{name:'Capabilities'}).click();
     assert.equal(await star(home,'Reports').getAttribute('aria-pressed'),'true');
 
-    // A transition to another capability keeps its menu and pins. Leaving the app area removes both.
+    // A card page can show and edit the same pins even though the card itself is outside the launcher.
+    const cardRoute = base+'page/all-accounts/Ellucian/apply-imports/ImportsCard/imports';
+    const card = await openPage(cardRoute);
+    await shortcut(card,'Reports').waitFor();
+    await card.getByRole('button',{name:'Capabilities'}).click();
+    assert.equal(await star(card,'Reports').getAttribute('aria-pressed'),'true');
+    await star(card,'Designer').click();
+    await shortcut(home,'Designer').waitFor();
+    await star(home,'Designer').click();
+    await shortcut(card,'Designer').waitFor({state:'detached'});
+    await card.close();
+    await packages.evaluate(route=>history.pushState({},'',route),cardRoute);
+    await shortcut(packages,'Reports').waitFor();
+    assert.equal(await star(packages,'Reports').getAttribute('aria-pressed'),'true');
+    await packages.goBack();
+
+    // A transition to another capability keeps its menu and pins. Leaving the Home path removes both.
     await packages.evaluate(()=>history.pushState({},'',location.pathname.replace('data-connect/jobRuns','other-app/')));
     await packages.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     assert.equal(await shortcut(packages,'Reports').isVisible(),true);
     assert.equal(await star(packages,'Reports').getAttribute('aria-pressed'),'true');
-    await packages.evaluate(()=>history.pushState({},'','/sample/non-app-page'));
+    await packages.evaluate(()=>history.pushState({},'','/sample-neighbor/'));
     await packages.locator('.inav-cap-pins').waitFor({state:'detached'});
     await packages.goBack();
     await shortcut(packages,'Reports').waitFor();
 
-    // Same-host tenant changes and unrelated Experience routes must never inherit the active header.
+    // Same-host tenant changes and similarly prefixed paths must never inherit the active header.
     const other = await openPage('/different/');
     await other.getByRole('button',{name:'Capabilities'}).click();
     await star(other,'Designer').waitFor();
@@ -198,7 +214,11 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     assert.ok(await libraryLink.evaluate(link => link.previousElementSibling?.getAttribute('aria-label') === 'Favorite Library'));
     const elsewhere = await openPage(base+'non-app-page');
     await elsewhere.getByRole('button',{name:'Capabilities'}).click();
-    assert.equal(await elsewhere.locator('.inav-cap-star,.inav-cap-pins').count(),0);
+    await shortcut(elsewhere,'Reports').waitFor();
+    assert.equal(await star(elsewhere,'Reports').getAttribute('aria-pressed'),'true');
+    await elsewhere.locator('#grid-btn').evaluate(button=>button.remove());
+    await shortcut(elsewhere,'Reports').waitFor({state:'detached'});
+    assert.equal(await elsewhere.locator('.inav-cap-star').count(),0);
     await star(home,'Reports').click();
     await packages.locator('.inav-cap-pins').waitFor({state:'detached'});
 
@@ -228,6 +248,8 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     await nativePackages.press('Enter');
     await college.waitForURL(customOrigin+'/app/all-accounts/Ellucian/data-connect/home');
     assert.equal(context.pages().length,tabCount);
+    await shortcut(college,'Reports').waitFor();
+    await college.goto(customOrigin+'/page/all-accounts/School/Card');
     await shortcut(college,'Reports').waitFor();
     // Two tenants can share the same root URL. Neither a new tenant nor a missing identity inherits a pin.
     rootTenant = 'school-two';
@@ -291,7 +313,7 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     assert.equal(await star(failed,'Designer').count(),0);
     assert.equal(await failed.getByRole('link',{name:'Designer',exact:true}).isVisible(), true);
     // Restoring a reachable route retries the read. A rejected write leaves the same star usable.
-    await failed.evaluate(()=>{capStore.failRead=false; history.pushState({},'','/sample/non-app-page');});
+    await failed.evaluate(()=>{capStore.failRead=false; history.pushState({},'','/sample-neighbor/');});
     await failed.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     await failed.goBack();
     await star(failed,'Designer').click();

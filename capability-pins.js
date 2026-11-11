@@ -45,9 +45,8 @@
     const base = home.pathname.replace(/\/?$/, '/');
     if (base.includes('//')) return null;
     const path = location.pathname;
-    const isHome = path.replace(/\/?$/, '/') === base;
-    if (!isHome && !path.startsWith(base + 'app/')) return null;
-    return base;
+    // The shell's Home link identifies the tenant on cards and future routes, too.
+    return path.startsWith(base) || path + '/' === base ? base : null;
   }
   async function currentScope(header) {
     const base = capabilityBase(header);

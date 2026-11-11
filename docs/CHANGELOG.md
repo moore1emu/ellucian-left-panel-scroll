@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.24.0 — 2026-11-11
+
+- All pages under the tenant Home path with the Experience header and Capabilities button, including Application Processing, show the same Capabilities favorites as Home and reflect pin and unpin actions across the tenant.
+
 ## 1.23.9 — 2026-11-11
 
 - Moved the favorite star to the left of each app icon in the **Capabilities** menu. The visual and keyboard order follows the current list as apps appear or disappear.
