@@ -2,6 +2,8 @@
 
 ## Scope and Approval
 
+- Capability shortcuts use the current Experience Home path and site origin to share pins among Home, Packages and Designer. Use the native menu’s same-tenant app paths and local icon symbols. Keep stars separate from launch links.
+
 - In 1.23.0, Job Run Files uses the open native editor for JSON and CSV. Keep the default-on Formatted view choice in local extension storage and preserve the original file for raw view.
 
 - Make surgical changes within the owner's request. Preserve deliberate behavior and useful comments; ask before broader refactoring, architecture changes, or consequential behavior changes.
@@ -27,7 +29,7 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v1 version after 1.23.5 is 1.23.6. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v1 version after 1.23.6 is 1.23.7. Do not rename historical releases.
 - Published fitting detection recognizes both observed Create Draft labels, including the existing-draft case, and still requires disabled Publish on the fitting route. Unknown labels/editors remain locked; never simplify this to disabled-controls or pointer-events-only detection.
 - This v1 hotfix branches from main independently of v2 development. Bring the narrow Packages identity fix into develop too, without replacing v2 files or merging unfinished v2 work into main.
 - Packages identity may come from context.tenantId on the existing menu/session owner. Keep that fallback Packages-only, inspect only callback presence (never invoke it for identity), and preserve Designer's live manager lookup and tenant isolation. Missing identity must not reset saved pins or reuse a stale tenant.

@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.23.6 — 2026-11-11
+
+- Star an app in the **Capabilities** menu to put its shortcut beside **Tasks** on Experience Home, Integration Packages and Integration Designer. Pins are saved locally for the current site and tenant Home path.
+
 ## 1.23.5 — 2026-11-11
 
 - **Wrap text** keeps CSV column headings on one line while wrapping data values. If the headings cannot fit side by side, the preview scrolls horizontally.

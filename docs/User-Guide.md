@@ -2,6 +2,10 @@
 
 [Back to the README](../README.md) · [Troubleshooting](Troubleshooting.md)
 
+## Capabilities favorites
+
+Open the nine-dot **Capabilities** menu on Experience Home, Integration Packages or Integration Designer. Select the star beside an app to pin it. The app appears to the left of **Tasks** on all three pages for that Experience site and tenant. Hover over its icon or focus it with the keyboard to see its name. If the icon is unavailable, the shortcut shows the app name. Select the shortcut to open the app. Select its star again to unpin it. Header favorites stay in this browser profile and use the tenant path in the Home link. The JSON backup covers package and pipeline favorites and saved sharing sources.
+
 ## Job Run Files
 
 In **Page Behavior**, **Enable JSON and CSV viewer** starts on. Turn it off to use Ellucian’s text viewer and hide the two footer controls. Turning it back on restores your saved **Formatted view** and **Wrap text** choices, even in an open file.

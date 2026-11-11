@@ -2,7 +2,9 @@
 
 Job Run Files formats the preview already loaded by Ellucian in page memory. The browser stores only whether the viewer is enabled and the Formatted view and Wrap text preferences for this feature. File contents stay in the viewer.
 
-Integration Navigator · Updated October 13, 2026
+Capability favorites save each selected app’s name, same-tenant app path and local icon identifier in browser extension storage. The site origin and tenant’s Home path keep the shortcuts together across Experience Home, Integration Packages and Integration Designer. The extension obtains these details from the menu already on the page. Opening a shortcut follows the app link in your browser.
+
+Integration Navigator · Updated November 11, 2026
 
 Publisher: Andrew Moore · Contact: moore.life@gmail.com
 
