@@ -2,6 +2,10 @@
 
 [Back to the README](../README.md) · [Troubleshooting](Troubleshooting.md)
 
+## What’s New
+
+After an update, open the Integration Navigator toolbar icon to see release highlights above **Page Behavior**. They stay there until you select **Dismiss** for that version. On a fresh installation the popup opens directly to settings.
+
 ## Capabilities favorites
 
 Open the nine-dot **Capabilities** menu on Experience Home, on a page opened from a card, or in a capability app such as Integration Packages, Integration Designer or Reporting & Analytics. Select the star to the left of an app’s icon to pin it. The stars follow the apps available in your menu. The app appears to the left of **Tasks** on every page under that site’s Home path with the Experience header and Capabilities button. Hover over its icon or focus it with the keyboard to see its name. If the icon is unavailable, the shortcut shows the app name. Select a shortcut or a Capabilities menu link to open the app in the current tab. Select its star again to unpin it. Header favorites stay in this browser profile for the current site and Home path. When Home is at the domain root, the extension uses the tenant ID provided by Experience. The JSON backup covers package and pipeline favorites and saved sharing sources.

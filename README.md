@@ -4,7 +4,9 @@ For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for deliv
 
 Make Ellucian Integration Packages and Integration Designer easier to navigate in Chrome and Microsoft Edge.
 
-In version **1.24.0**, select the star to the left of an app’s icon in the nine-dot **Capabilities** menu to add its shortcut beside **Tasks** on Experience Home and across the tenant’s capability apps, including Reporting & Analytics, and on pages opened from Experience cards. The shortcuts match the native icon spacing and open in the current tab. The same controls work on Experience domains enabled under **Custom Sites**. Star an app again to remove it.
+After updating to **1.24.1**, open the toolbar popup for **What’s New** since the last store release. Dismiss the card when you’re done.
+
+Select the star to the left of an app’s icon in the nine-dot **Capabilities** menu to add its shortcut beside **Tasks** on Experience Home and across the tenant’s capability apps, including Reporting & Analytics, and on pages opened from Experience cards. The shortcuts match the native icon spacing and open in the current tab. The same controls work on Experience domains enabled under **Custom Sites**. Star an app again to remove it.
 
 In Job Run Files, **Wrap text** wraps CSV values while keeping column headings on one line. If the headings exceed the viewer width, scroll horizontally to see them all. **Wrap text** stays visible but grayed out when **Formatted view** is off. To hide both controls and use Ellucian’s text viewer, turn off **Enable JSON and CSV viewer** under **Page Behavior**. Turning it back on restores your **Formatted view** and **Wrap text** choices. Scroll horizontally to read long CSV fields or JSON lines, or turn on wrapping to fit them to the preview. See the [changelog](docs/CHANGELOG.md).
 
@@ -75,6 +77,7 @@ Read [AGENTS.md](AGENTS.md) before making changes. The synthetic settings regres
 npm install --no-save --package-lock=false playwright ace-builds
 npx playwright install chromium
 node tests/popup-switches.regression.js
+node tests/update-summary.cjs
 node tests/tenant-favorites.cjs
 node tests/tenant-context.cjs
 node tests/job-file-viewer.cjs

@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.24.1 — 2026-11-11
+
+- The settings popup now shows **What’s New** after an update, with highlights since the last store release. Select **Dismiss** to hide the notes for this version.
+
 ## 1.24.0 — 2026-11-11
 
 - All pages under the tenant Home path with the Experience header and Capabilities button, including Application Processing, show the same Capabilities favorites as Home and reflect pin and unpin actions across the tenant.

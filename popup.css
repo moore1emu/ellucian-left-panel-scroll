@@ -107,6 +107,16 @@ h1 {
   overflow: hidden;
 }
 
+/* Keep release notes in the normal popup scroll area, above Page Behavior. */
+.update-summary-card { flex-shrink: 0; padding: 10px 12px; }
+.update-summary-card[hidden] { display: none; }
+.update-summary-heading { align-items: center; display: flex; gap: 8px; justify-content: space-between; }
+.update-summary-heading h2 { font-size: 14px; margin: 0; }
+.update-summary-heading button { background: var(--background); border: 1px solid var(--border); border-radius: 5px; color: var(--text); cursor: pointer; font: 12px Arial, sans-serif; padding: 4px 6px; }
+#update-summary-baseline { color: var(--muted); font-size: 12px; margin: 5px 0 0; }
+.update-summary-card ul { color: var(--muted); font-size: 12px; line-height: 1.4; margin: 8px 0 0; padding-left: 17px; }
+.update-summary-card li + li { margin-top: 5px; }
+
 /* Make the full preference row clickable and comfortably spaced. */
 .setting-row {
   align-items: center;

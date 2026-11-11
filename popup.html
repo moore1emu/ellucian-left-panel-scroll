@@ -17,6 +17,17 @@
         </div>
       </header>
 
+      <!-- Show update notes only after an update, until this version is dismissed. -->
+      <section id="update-summary" class="settings-card update-summary-card" aria-labelledby="update-summary-title" hidden>
+        <div class="update-summary-heading">
+          <h2 id="update-summary-title">What's New</h2>
+          <button id="dismiss-update-summary" type="button" aria-label="Dismiss update summary">Dismiss</button>
+        </div>
+        <p id="update-summary-baseline"></p>
+        <ul id="update-summary-items"></ul>
+        <p id="update-summary-status" class="icon-status" role="status" aria-live="polite"></p>
+      </section>
+
       <!-- Keep everyday page options together in the same compact disclosure style. -->
       <details class="settings-card page-behavior-card" open>
         <summary>Page Behavior</summary>
@@ -277,6 +288,8 @@
     <script src="icon-appearance.js"></script>
     <script src="favorite-appearance.js"></script>
     <script src="favorites-data.js"></script>
+    <script src="update-summary.js"></script>
+    <script src="update-summary-popup.js"></script>
     <script src="popup.js"></script>
     <script src="favorites-popup.js"></script>
     <script src="custom-sites.js"></script>

@@ -155,6 +155,20 @@ async function expectMatches(page, item, expected, step) {
       console.log(`ok - ${item.label}`);
     }
 
+    // A failed dismissal must keep both the release notes and the retry button usable.
+    const { page: notesPage } = await openPopup(browser, { pendingUpdateSummary: { version: "0.0.0-test" } });
+    const notice = notesPage.locator('#update-summary');
+    const dismiss = notice.getByRole('button', { name: 'Dismiss update summary' });
+    await dismiss.click();
+    assert.ok(await dismiss.isDisabled());
+    await notesPage.evaluate(() => window.__settleWrite(true));
+    assert.ok(await notice.isVisible());
+    assert.match(await notice.locator('[role="status"]').textContent(), /try again/i);
+    await dismiss.click();
+    await notesPage.evaluate(() => window.__settleWrite(false));
+    assert.equal(await notice.isVisible(), false);
+    await notesPage.close();
+
     // Saved widths are cleared only after reset-on-refresh actually saves.
     const widths = { "example.test|packages": 320 };
     const { page } = await openPopup(browser, { rememberWidth: true, savedWidths: widths });
