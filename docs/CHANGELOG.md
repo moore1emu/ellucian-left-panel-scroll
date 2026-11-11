@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.23.5 — 2026-11-11
+
+- **Wrap text** keeps CSV column headings on one line while wrapping data values. If the headings cannot fit side by side, the preview scrolls horizontally.
+
 ## 1.23.4 — 2026-11-11
 
 - **Wrap text** stays visible but grayed out when **Formatted view** is off. Turning formatting back on re-enables it with the same checkmark.

@@ -166,6 +166,26 @@ async function checkStorageFailures(context) {
       const el = document.querySelector('.inav-file-output');
       return el.scrollWidth <= el.clientWidth && el.querySelector('tbody tr').getBoundingClientRect().height > 40;
     });
+    // A long value wraps under its intact heading; the whole table fits when the headings can fit.
+    const names = ['Job Run Identifier', 'Detailed Output Description'];
+    await page.evaluate(([names, wide]) => fixtureEditor.setValue(names.join(',')+'\n1,'+wide,-1), [names,wide]);
+    await panel.getByRole('columnheader',{name:names[1],exact:true}).waitFor();
+    const textLines = el => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return new Set(Array.from(range.getClientRects(), rect => rect.top)).size;
+    };
+    const header = panel.getByRole('columnheader');
+    assert.equal(await header.first().evaluate(textLines),1);
+    assert.ok(await panel.getByRole('cell',{name:wide,exact:true}).evaluate(textLines) > 1);
+    assert.ok(await panel.evaluate(el => el.scrollWidth <= el.clientWidth));
+    // When headings alone exceed the dialog width, keep every heading readable and scroll only the preview.
+    const manyNames = Array.from({length:8}, (_, i) => 'Job Output Field Number ' + (i+1));
+    await page.evaluate(names => fixtureEditor.setValue(names.join(',')+'\n'+names.map(()=>'1').join(','),-1), manyNames);
+    await panel.getByRole('columnheader',{name:manyNames[7],exact:true}).waitFor();
+    for (const cell of await header.all()) assert.equal(await cell.evaluate(textLines),1);
+    assert.ok(await panel.evaluate(el => el.scrollWidth > el.clientWidth));
+    assert.ok(await footer.evaluate(el => el.scrollWidth <= el.clientWidth));
     await page.evaluate(text=>fixtureEditor.setValue(text,-1),csv);
     await panel.getByText('Example',{exact:true}).waitFor();
     await control.uncheck();
@@ -272,7 +292,7 @@ async function checkStorageFailures(context) {
     await checkStorageFailures(context);
     assert.deepEqual(unexpected,[]);
     assert.deepEqual(errors,[]);
-    console.log('PASS installed Job Run Files: Page Behavior enable/disable and saved footer choices, horizontal scrolling, CSV and JSON wrapping, saved preferences, pagination, JSON disclosure, native fallback and zero extra requests.');
+    console.log('PASS installed Job Run Files: Page Behavior enable/disable and saved footer choices, horizontal scrolling, single-line CSV headings, CSV and JSON wrapping, saved preferences, pagination, JSON disclosure, native fallback and zero extra requests.');
   } finally {
     try { await context?.close(); }
     finally {
