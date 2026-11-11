@@ -7,7 +7,7 @@
   let pins = null, appearance, iconAppearance, strip = null, signature = '';
   const pending = new WeakSet();
 
-  // The native Home link identifies the Experience site and tenant shared by these three pages.
+  // Use the same tenant Home link on the landing page and throughout the native Capabilities apps.
   function currentScope(header) {
     const home = header?.querySelector(':scope > a[href]');
     if (!home || home.origin !== location.origin || home.protocol !== 'https:') return null;
@@ -15,7 +15,7 @@
     if (!/^\/[^/]+\/$/.test(base)) return null;
     const path = location.pathname;
     const isHome = path.replace(/\/?$/, '/') === base;
-    if (!isHome && !(path.startsWith(base) && /^app\/[^/]+\/[^/]+\/data-connect(?:-designer)?(?:\/|$)/i.test(path.slice(base.length)))) return null;
+    if (!isHome && !path.startsWith(base + 'app/')) return null;
     return { base, key: 'capabilityPins:' + location.origin + base };
   }
 

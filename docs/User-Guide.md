@@ -4,7 +4,7 @@
 
 ## Capabilities favorites
 
-Open the nine-dot **Capabilities** menu on Experience Home, Integration Packages or Integration Designer. Select the star beside an app to pin it. The app appears to the left of **Tasks** on all three pages for that Experience site and tenant. Hover over its icon or focus it with the keyboard to see its name. If the icon is unavailable, the shortcut shows the app name. Select the shortcut to open the app. Select its star again to unpin it. Header favorites stay in this browser profile and use the tenant path in the Home link. The JSON backup covers package and pipeline favorites and saved sharing sources.
+Open the nine-dot **Capabilities** menu on Experience Home or in a capability app such as Integration Packages, Integration Designer or Reporting & Analytics. Select the star beside an app to pin it. The app appears to the left of **Tasks** on Home and the other capability pages for that Experience site and tenant. Hover over its icon or focus it with the keyboard to see its name. If the icon is unavailable, the shortcut shows the app name. Select the shortcut to open the app. Select its star again to unpin it. Header favorites stay in this browser profile and use the tenant path in the Home link. The JSON backup covers package and pipeline favorites and saved sharing sources.
 
 ## Job Run Files
 

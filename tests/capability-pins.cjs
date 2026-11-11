@@ -8,22 +8,22 @@ const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const origin = 'https://experience-test.elluciancloud.com';
 
-// Model the native header, lazy drawer and SVG sprite observed on the three Experience pages.
-function fixture(base) {
+// Model the native header, lazy drawer and SVG sprite observed on Experience Home and its capability pages.
+function fixture(base, homeOverlay = false) {
   const apps = [
     ['Designer', base + 'app/all-accounts/Ellucian/data-connect-designer/', 'design'],
     ['Packages', base + 'app/all-accounts/Ellucian/data-connect/home', 'packages'],
-    ['Reports', base + 'app/all-accounts/reporting/home', 'missing'],
+    ['Reports', base + 'app/all-accounts/Ellucian/Insights%20Reporting/browseInsights', 'missing'],
     ['External', 'https://outside.invalid/', 'missing'],
     ['Parameter link', base + 'app/all-accounts/example?state=example', 'missing'],
     ['Other tenant', '/different/app/all-accounts/example', 'missing']
   ];
-  return '<!doctype html><meta charset="utf-8"><style>#experience-header,#actions{display:flex;align-items:center}#spacer{flex:1}</style>' +
+  return '<!doctype html><meta charset="utf-8"><style>#experience-header,#actions{display:flex;align-items:center}#spacer{flex:1}#home-cover{position:absolute;inset:0 0 auto;height:44px}#actions,#experience-header>a{position:relative;z-index:1}[role=presentation]{position:relative;z-index:2}</style>' +
     '<svg width="0" height="0"><defs><symbol id="ds-icon-design" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></symbol>' +
     '<symbol id="ds-icon-packages" viewBox="0 0 24 24"><rect width="24" height="24"/></symbol></defs></svg>' +
     '<div id="experience-header"><a aria-label="Home home" href="'+base+'">Home</a><span id="spacer"></span>' +
     '<div id="actions"><div><button id="calendar-btn">Tasks</button></div><div><button id="notifications-btn">Notifications</button></div>' +
-    '<div><button id="grid-btn">Capabilities</button></div></div><button>Account</button></div><main></main>' +
+    '<div><button id="grid-btn">Capabilities</button></div></div><button>Account</button></div><main></main>' + (homeOverlay ? '<div id="home-cover"></div>' : '') +
     '<template id="drawer"><div role="presentation"><section><header><h2 id="applicationsHeader">Capabilities</h2><button id="close">Close</button></header><ul>' +
     apps.map(([name, href, icon]) => '<li><a href="'+href+'"><svg aria-hidden="true"><use href="#ds-icon-'+icon+'"/></svg><span>'+name+'</span></a></li>').join('') +
     '</ul></section></div></template><script>' +
@@ -46,7 +46,7 @@ function fixture(base) {
       const url = new URL(route.request().url());
       if (url.protocol === 'chrome-extension:') return route.continue();
       if (url.origin === origin && route.request().isNavigationRequest()) {
-        return route.fulfill({ contentType: 'text/html', body: fixture('/'+url.pathname.split('/')[1]+'/') });
+        return route.fulfill({ contentType: 'text/html', body: fixture('/'+url.pathname.split('/')[1]+'/', /^\/[^/]+\/?$/.test(url.pathname)) });
       }
       unexpected.push(url.origin);
       return route.abort();
@@ -96,8 +96,28 @@ function fixture(base) {
     assert.equal(await shortcut(home,'Reports').count(),1);
 
 
-    // A history-only route change must remove and restore pins even when the shell keeps its header.
+    // Return through Ellucian’s left Home link and click a saved icon through the Home overlay.
+    await home.getByRole('button',{name:'Close'}).click();
+    await home.getByRole('link',{name:'Home home'}).click();
+    await home.waitForURL(origin + base);
+    const reports = shortcut(home,'Reports');
+    await reports.waitFor();
+    assert.ok(await reports.evaluate(link => {
+      const box = link.getBoundingClientRect();
+      return link.contains(document.elementFromPoint(box.x + box.width/2, box.y + box.height/2));
+    }), 'Home content must not intercept shortcut clicks');
+    await reports.click();
+    await home.waitForURL('**/Insights%20Reporting/browseInsights');
+    await shortcut(home,'Reports').waitFor();
+    await home.getByRole('button',{name:'Capabilities'}).click();
+    assert.equal(await star(home,'Reports').getAttribute('aria-pressed'),'true');
+
+    // A transition to another capability keeps its menu and pins. Leaving the app area removes both.
     await packages.evaluate(()=>history.pushState({},'',location.pathname.replace('data-connect/jobRuns','other-app/')));
+    await packages.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(await shortcut(packages,'Reports').isVisible(),true);
+    assert.equal(await star(packages,'Reports').getAttribute('aria-pressed'),'true');
+    await packages.evaluate(()=>history.pushState({},'','/sample/non-app-page'));
     await packages.locator('.inav-cap-pins').waitFor({state:'detached'});
     await packages.goBack();
     await shortcut(packages,'Reports').waitFor();
@@ -107,7 +127,7 @@ function fixture(base) {
     await other.getByRole('button',{name:'Capabilities'}).click();
     await star(other,'Designer').waitFor();
     assert.equal(await other.locator('.inav-cap-pins').count(),0);
-    const elsewhere = await openPage(base+'app/all-accounts/Ellucian/other-app/');
+    const elsewhere = await openPage(base+'non-app-page');
     await elsewhere.getByRole('button',{name:'Capabilities'}).click();
     assert.equal(await elsewhere.locator('.inav-cap-star,.inav-cap-pins').count(),0);
     await star(home,'Reports').click();
@@ -144,7 +164,7 @@ function fixture(base) {
     assert.equal(await star(failed,'Designer').count(),0);
     assert.equal(await failed.getByRole('link',{name:'Designer',exact:true}).isVisible(), true);
     // Restoring a reachable route retries the read. A rejected write leaves the same star usable.
-    await failed.evaluate(()=>{capStore.failRead=false; history.pushState({},'','/sample/app/other');});
+    await failed.evaluate(()=>{capStore.failRead=false; history.pushState({},'','/sample/non-app-page');});
     await failed.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     await failed.goBack();
     await star(failed,'Designer').click();
@@ -156,7 +176,7 @@ function fixture(base) {
     await shortcut(failed,'Designer').waitFor();
 
     assert.deepEqual(unexpected, []);
-    console.log('PASS Capabilities: independent stars, SVG and name shortcuts, keyboard navigation, reload, both concurrent pins, site routes, tenant separation, header replacement, native controls and unpin.');
+    console.log('PASS Capabilities: independent stars, SVG and name shortcuts, keyboard navigation, reload, both concurrent pins, Home overlay, Reporting and other capability routes, tenant separation, header replacement, native controls and unpin.');
   } finally {
     try { await context?.close(); }
     finally {

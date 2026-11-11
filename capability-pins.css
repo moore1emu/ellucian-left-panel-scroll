@@ -7,7 +7,8 @@ li:has(> .inav-cap-star) > a { flex: 1 1 auto; min-width: 0; }
 .inav-cap-star:hover, .inav-cap-star:focus-visible { background: rgba(128,128,128,.15); }
 
 /* Bound the shortcut strip so the Experience header still has room for its own actions. */
-.inav-cap-pins { display: flex; align-items: center; min-width: 0; max-width: 30vw; overflow-x: auto; scrollbar-width: thin; }
+/* Home draws a positioned layer over ordinary header content. Match the native Home link's stacking level. */
+.inav-cap-pins { position: relative; z-index: 1; display: flex; align-items: center; min-width: 0; max-width: 30vw; overflow-x: auto; scrollbar-width: thin; }
 .inav-cap-pins a { display: inline-flex; align-items: center; justify-content: center; gap: .3rem; flex: none; min-width: 2.25rem; min-height: 2.25rem; padding-inline: .25rem; border-radius: .25rem; color: inherit; font: inherit; text-decoration: none; }
 .inav-cap-pins a:hover, .inav-cap-pins a:focus-visible { background: rgba(128,128,128,.18); }
 .inav-cap-pins a:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }

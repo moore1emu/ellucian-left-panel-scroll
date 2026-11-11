@@ -4,7 +4,7 @@ For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for deliv
 
 Make Ellucian Integration Packages and Integration Designer easier to navigate in Chrome and Microsoft Edge.
 
-In version **1.23.6**, star an app in the nine-dot **Capabilities** menu to add its shortcut beside **Tasks** on Experience Home, Integration Packages and Integration Designer. Star it again to remove it.
+In version **1.23.7**, star an app in the nine-dot **Capabilities** menu to add its shortcut beside **Tasks** on Experience Home and across the tenant’s capability apps, including Reporting & Analytics. Star it again to remove it.
 
 In Job Run Files, **Wrap text** wraps CSV values while keeping column headings on one line. If the headings exceed the viewer width, scroll horizontally to see them all. **Wrap text** stays visible but grayed out when **Formatted view** is off. To hide both controls and use Ellucian’s text viewer, turn off **Enable JSON and CSV viewer** under **Page Behavior**. Turning it back on restores your **Formatted view** and **Wrap text** choices. Scroll horizontally to read long CSV fields or JSON lines, or turn on wrapping to fit them to the preview. See the [changelog](docs/CHANGELOG.md).
 
