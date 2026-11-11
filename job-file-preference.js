@@ -70,7 +70,7 @@
     }
     // The footer may arrive after the editor or be replaced while the same file is open.
     if (close) {
-      if (close.nextElementSibling !== control.group) close.after(control.group);
+      if (close.previousElementSibling !== control.group) close.before(control.group);
     } else if (!control.group.isConnected) {
       dialog.append(control.group);
     }

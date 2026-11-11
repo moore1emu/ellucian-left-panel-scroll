@@ -129,7 +129,16 @@ async function checkStorageFailures(context) {
     const wrap = page.getByRole('checkbox', {name: 'Wrap text'});
     const footer = page.locator('footer');
     assert.equal(await footer.getByRole('switch',{name:'Formatted view'}).count(), 1);
-    assert.equal(await footer.getByRole('button',{name:'Close'}).evaluate(b=>b.nextElementSibling?.className), 'inav-file-switch');
+    // Both the visible left-to-right order and the keyboard order should end at Close.
+    const close = footer.getByRole('button',{name:'Close'});
+    assert.equal(await close.evaluate(b=>b.previousElementSibling?.className),'inav-file-switch');
+    const [modeBox, wrapBox, closeBox] = await Promise.all([control.boundingBox(), wrap.boundingBox(), close.boundingBox()]);
+    assert.ok(modeBox.x + modeBox.width <= wrapBox.x && wrapBox.x + wrapBox.width <= closeBox.x);
+    await control.focus();
+    await page.keyboard.press('Tab');
+    assert.equal(await wrap.evaluate(el=>el === document.activeElement),true);
+    await page.keyboard.press('Tab');
+    assert.equal(await close.evaluate(el=>el === document.activeElement),true);
     assert.equal(await wrap.isChecked(), false);
     const wide = 'W'.repeat(300);
     await page.evaluate(text => fixtureEditor.setValue('Key,Description\n1,'+text,-1),wide);

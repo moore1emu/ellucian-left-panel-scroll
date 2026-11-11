@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.23.2 — 2026-11-11
+
+- In the Job Run Files footer, **Formatted view** and **Wrap text** now appear to the left of **Close**. Tab moves through the controls in that order.
+
 ## 1.23.1 — 2026-11-11
 
 - Moved **Formatted view** beside **Close** and added a remembered **Wrap text** checkbox. Long CSV fields and JSON lines scroll horizontally by default. Changing wrapping keeps the current CSV page and expanded JSON branches.

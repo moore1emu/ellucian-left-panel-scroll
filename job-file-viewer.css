@@ -5,7 +5,7 @@
   align-items: center;
   vertical-align: middle;
   gap: .3rem 1rem;
-  margin-inline-start: .75rem;
+  margin-inline-end: .75rem;
   font: inherit;
 }
 .inav-file-switch label { display: inline-flex; align-items: center; gap: .4rem; cursor: pointer; }
