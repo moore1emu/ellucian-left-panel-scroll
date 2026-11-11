@@ -2,6 +2,11 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.22.9 — 2026-11-11
+
+- Both pipeline stars now recognize the same saved favorite when its displayed name or version changes. Unpinning removes saved duplicates for that row and preserves other major versions.
+- Integration Packages now shows the latest published Sub-Pipeline release in each major version.
+
 ## 1.22.8 — 2026-10-15
 
 - Fixes View Published Fitting Details when the published pipeline already has a draft. The page's alternate published-state label is now recognized; the existing version remained locked in this case.

@@ -19,7 +19,7 @@ Version 1.22.7 also recognizes Packages tenants supplied through the page's live
 - Select a favorite package to open it, or a favorite pipeline to open that pipeline's page.
 - Use the arrow to expand or collapse a favorite's pipelines without opening the package.
 - Drag handles to reorder packages or pipelines within their package.
-- Use a selected star again to unpin an item, including from the favorites area.
+- Use a selected star again to unpin an item, including from the favorites area. If an older build saved duplicate entries for the same pipeline, one click removes them together.
 - Resize the favorites area vertically, or collapse it when you need more space.
 
 Favorites and their layout stay separate by site, tenant ID, and Packages/Designer page. Multiple tenants on one vanity domain have separate lists. Hiding favorites does not delete them. Unavailable favorites are hidden without deleting their saved pins. Unknown tenant identity cannot load another tenant's favorites.
@@ -36,7 +36,7 @@ Designer pipeline search shows the first 20 matches and a count when there are m
 
 Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
 
-Enable **Page Behavior → Show APIs & Sub-Pipelines** to add a **Type** column and the newest published API/Sub-Pipeline release for each name in Integration Packages. These are plain, non-clickable records without run actions; they are not added to the sidebar or favorites. Normal Integration links work as before. These records use the page's normal package response, not extra network lookups or the Designer cache. **Shared From** remains an independent optional column.
+Enable **Page Behavior → Show APIs & Sub-Pipelines** to add a **Type** column and the newest published release for each API and for each major version of a Sub-Pipeline in Integration Packages. These are plain, non-clickable records without run actions; they are not added to the sidebar or favorites. Normal Integration links work as before. These records use the page's normal package response, not extra network lookups or the Designer cache. **Shared From** remains an independent optional column.
 
 Refresh Integration Packages once after installing this update or re-enabling **Show APIs & Sub-Pipelines**. The page then loads the metadata normally, before its sidebar filters out non-runnable entries. Turning this display setting off removes Type and the extra records and clears their temporary in-memory data, without clearing Designer sources or favorites. Turning Shared From off removes only its source column and cache. Source labels require visiting Designer; API/Sub-Pipeline names do not.
 

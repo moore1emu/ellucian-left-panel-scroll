@@ -4,7 +4,7 @@ For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for deliv
 
 Make Ellucian Integration Packages and Integration Designer easier to navigate in Chrome and Microsoft Edge.
 
-Version **1.22.8** fixes read-only published-fitting viewing when a draft already exists, and retains the Packages favorites fix. Saved pins and the existing v1 interface are preserved; see the [changelog](docs/CHANGELOG.md).
+Version **1.22.9** fixes duplicate pipeline favorites and lets you unpin them from either list. Integration Packages also displays each published Sub-Pipeline major. See the [changelog](docs/CHANGELOG.md).
 
 ## What It Does
 
@@ -76,6 +76,7 @@ node tests/popup-switches.regression.js
 node tests/tenant-favorites.cjs
 node tests/tenant-context.cjs
 node tests/tenant-favorites-browser.cjs
+node tests/package-artifact-majors.cjs
 node tests/published-fitting-details.cjs
 node tests/browser-profile-cleanup.cjs
 ```

@@ -22,7 +22,11 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     const list=document.querySelector('ul');list.innerHTML='';
     const row=document.createElement('li');row.dataset.level='1';row.dataset.nodeid=tenant;
     row.setAttribute('package-element','');row.innerHTML='<div class="MuiTreeItem-content"><span class="MuiTreeItem-label">'+tenant+' Package</span></div>';
-    row.__reactProps$fixture={'package-element':{name:tenant+' Package',pipelines:[{name:tenant+' Pipeline',version:'1.0.0'}]}};
+    row.__reactProps$fixture={'package-element':{name:tenant+' Package',pipelines:[{name:tenant+' Pipeline',version:'v1.1.2',originalName:'Original Pipeline'},{name:tenant+' Pipeline',version:'v2.0.0'}]}};
+    // Mirror the Packages tree's visible version chip and its separate accessible star.
+    const children=document.createElement('ul');
+    children.innerHTML='<li data-level="2" pipeline-element><div class="MuiTreeItem-content"><div data-ellucian-pipeline-row="true"><span title="'+tenant+' Pipeline">'+tenant+' Pipeline</span><span id="fixture-chip">1.1.2</span></div></div></li>';
+    row.appendChild(children);
     // Packages can expose only menu/session context; identity must never invoke authentication.
     row.__reactFiber$fixture=page==='designer'?{}:{stateNode:{state:{menu:[]},context:{tenantId:tenant,getJwt:()=>{throw Error('Identity must not invoke a session callback');}}}};list.appendChild(row);
     // Retain a stale Designer root on Packages to verify route-specific lookup, not just priority.
@@ -57,7 +61,11 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await worker.evaluate(() => pendingOwnershipUpdate);
     await worker.evaluate(() => chrome.storage.local.set({
       favoritePackagesByHost: {
-        'experience-test.elluciancloud.com|packages': [{ packageName: 'test-a Package', packagePinned: true, pipelines: [] }],
+        'experience-test.elluciancloud.com|packages': [{ packageName: 'test-a Package', packagePinned: true, pipelines: [
+          {name:'Original Pipeline', originalName:'', version:'v1.0.0'},
+          {name:'test-a Pipeline', originalName:'', version:'v1.1.1'},
+          {name:'test-a Pipeline', originalName:'', version:'v2.0.0'},
+        ] }],
         'experience-test.elluciancloud.com|designer': [{ packageName: 'Old Designer Pin', packagePinned: true, pipelines: [] }],
       },
     }));
@@ -76,6 +84,34 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await page.reload();
     await page.locator('.ellucian-favorite-select').filter({ hasText: 'test-a Package' }).waitFor();
     assert.deepEqual(await read(), beforePackagesReload, 'Packages reload preserves tenant lists exactly');
+    // Existing aliases and the duplicate created by the old star must display as one v1 pin.
+    const pinnedV1 = page.locator('.ellucian-favorite-pipeline-item').filter({ hasText: 'v1.1.2' });
+    const nativeStar = page.locator('li[data-level="2"] .ellucian-pipeline-favorite-button');
+    await pinnedV1.first().waitFor();
+    assert.equal(await pinnedV1.count(), 1, 'Only one pinned row for the resolved pipeline');
+    assert.equal(await nativeStar.getAttribute('aria-pressed'), 'true');
+    // A grouped duplicate follows its keyboard reorder handle, including its original stored alias.
+    const handle = pinnedV1.locator('.ellucian-favorite-pipeline-drag-handle');
+    await handle.press('ArrowDown');
+    await page.waitForFunction(() => document.querySelector('.ellucian-favorite-pipeline-version')?.textContent === 'v2.0.0');
+    await pinnedV1.locator('.ellucian-favorite-pipeline-remove').click();
+    // Check the actual worker save and a page reload before pinning it again.
+    const savedKey = JSON.stringify([site, 'test-a', 'packages']);
+    const saveDeadline = Date.now() + 5000;
+    while ((await read()).favoritePackagesByTenant[savedKey][0].pipelines.length !== 1) {
+      assert.ok(Date.now() < saveDeadline, 'Unpin must persist both removals');
+      await page.waitForTimeout(25);
+    }
+    await page.reload();
+    await page.locator('li[data-level="2"] button[aria-pressed="false"]').waitFor();
+    assert.equal(await pinnedV1.count(), 0);
+    assert.deepEqual((await read()).favoritePackagesByTenant[savedKey][0].pipelines.map(p => p.version), ['v2.0.0']);
+    // Repin and unpin from the native tree while observing both controls.
+    await nativeStar.click();
+    await pinnedV1.waitFor();
+    assert.equal(await nativeStar.getAttribute('aria-pressed'), 'true');
+    await nativeStar.click();
+    await pinnedV1.waitFor({ state:'detached' });
     // Switching tenants with an unchanged vanity-style URL must separate the list and ignore bootstrap identity.
     await page.evaluate(() => switchTenant('test-b'));
     await pin().waitFor();
@@ -227,7 +263,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     const count = await page.evaluate(() => __messages.length);
     await page.waitForTimeout(1200);
     assert.equal(await page.evaluate(() => __messages.length), count, 'No idle polling');
-    assert.equal(requests.filter((url) => url.startsWith('https:')).length, 4, 'Only explicit fixture navigations and the Packages reload make requests');
+    assert.equal(requests.filter((url) => url.startsWith('https:')).length, 5, 'Only explicit fixture navigations and reloads make requests');
     assert.deepEqual(errors, []);
     console.log('PASS: last-section backup actions, independent export/refresh feedback and retry, real popup export/import/refresh, direct Designer reload/cache, tenant recovery/isolation, and zero idle polling/service lookups.');
 

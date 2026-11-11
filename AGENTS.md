@@ -6,6 +6,8 @@
 - Use `develop` for test builds. Owner-authorized review branches may feed into develop. Keep main unchanged until the owner confirms the intended release works and explicitly authorizes merging. Testing, store submission, store approval, and GitHub merging are separate steps.
 - Use draft pull requests to track unconfirmed development. Preserve individual version commits when an approved merge is performed. Do not enable auto-merge or publish/upload a store update without authorization.
 
+- Keep pipeline star actions tied to the saved pin identities represented by the displayed row. A single unpin removes prior duplicates within that package and major version.
+
 ## Comments and Execution Worlds
 
 - Put concise, normally one-line comments immediately before meaningful steps and decisions, explaining why. Comment setup, API calls, loops, conditions, transformations, non-obvious assignments, and file writes; do not substitute large headers for inline explanations.
@@ -23,7 +25,7 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v1 version after 1.22.8 is 1.22.9. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v1 version after 1.22.9 is 1.23.0. Do not rename historical releases.
 - Published fitting detection recognizes both observed Create Draft labels, including the existing-draft case, and still requires disabled Publish on the fitting route. Unknown labels/editors remain locked; never simplify this to disabled-controls or pointer-events-only detection.
 - This v1 hotfix branches from main independently of v2 development. Bring the narrow Packages identity fix into develop too, without replacing v2 files or merging unfinished v2 work into main.
 - Packages identity may come from context.tenantId on the existing menu/session owner. Keep that fallback Packages-only, inspect only callback presence (never invoke it for identity), and preserve Designer's live manager lookup and tenant isolation. Missing identity must not reset saved pins or reuse a stale tenant.
