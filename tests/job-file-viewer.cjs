@@ -122,6 +122,14 @@ async function checkStorageFailures(context) {
     await open('records.CSV',csv);
     await panel.locator('tbody tr').first().waitFor();
     assert.equal(await control.isChecked(), true);
+    // Drive the real Page Behavior switch so the popup, storage, and open Ellucian tab are tested together.
+    const settings = await context.newPage();
+    await settings.goto(new URL('popup.html', worker.url()).href);
+    const masterTrack = settings.locator('label[for="job-file-viewer-enabled"] .switch-track');
+    const master = settings.locator('.page-behavior-card').getByRole('checkbox', {name:'Enable JSON and CSV viewer',exact:true});
+    await settings.waitForFunction(() => document.querySelector('#job-file-viewer-enabled')?.disabled === false);
+    assert.equal(await master.isChecked(),true);
+
     assert.deepEqual(await panel.locator('tbody tr').first().locator('td').allTextContents(), ['Example','one, two\nthree "quotes"','']);
     assert.equal(await panel.locator('img').count(),0);
     assert.equal(await raw.isVisible(),false);
@@ -159,11 +167,23 @@ async function checkStorageFailures(context) {
     await raw.waitFor();
     assert.equal(await wrap.isVisible(),false);
     assert.equal(await page.evaluate(()=>fixtureEditor.getValue()),csv);
+    // Disable with raw mode selected and wrapping saved on. Reload both pages while disabled.
+    await masterTrack.click();
+    await control.waitFor({state:'detached'});
+    assert.equal(await panel.count(),0);
+    await settings.reload();
+    await settings.waitForFunction(() => document.querySelector('#job-file-viewer-enabled')?.disabled === false);
+    assert.equal(await master.isChecked(),false);
     await page.getByRole('button',{name:'Close',exact:true}).click();
     await page.reload();
     // The choice applies to the next format and survives a full document reload.
     const json = '{"record":{"id":900719925474099312345,"note":"safe <tag>","id":2}}';
     await open('result.json',json);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await control.count(),0);
+    await raw.waitFor();
+    assert.equal(await page.evaluate(()=>fixtureEditor.getValue()),json);
+    await masterTrack.click();
     await control.waitFor();
     assert.equal(await control.isChecked(),false);
     await control.check();
@@ -185,6 +205,18 @@ async function checkStorageFailures(context) {
       return el.scrollWidth > el.clientWidth;
     });
     assert.equal(await panel.locator('details[open]').count(),openBefore);
+    // With formatted mode on and wrap off, disabling must restore the actual native file immediately.
+    await master.press('Space');
+    await control.waitFor({state:'detached'});
+    await raw.waitFor();
+    assert.equal(await panel.count(),0);
+    assert.equal(await page.evaluate(()=>fixtureEditor.getValue()),wideJSON);
+    await master.press('Space');
+    await panel.locator('summary').first().waitFor();
+    assert.equal(await control.isChecked(),true);
+    assert.equal(await wrap.isChecked(),false);
+    // Reopen the record after restoring formatted mode to exercise wrapping its long JSON value.
+    await panel.locator('summary').filter({hasText:'"record"'}).click();
     await wrap.check();
     await page.waitForFunction(() => {
       const el=document.querySelector('.inav-file-output');
@@ -218,7 +250,7 @@ async function checkStorageFailures(context) {
     await checkStorageFailures(context);
     assert.deepEqual(unexpected,[]);
     assert.deepEqual(errors,[]);
-    console.log('PASS installed Job Run Files: footer controls, horizontal scrolling, CSV and JSON wrapping, saved preferences, pagination, JSON disclosure, native fallback and zero extra requests.');
+    console.log('PASS installed Job Run Files: Page Behavior enable/disable and saved footer choices, horizontal scrolling, CSV and JSON wrapping, saved preferences, pagination, JSON disclosure, native fallback and zero extra requests.');
   } finally {
     try { await context?.close(); }
     finally {

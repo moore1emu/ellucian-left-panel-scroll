@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.23.3 — 2026-11-11
+
+- Added **Enable JSON and CSV viewer** under **Page Behavior**, on by default. Turning it off restores the native viewer immediately. Turning it back on restores both footer preferences.
+
 ## 1.23.2 — 2026-11-11
 
 - In the Job Run Files footer, **Formatted view** and **Wrap text** now appear to the left of **Close**. Tab moves through the controls in that order.

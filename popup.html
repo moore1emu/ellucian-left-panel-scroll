@@ -67,6 +67,18 @@
           </span>
         </label>
         <p id="package-artifacts-status" class="icon-status" role="status" aria-live="polite"></p>
+        <!-- Let the native text viewer take over without resetting either footer preference. -->
+        <label class="setting-row" for="job-file-viewer-enabled">
+          <span class="setting-copy">
+            <span class="setting-title" id="job-file-viewer-title">Enable JSON and CSV viewer</span>
+            <span class="setting-description" id="job-file-viewer-help">Format files in Job Run Files.</span>
+          </span>
+          <span class="switch">
+            <input id="job-file-viewer-enabled" type="checkbox" disabled aria-labelledby="job-file-viewer-title" aria-describedby="job-file-viewer-help" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="job-file-viewer-status" class="icon-status" role="status" aria-live="polite"></p>
         <!-- Separate navigation/display choices from the two optional sharing features. -->
         <hr class="page-behavior-divider" />
         <!-- Keep destination sharing details an opt-in named to match Shared From. -->

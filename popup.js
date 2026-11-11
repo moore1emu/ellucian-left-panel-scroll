@@ -11,6 +11,7 @@
   const FAVORITES_ENABLED_KEY = "favoritesEnabled";
   const SHARED_VERSION_ENABLED_KEY = "sharedVersionEnabled";
   const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
+  const JOB_FILE_VIEWER_ENABLED_KEY = 'jobFileViewerEnabled';
   const PACKAGE_ARTIFACTS_ENABLED_KEY = 'packageArtifactsEnabled';
   // Store only the opt-in, never the published fitting's source or values.
   const FITTING_DETAILS_ENABLED_KEY = 'fittingDetailsEnabled';
@@ -21,6 +22,8 @@
   const favoritesEnabledSwitch = document.querySelector("#favorites-enabled");
   const sharedVersionSwitch = document.querySelector("#shared-version-enabled");
   const sharedFromSwitch = document.querySelector("#shared-from-enabled");
+  const jobFileViewerSwitch = document.querySelector('#job-file-viewer-enabled');
+  const jobFileViewerStatus = document.querySelector('#job-file-viewer-status');
   const packageArtifactsSwitch = document.querySelector('#package-artifacts-enabled');
   const packageArtifactsStatus = document.querySelector('#package-artifacts-status');
   // Reuse the confirmed-value switch saver for this independent Designer option.
@@ -77,6 +80,7 @@
     {
       [REMEMBER_WIDTH_KEY]: false,
       [FAVORITES_ENABLED_KEY]: true,
+      [JOB_FILE_VIEWER_ENABLED_KEY]: true,
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SHARED_FROM_ENABLED_KEY]: false,
       [PACKAGE_ARTIFACTS_ENABLED_KEY]: null,
@@ -88,6 +92,7 @@
     },
     (settings) => {
       // Display the width preference and its explanatory status.
+      jobFileViewerSwitch.checked = settings[JOB_FILE_VIEWER_ENABLED_KEY] !== false;
       rememberWidthSwitch.checked = Boolean(settings[REMEMBER_WIDTH_KEY]);
       sharedVersionSwitch.checked = settings[SHARED_VERSION_ENABLED_KEY] === true;
       fittingDetailsSwitch.checked = settings[FITTING_DETAILS_ENABLED_KEY] === true;
@@ -115,7 +120,7 @@
         settings[FAVORITES_ENABLED_KEY] !== false;
 
       // Treat the loaded values as confirmed before allowing any switch changes.
-      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch].forEach((input) => {
+      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch, jobFileViewerSwitch].forEach((input) => {
         confirmedSwitchValues.set(input, input.checked);
         input.disabled = false;
       });
@@ -325,6 +330,11 @@
       else onSaved?.(value);
     });
   }
+
+  // Save only the viewer enablement so its formatted and wrapping preferences survive either state.
+  jobFileViewerSwitch.addEventListener('change', () => {
+    saveSwitch(jobFileViewerSwitch, JOB_FILE_VIEWER_ENABLED_KEY, 'Enable JSON and CSV viewer', jobFileViewerStatus);
+  });
 
   // Width behavior remains separate from the new record display switch.
   rememberWidthSwitch.addEventListener("change", () => {

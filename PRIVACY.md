@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Job Run Files formats the preview already loaded by Ellucian in page memory. The browser stores only the Formatted view and Wrap text preferences for this feature. File contents stay in the viewer.
+Job Run Files formats the preview already loaded by Ellucian in page memory. The browser stores only whether the viewer is enabled and the Formatted view and Wrap text preferences for this feature. File contents stay in the viewer.
 
 Integration Navigator · Updated October 13, 2026
 
