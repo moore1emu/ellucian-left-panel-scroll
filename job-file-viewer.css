@@ -9,7 +9,7 @@
   font: inherit;
 }
 .inav-file-switch label { display: inline-flex; align-items: center; gap: .4rem; cursor: pointer; }
-.inav-file-switch label[hidden] { display: none; }
+.inav-file-switch label:has(input:disabled) { color: GrayText; cursor: default; }
 .inav-file-switch input { width: 1rem; height: 1rem; margin: 0; }
 #review-file.inav-file-raw-hidden { display: none !important; }
 

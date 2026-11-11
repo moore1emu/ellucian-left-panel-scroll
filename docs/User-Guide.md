@@ -6,7 +6,7 @@
 
 In **Page Behavior**, **Enable JSON and CSV viewer** starts on. Turn it off to use Ellucian’s text viewer and hide the two footer controls. Turning it back on restores your saved **Formatted view** and **Wrap text** choices, even in an open file.
 
-Open **View File** for a CSV or JSON job output. At the bottom of the dialog, **Formatted view** and **Wrap text** are to the left of **Close**. Formatted view starts on. Scroll across wide files, or select **Wrap text** to fit long values to the available width. Wrapping starts off. CSV uses the first record for column headings and preserves quoted fields. Expand JSON objects and arrays to read their contents. Turn the switch off for the original text. Your browser remembers both choices for the next file. Large or invalid previews fall back to the original text.
+Open **View File** for a CSV or JSON job output. At the bottom of the dialog, **Formatted view** and **Wrap text** are to the left of **Close**. Formatted view starts on. Scroll across wide files, or select **Wrap text** to fit long values to the available width. Wrapping starts off. CSV uses the first record for column headings and preserves quoted fields. Expand JSON objects and arrays to read their contents. Turn **Formatted view** off for the original text. **Wrap text** stays visible but grayed out, and keeps its checkmark when you turn formatting back on. Your browser remembers both choices for the next file. Large or invalid previews fall back to the original text.
 
 ## Getting Started
 

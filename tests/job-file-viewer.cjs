@@ -66,6 +66,11 @@ async function checkStorageFailures(context) {
   await start('pending');
   const wrap = page.getByRole('checkbox', {name: 'Wrap text'});
   await wrap.check();
+  // A dialog refresh must not unlock Wrap text while its write is still pending.
+  await page.evaluate(() => {
+    document.querySelector('footer').append(document.createTextNode(' '));
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
   assert.equal(await wrap.isDisabled(), true);
   await page.evaluate(() => fixtureStorage.reject(Error('Wrap save failed')));
   await page.waitForFunction(() => {
@@ -165,7 +170,12 @@ async function checkStorageFailures(context) {
     await panel.getByText('Example',{exact:true}).waitFor();
     await control.uncheck();
     await raw.waitFor();
-    assert.equal(await wrap.isVisible(),false);
+    assert.equal(await wrap.isVisible(),true);
+    assert.equal(await wrap.isDisabled(),true);
+    assert.equal(await wrap.isChecked(),true);
+    await control.focus();
+    await page.keyboard.press('Tab');
+    assert.equal(await close.evaluate(el=>el === document.activeElement),true);
     assert.equal(await page.evaluate(()=>fixtureEditor.getValue()),csv);
     // Disable with raw mode selected and wrapping saved on. Reload both pages while disabled.
     await masterTrack.click();
@@ -186,7 +196,11 @@ async function checkStorageFailures(context) {
     await masterTrack.click();
     await control.waitFor();
     assert.equal(await control.isChecked(),false);
+    assert.equal(await wrap.isVisible(),true);
+    assert.equal(await wrap.isDisabled(),true);
+    assert.equal(await wrap.isChecked(),true);
     await control.check();
+    assert.equal(await wrap.isEnabled(),true);
     const branch = panel.locator('summary').filter({hasText:'"record"'});
     await branch.focus();
     await page.keyboard.press('Enter');
@@ -205,6 +219,14 @@ async function checkStorageFailures(context) {
       return el.scrollWidth > el.clientWidth;
     });
     assert.equal(await panel.locator('details[open]').count(),openBefore);
+    await control.uncheck();
+    await raw.waitFor();
+    assert.equal(await wrap.isDisabled(),true);
+    assert.equal(await wrap.isChecked(),false);
+    await control.check();
+    await panel.locator('summary').first().waitFor();
+    assert.equal(await wrap.isEnabled(),true);
+    assert.equal(await wrap.isChecked(),false);
     // With formatted mode on and wrap off, disabling must restore the actual native file immediately.
     await master.press('Space');
     await control.waitFor({state:'detached'});

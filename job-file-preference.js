@@ -6,6 +6,7 @@
   const formatted = { key: 'jobFilesFormattedView', initial: true, value: true, revision: 0 };
   const wrapping = { key: 'jobFilesWrapText', initial: false, value: false, revision: 0 };
   const preferences = [viewer, formatted, wrapping];
+  const saving = new WeakSet();
   const signal = 'ellucian-job-file-view-change';
   let loaded = false, control = null, frame = 0;
   let navigation = !globalThis.FeatureTools;
@@ -17,6 +18,10 @@
     control.group.remove();
     control = null;
     syncPage();
+  }
+
+  function updateWrapAvailability() {
+    if (control) control.wrap.disabled = !formatted.value || saving.has(control.wrap);
   }
 
   function addChoice(group, text, preference) {
@@ -34,8 +39,9 @@
       const previous = preference.value;
       const edit = ++preference.revision;
       preference.value = input.checked;
+      saving.add(input);
       input.disabled = true;
-      control.wrap.parentElement.hidden = !formatted.value;
+      updateWrapAvailability();
       schedule();
       syncPage();
       try {
@@ -43,7 +49,9 @@
       } catch {
         if (preference.revision === edit) preference.value = previous;
       } finally {
+        saving.delete(input);
         input.disabled = false;
+        updateWrapAvailability();
         schedule();
       }
     });
@@ -77,7 +85,7 @@
     }
     control.mode.checked = formatted.value;
     control.wrap.checked = wrapping.value;
-    control.wrap.parentElement.hidden = !formatted.value;
+    updateWrapAvailability();
     syncPage();
   }
 

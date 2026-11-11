@@ -4,7 +4,7 @@ For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for deliv
 
 Make Ellucian Integration Packages and Integration Designer easier to navigate in Chrome and Microsoft Edge.
 
-Version **1.23.3** adds **Enable JSON and CSV viewer** under **Page Behavior**. Turn it off to use Ellucian’s text viewer. Turning it back on restores your **Formatted view** and **Wrap text** choices. Scroll horizontally to read long CSV fields or JSON lines, or turn on wrapping to fit them to the preview. See the [changelog](docs/CHANGELOG.md).
+In version **1.23.4**, **Wrap text** stays visible but grayed out when **Formatted view** is off. To hide both controls and use Ellucian’s text viewer, turn off **Enable JSON and CSV viewer** under **Page Behavior**. Turning it back on restores your **Formatted view** and **Wrap text** choices. Scroll horizontally to read long CSV fields or JSON lines, or turn on wrapping to fit them to the preview. See the [changelog](docs/CHANGELOG.md).
 
 ## What It Does
 
