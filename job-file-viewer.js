@@ -156,14 +156,21 @@
     const dialog = host?.closest('[role="dialog"]');
     const title = dialog?.querySelector('h1,h2,h3,[role="heading"]')?.textContent.trim() ?? '';
     const format = title.match(/\.(json|csv)$/iu)?.[1]?.toLowerCase();
-    const enabled = dialog?.querySelector('.inav-file-switch input')?.checked;
+    const controls = dialog?.querySelector('.inav-file-switch');
+    const enabled = controls?.querySelector('[role="switch"]')?.checked;
+    const wrap = controls?.querySelector('input:not([role])')?.checked === true;
     const editor = host?.env?.editor;
     if (!enabled || !format || !/\/data-connect(?:\/|$)/iu.test(location.pathname) ||
         !editor?.getValue || !editor.on || !editor.off) { restore(); return; }
-    if (active?.editor === editor && active.host === host && active.title === title && active.panel.isConnected) return;
+    if (active?.editor === editor && active.host === host && active.title === title && active.panel.isConnected) {
+      // Reflow existing nodes to keep the CSV page and expanded JSON branches in place.
+      active.panel.classList.toggle('inav-file-wrap', wrap);
+      return;
+    }
     restore();
     const panel = element('div');
     panel.className = 'inav-file-output';
+    panel.classList.toggle('inav-file-wrap', wrap);
     panel.setAttribute('aria-label', 'Formatted ' + format.toUpperCase());
     panel.setAttribute('role','region');
     panel.tabIndex = 0;

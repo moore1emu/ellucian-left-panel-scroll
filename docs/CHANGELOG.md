@@ -1,5 +1,10 @@
 # Update history
 
+## 3.2.1 — 2026-11-11
+
+- Pin or unpin apps from the nine-dot Capabilities menu. Favorites open in the current tab and follow the tenant across Home, apps, card pages and approved custom sites.
+- In Job Run Files, Formatted view and Wrap text sit to the left of Close. Wide previews scroll horizontally. Wrapping keeps CSV headings on one line. Disable the viewer under Navigation to use the original text and retain both choices. Both features follow the Navigation Tools switch.
+
 ## 3.2.0 — 2026-11-11
 
 - Job Run Files opens CSV previews as tables and JSON previews with collapsible objects and arrays. The Formatted view switch defaults to on and remembers the last choice in this browser profile.

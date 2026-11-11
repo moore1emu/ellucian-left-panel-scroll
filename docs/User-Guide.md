@@ -1,12 +1,20 @@
 # User Guide
 
-> This is the separate **3.2.0 Git test candidate**, based on v2.1.9. Settings → Export launches the workspace for the connected source page, or opens Git Connections/Export Configuration directly. Version/file choices are in Export Configuration; Favorites Backup & Restore stays in settings. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. Live Git acceptance is still unverified.
+> This is the separate **3.2.1 Git test candidate**, based on v2.1.9. Settings → Export launches the workspace for the connected source page, or opens Git Connections/Export Configuration directly. Version/file choices are in Export Configuration; Favorites Backup & Restore stays in settings. See [Git Export Setup](Git-Export.md) and [v3 Development](V3-Development.md). Configure tokens only in the extension-owned connection tab, never on an Experience page or in a support message. A Git upload requires separate preview and confirmation. Live Git acceptance is still unverified.
 
 If settings cannot read saved preferences, reopen settings before changing them. Failed search-display saves restore the previous selection and show a message beside that selector. Avoid editing the same favorites list in multiple tabs simultaneously; cross-tab whole-list conflict merging is not included in this repair. This update does not reconstruct previously lost favorites.
 
+## Capabilities favorites
+
+Open the nine-dot **Capabilities** menu on Experience Home, on a page opened from a card, or in a capability app such as Integration Packages, Integration Designer or Reporting & Analytics. Select the star to the left of an app’s icon to pin it. The stars follow the apps available in your menu. The app appears to the left of **Tasks** on every page under that site’s Home path with the Experience header and Capabilities button. Hover over its icon or focus it with the keyboard to see its name. If the icon is unavailable, the shortcut shows the app name. Select a shortcut or a Capabilities menu link to open the app in the current tab. Select its star again to unpin it. Header favorites stay in this browser profile for the current site and Home path. When Home is at the domain root, the extension uses the tenant ID provided by Experience. The JSON backup covers package and pipeline favorites and saved sharing sources.
+
 ## Job Run Files
 
-Open **View File** for a CSV or JSON job output. **Formatted view** starts on. CSV uses the first record for column headings and preserves quoted fields. Expand JSON objects and arrays to read their contents. Turn the switch off for the original text. Your browser remembers the choice for the next file. Large or invalid previews fall back to the original text. This viewer is part of **Navigation Tools**.
+Enable **Navigation Tools** in General to use Capabilities favorites and the job file viewer.
+
+In **Navigation → Integration Packages**, **Enable JSON and CSV viewer** starts on. Turn it off to use Ellucian’s text viewer and hide the two footer controls. Turning it back on restores your saved **Formatted view** and **Wrap text** choices, even in an open file.
+
+Open **View File** for a CSV or JSON job output. At the bottom of the dialog, **Formatted view** and **Wrap text** are to the left of **Close**. Formatted view starts on. Scroll across wide files, or select **Wrap text** to fit long values to the available width. Wrapping starts off. CSV uses the first record for column headings and preserves quoted fields. With wrapping on, values wrap and headings stay on one line. If the headings are too wide to fit, scroll across the preview. Expand JSON objects and arrays to read their contents. Turn **Formatted view** off for the original text. **Wrap text** stays visible but grayed out, and keeps its checkmark when you turn formatting back on. Your browser remembers both choices for the next file. Large or invalid previews fall back to the original text.
 
 ## Definition Export — Current v3 Candidate
 

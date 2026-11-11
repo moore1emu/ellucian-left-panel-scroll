@@ -1,6 +1,8 @@
 # Privacy Policy
 
-Job Run Files formats the preview already loaded by Ellucian in page memory. The browser stores only the Formatted view preference for this feature. File contents stay in the viewer.
+Job Run Files formats the preview already loaded by Ellucian in page memory. The browser stores only whether the viewer is enabled and the Formatted view and Wrap text preferences for this feature. File contents stay in the viewer.
+
+Capability favorites save each selected app’s name, same-tenant app path and local icon identifier in browser extension storage. The site origin and tenant’s Home path keep the shortcuts together across pages with the Experience header and Capabilities menu, including on custom domains you enable. When Home is at the domain root, the local list also uses the current tenant ID from Experience. The extension obtains these details from the menu already on the page. Opening a shortcut follows the app link in your browser.
 
 Current v3.1.4 configuration stores non-secret tenant/card folder preferences, version/file choices and explicit review-confirmation signatures locally, separately from credentials and favorites/source backups. ZIP and Git share these configured destinations, defaulting to tenant-name folders matched only by verified tenant ID. The bundled JSON editor runs locally without remote editor services or source uploads. Configuration editing never uploads files; Git still needs its separate reviewed confirmation. Older ID-first routing notes below describe historical candidates.
 
