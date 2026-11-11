@@ -2,7 +2,7 @@
 
 ## Scope and Approval
 
-- Capability shortcuts use the current Experience Home path and site origin to share pins across Home and every page beneath that Home path with the Experience header and Capabilities button. Keep the shortcuts clickable above Home’s content layer. Use the native menu’s same-tenant app paths and local icon symbols. Place a separate star before each eligible launch link and follow the current menu contents as rows change. Cover approved custom HTTPS origins, including nested Home paths and root Home links with verified tenant identity. Preserve current-tab navigation and native header spacing.
+- Capability shortcuts use the current Experience Home path and site origin to share pins across Home and every page beneath that Home path with the Experience header and Capabilities button. Keep the shortcuts clickable above Home’s content layer. Use the native menu’s same-tenant app paths and local icon symbols. Place a separate star before each eligible launch link and follow the current menu contents as rows change. Cover approved custom HTTPS origins, including nested Home paths and root Home links with verified tenant identity. Preserve current-tab navigation and native header spacing. The default-on Capabilities favorites switch hides stars and shortcuts without deleting pins. Include the switch and scoped app lists in JSON backups. Older backups preserve both.
 
 - In 1.23.0, Job Run Files uses the open native editor for JSON and CSV. Keep the default-on Formatted view choice in local extension storage and preserve the original file for raw view.
 
@@ -30,7 +30,7 @@
 ## Versions, Packaging, and Documentation
 
 - Maintain one cumulative v1 What’s New list. Carry it through local version bumps and add user-visible changes. Start a new list and advance LAST_PUBLISHED_VERSION only after verifying a new store release. Show it on upgrade and remember dismissal for that version.
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v1 version after 1.24.2 is 1.24.3. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v1 version after 1.24.3 is 1.24.4. Do not rename historical releases.
 - Published fitting detection recognizes both observed Create Draft labels, including the existing-draft case, and still requires disabled Publish on the fitting route. Unknown labels/editors remain locked; never simplify this to disabled-controls or pointer-events-only detection.
 - This v1 hotfix branches from main independently of v2 development. Bring the narrow Packages identity fix into develop too, without replacing v2 files or merging unfinished v2 work into main.
 - Packages identity may come from context.tenantId on the existing menu/session owner. Keep that fallback Packages-only, inspect only callback presence (never invoke it for identity), and preserve Designer's live manager lookup and tenant isolation. Missing identity must not reset saved pins or reuse a stale tenant.

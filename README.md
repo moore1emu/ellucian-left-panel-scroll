@@ -4,9 +4,9 @@ For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for deliv
 
 Make Ellucian Integration Packages and Integration Designer easier to navigate in Chrome and Microsoft Edge.
 
-After updating to **1.24.2**, open the toolbar popup for **What’s New** since the last store release. Dismiss the card when you’re done.
+After updating to **1.24.3**, open the toolbar popup for **What’s New** since the last store release. Dismiss the card when you’re done.
 
-Select the star to the left of an app’s icon in the nine-dot **Capabilities** menu to add its shortcut beside **Tasks** on Experience Home and across the tenant’s capability apps, including Reporting & Analytics, and on pages opened from Experience cards. The shortcuts match the native icon spacing and open in the current tab. The same controls work on Experience domains enabled under **Custom Sites**. Star an app again to remove it.
+Select the star to the left of an app’s icon in the nine-dot **Capabilities** menu to add its shortcut beside **Tasks** on Experience Home and across the tenant’s capability apps, including Reporting & Analytics, and on pages opened from Experience cards. The shortcuts match the native icon spacing and open in the current tab. The same controls work on Experience domains enabled under **Custom Sites**. Star an app again to remove it. Under **Page Behavior**, turn **Capabilities favorites** off to hide the stars and header links. JSON backups include the links and this setting.
 
 In Job Run Files, **Wrap text** wraps CSV values while keeping column headings on one line. If the headings exceed the viewer width, scroll horizontally to see them all. **Wrap text** stays visible but grayed out when **Formatted view** is off. To hide both controls and use Ellucian’s text viewer, turn off **Enable JSON and CSV viewer** under **Page Behavior**. Turning it back on restores your **Formatted view** and **Wrap text** choices. Scroll horizontally to read long CSV fields or JSON lines, or turn on wrapping to fit them to the preview. See the [changelog](docs/CHANGELOG.md).
 
@@ -22,7 +22,7 @@ In Job Run Files, **Wrap text** wraps CSV values while keeping column headings o
 - Optionally show **Shared From** in Integration Packages using locally saved Designer sources.
 - Customize your toolbar icon, favorite shapes and colors, and search display.
 
-Favorites stay separate by site, tenant ID, and Packages/Designer page, including multiple tenants behind one vanity domain. Export JSON backs up package and pipeline favorites and saved sources; Backup & Restore lets you preview and import them. Standard Experience Test and Production sites are supported, along with university vanity URLs you add in settings.
+Favorites stay separate by site, tenant ID, and Packages/Designer page, including multiple tenants behind one vanity domain. Export JSON backs up package, pipeline and Capabilities favorites and saved sources; Backup & Restore lets you preview and import them. Standard Experience Test and Production sites are supported, along with university vanity URLs you add in settings.
 
 Existing favorites carry over automatically when only one tenant is known on that domain. If multiple tenants are known, settings lets you choose which one owns the old list.
 

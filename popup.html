@@ -66,6 +66,17 @@
           </span>
         </label>
 
+        <label class="setting-row" for="capabilities-favorites-enabled">
+          <span class="setting-copy">
+            <span class="setting-title" id="capabilities-title">Capabilities favorites</span>
+            <span class="setting-description" id="capabilities-help">Show menu stars and Experience header links.</span>
+          </span>
+          <span class="switch">
+            <input id="capabilities-favorites-enabled" type="checkbox" disabled aria-labelledby="capabilities-title" aria-describedby="capabilities-help" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="capabilities-status" class="icon-status" role="status" aria-live="polite"></p>
         <!-- Keep reference display with width and favorites, separate from sharing settings. -->
         <label class="setting-row" for="package-artifacts-enabled" title="Integration Packages only; Designer is unchanged. Refresh Integration Packages after enabling.">
           <span class="setting-copy">
@@ -244,7 +255,7 @@
       <!-- Keep: group export/import in the last settings section, with Refresh left under Shared From (1.22.3). -->
       <details class="settings-card backup-card">
         <summary>Backup &amp; Restore</summary>
-        <p class="card-description">Back up favorites and saved sources.</p>
+        <p class="card-description">Back up package, pipeline and Capabilities favorites and saved sources.</p>
         <button id="export-shared-from" type="button" aria-label="Export Favorites and Shared From JSON" title="Back up tenant favorites and saved Designer sources">Export JSON</button>
         <button id="import-favorites" type="button">Import JSON</button>
         <input id="backup-file" type="file" accept=".json,application/json" hidden />
@@ -254,7 +265,7 @@
             <select id="backup-mode"><option value="merge">Merge (Keep Existing Order)</option><option value="replace">Replace Matching Lists</option></select>
           </label>
           <label class="card-description"><input id="backup-sources" type="checkbox" /> Also Restore Shared From Data</label>
-          <p class="card-description">Shared From must be enabled first. No settings or site permissions change.</p>
+          <p class="card-description">Shared From must be enabled first. Site permissions stay unchanged.</p>
           <button id="confirm-backup" type="button">Import Backup</button>
           <button id="cancel-backup" type="button">Cancel</button>
         </div>

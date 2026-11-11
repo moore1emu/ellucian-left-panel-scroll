@@ -2,6 +2,10 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.24.3 — 2026-11-11
+
+- Toggle **Capabilities favorites** under Page Behavior. JSON export and import now include its saved links and switch. Older backups preserve both.
+
 ## 1.24.2 — 2026-11-11
 
 - Shortened the What’s New notice to three bullets covering Capabilities favorites, the JSON and CSV viewer, and bug fixes.

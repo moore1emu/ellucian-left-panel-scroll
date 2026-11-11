@@ -22,6 +22,8 @@
   const favoritesEnabledSwitch = document.querySelector("#favorites-enabled");
   const sharedVersionSwitch = document.querySelector("#shared-version-enabled");
   const sharedFromSwitch = document.querySelector("#shared-from-enabled");
+  const capabilitiesSwitch = document.querySelector('#capabilities-favorites-enabled');
+  const capabilitiesStatus = document.querySelector('#capabilities-status');
   const jobFileViewerSwitch = document.querySelector('#job-file-viewer-enabled');
   const jobFileViewerStatus = document.querySelector('#job-file-viewer-status');
   const packageArtifactsSwitch = document.querySelector('#package-artifacts-enabled');
@@ -80,6 +82,7 @@
     {
       [REMEMBER_WIDTH_KEY]: false,
       [FAVORITES_ENABLED_KEY]: true,
+      [FavoritesData.CAPABILITIES_ENABLED]: true,
       [JOB_FILE_VIEWER_ENABLED_KEY]: true,
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SHARED_FROM_ENABLED_KEY]: false,
@@ -92,6 +95,7 @@
     },
     (settings) => {
       // Display the width preference and its explanatory status.
+      capabilitiesSwitch.checked = settings[FavoritesData.CAPABILITIES_ENABLED] !== false;
       jobFileViewerSwitch.checked = settings[JOB_FILE_VIEWER_ENABLED_KEY] !== false;
       rememberWidthSwitch.checked = Boolean(settings[REMEMBER_WIDTH_KEY]);
       sharedVersionSwitch.checked = settings[SHARED_VERSION_ENABLED_KEY] === true;
@@ -120,7 +124,7 @@
         settings[FAVORITES_ENABLED_KEY] !== false;
 
       // Treat the loaded values as confirmed before allowing any switch changes.
-      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch, jobFileViewerSwitch].forEach((input) => {
+      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch, jobFileViewerSwitch, capabilitiesSwitch].forEach((input) => {
         confirmedSwitchValues.set(input, input.checked);
         input.disabled = false;
       });
@@ -331,6 +335,16 @@
     });
   }
 
+  capabilitiesSwitch.addEventListener('change', () => {
+    saveSwitch(capabilitiesSwitch, FavoritesData.CAPABILITIES_ENABLED, 'Capabilities favorites', capabilitiesStatus);
+  });
+  // Reflect restored preferences in the open popup, including its failed-save rollback value.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !changes[FavoritesData.CAPABILITIES_ENABLED]) return;
+    capabilitiesSwitch.checked = changes[FavoritesData.CAPABILITIES_ENABLED].newValue !== false;
+    confirmedSwitchValues.set(capabilitiesSwitch, capabilitiesSwitch.checked);
+  });
+
   // Save only the viewer enablement so its formatted and wrapping preferences survive either state.
   jobFileViewerSwitch.addEventListener('change', () => {
     saveSwitch(jobFileViewerSwitch, JOB_FILE_VIEWER_ENABLED_KEY, 'Enable JSON and CSV viewer', jobFileViewerStatus);
@@ -460,7 +474,8 @@
     // Expose the export's busy state without hiding its eventual error or setup guidance.
     exportSharedFromButton.setAttribute('aria-busy', 'true');
     backupStatus.textContent = "";
-    chrome.storage.local.get({ ...FavoritesData.defaults, [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
+    // Existing Capabilities keys are scoped per site and tenant. The serializer selects only backup fields.
+    chrome.storage.local.get(null, (settings) => {
       try {
         // Report failed reads instead of downloading an empty or misleading file.
         if (chrome.runtime.lastError) throw new Error("Cache read failed.");
@@ -469,6 +484,7 @@
         const exportedAt = snapshot.exportedAt;
         // Use a local JSON download without new permissions or any network upload.
         const file = new Blob([JSON.stringify(snapshot, null, 2) + "\r\n"], { type: "application/json" });
+        if (file.size > 4000000) throw new Error('Backup exceeds the import size limit.');
         const url = URL.createObjectURL(file);
         const link = document.createElement("a");
         link.href = url;
