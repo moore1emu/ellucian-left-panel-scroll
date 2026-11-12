@@ -40,7 +40,7 @@
         <section id="panel-navigation" class="settings-card settings-panel navigation-card" role="tabpanel" aria-labelledby="tab-navigation">
           <!-- Group shared controls once, rather than repeating their page scope on every row. -->
           <section class="behavior-card navigation-group" aria-labelledby="general-title">
-            <h2 id="general-title" title="Applies to Integration Packages and Integration Designer.">General</h2>
+            <h2 id="general-title" title="General navigation settings for Experience.">General</h2>
             <label class="setting-row" for="remember-width">
               <span class="setting-copy">
                 <span class="setting-title" id="width-setting-title">
@@ -75,6 +75,15 @@
                 <span class="switch-track" aria-hidden="true"></span>
               </span>
             </label>
+
+            <label class="setting-row" for="capabilities-favorites-enabled" title="Show stars in the Capabilities menu and links in the Experience header.">
+              <span class="setting-title">Capabilities favorites</span>
+              <span class="switch">
+                <input id="capabilities-favorites-enabled" type="checkbox" disabled />
+                <span class="switch-track" aria-hidden="true"></span>
+              </span>
+            </label>
+            <p id="capabilities-status" class="icon-status" role="status" aria-live="polite"></p>
 
             <!-- Sidebar search belongs to navigation because it applies to both pages. -->
             <label class="search-display-control" for="search-display-mode">
@@ -284,7 +293,7 @@
               <select id="backup-mode"><option value="merge">Merge (Keep Existing Order)</option><option value="replace">Replace Matching Lists</option></select>
             </label>
             <label class="card-description"><input id="backup-sources" type="checkbox" /> Also Restore Shared From Data</label>
-            <p class="card-description">Shared From must be enabled first. No settings or site permissions change.</p>
+            <p class="card-description">Shared From must be enabled first. Site permissions stay unchanged.</p>
             <button id="confirm-backup" type="button">Import Backup</button>
             <button id="cancel-backup" type="button">Cancel</button>
           </div>

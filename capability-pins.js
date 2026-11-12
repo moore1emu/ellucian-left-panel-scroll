@@ -7,6 +7,9 @@
   let pins = null, appearance, iconAppearance, strip = null, signature = '';
   const pending = new WeakSet();
 
+  const enabledKey = FavoritesData.CAPABILITIES_ENABLED;
+  let enabled = false;
+  let preferenceChanged = false;
   let scopeCheck = 0;
   let pendingRootRead;
 
@@ -126,24 +129,21 @@
     if (focused) links.find(link => link.pathname === focused)?.focus();
   }
 
-  // Read the latest list inside a same-origin lock so clicks in two tabs cannot overwrite one another.
+  // Resolve the selected menu entry in the current tenant before asking the worker to save it.
   async function toggle(event, button, link) {
-    if (!event.isTrusted || pending.has(button) || !pins || !link?.isConnected) return;
+    if (!enabled || !event.isTrusted || pending.has(button) || !pins || !link?.isConnected) return;
+    const originalScope = scope;
     const site = await currentScope(document.getElementById('experience-header'));
-    if (!site || site.key !== scope?.key) return;
+    if (!enabled || scope !== originalScope || !site || site.key !== scope?.key) return;
     const item = menuItem(link, site);
     if (!item) return;
     const add = button.getAttribute('aria-pressed') !== 'true';
     pending.add(button);
     button.setAttribute('aria-busy', 'true');
     try {
-      await navigator.locks.request('integration-navigator-capability-pins', async () => {
-        const stored = await chrome.storage.local.get(site.key);
-        const list = readPins(stored[site.key], site);
-        const exists = list.some(pin => pin.path === item.path);
-        if (add && !exists) await chrome.storage.local.set({ [site.key]: [...list, item] });
-        if (!add && exists) await chrome.storage.local.set({ [site.key]: list.filter(pin => pin.path !== item.path) });
-      });
+      // The worker serializes individual clicks with imports and other tabs' edits.
+      const result = await chrome.runtime.sendMessage({type:'capability-pin', key:site.key, item, add});
+      if (!result?.ok) throw new Error('Pin could not be saved.');
     } catch {
       button.title = 'Could not save this favorite. Try again.';
     } finally {
@@ -152,15 +152,33 @@
     }
   }
 
+  // Confirm the active Home path in this document when a queued write reaches the worker.
+  chrome.runtime.onMessage.addListener((message, sender, respond) => {
+    if (message?.type !== 'capability-pin-context' || sender.id !== chrome.runtime.id || sender.tab) return;
+    const header = document.getElementById('experience-header');
+    if (!enabled || !header?.querySelector('#grid-btn')) { respond(null); return; }
+    currentScope(header).then(site => respond(enabled && site?.key === scope?.key ? site?.key : null), () => respond(null));
+    return true;
+  });
+
   // A newly opened drawer can receive a click or Enter before its first animation frame.
   // Set the native anchor's target at activation and leave the browser's modifier-key behavior intact.
   document.addEventListener('click', event => {
+    if (!enabled) return;
     const link = event.target.closest?.('li > a[href]');
     const drawer = link?.closest('[role="presentation"]');
     if (!drawer || !drawer.querySelector('#applicationsHeader')) return;
     const header = document.getElementById('experience-header');
     const base = header?.querySelector('#grid-btn') && capabilityBase(header);
-    if (base && menuItem(link, {base})) link.target = '_self';
+    if (!base || !menuItem(link, {base})) return;
+    // Apply the override only to this activation so disabling favorites restores native behavior.
+    const previous = link.getAttribute('target');
+    link.target = '_self';
+    setTimeout(() => {
+      if (link.target !== '_self') return;
+      if (previous === null) link.removeAttribute('target');
+      else link.target = previous;
+    }, 0);
   }, true);
 
   // Attach a separate button so starring an app never activates the native link.
@@ -226,11 +244,15 @@
     renderMenu();
   }
   function schedule() {
-    if (!frame) frame = requestAnimationFrame(refresh);
+    if (enabled && !frame) frame = requestAnimationFrame(refresh);
   }
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
+    if (changes[enabledKey]) {
+      preferenceChanged = true;
+      setEnabled(changes[enabledKey].newValue === true);
+    }
     if (scope && changes[scope.key]) {
       revision++;
       pins = readPins(changes[scope.key].newValue, scope);
@@ -251,9 +273,30 @@
       }
     }
   });
-  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['href','xlink:href'] });
+  function setEnabled(value) {
+    if (enabled === value) return;
+    enabled = value;
+    if (enabled) {
+      observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['href','xlink:href'] });
+      schedule();
+      return;
+    }
+    // Drop pending lookups and remove injected controls without clearing the saved pins.
+    scopeCheck++;
+    revision++;
+    observer.disconnect();
+    cancelAnimationFrame(frame);
+    frame = 0;
+    scope = null;
+    pins = null;
+    renderHeader(null, null);
+    for (const star of document.querySelectorAll('.inav-cap-star')) star.remove();
+  }
+  // A change delivered during startup takes precedence over an older preference read.
+  chrome.storage.local.get({ [enabledKey]: false }).then(settings => {
+    if (!preferenceChanged) setEnabled(settings[enabledKey] === true);
+  }).catch(() => {});
   window.addEventListener('popstate', schedule);
   window.addEventListener('pageshow', schedule);
   if (window.navigation) window.navigation.addEventListener('navigatesuccess', schedule);
-  schedule();
 })();

@@ -1,6 +1,6 @@
 # Integration Navigator
 
-> **v2 test candidate (2.2.1):** Pin apps from the nine-dot Capabilities menu across Experience, including card pages and approved custom sites. Job Run Files adds horizontal scrolling, optional text wrapping and a viewer switch under Navigation. Adds store-submission preparation, a Chrome 106 API compatibility floor, and an explicit extension-page security policy. What's New still highlights redesigned settings and published artifact ZIP export since v1. See [v2 Development](docs/V2-Development.md). This is not the store release.
+> **v2 test candidate (2.2.2):** Enable **Capabilities favorites** in Navigation to pin apps to the Experience header. JSON backups include the links and this default-off switch. Job Run Files adds horizontal scrolling, optional text wrapping and a viewer switch under Navigation. Adds store-submission preparation, a Chrome 106 API compatibility floor, and an explicit extension-page security policy. What's New still highlights redesigned settings and published artifact ZIP export since v1. See [v2 Development](docs/V2-Development.md). This is not the store release.
 
 For extension code updates, contributors follow [AGENTS.md](AGENTS.md) for delivered versions, docs/CHANGELOG.md, inline comments, and evidence-backed `Keep:` tags.
 

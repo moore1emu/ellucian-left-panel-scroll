@@ -25,6 +25,7 @@ function installChromeStub() {
   window.chrome = {
     runtime,
     storage: {
+      onChanged: { addListener() {} },
       local: {
         get(defaults, callback) {
           const result = typeof defaults === "object" && defaults ? { ...defaults } : {};
@@ -52,6 +53,7 @@ function installChromeStub() {
 }
 
 const SWITCHES = [
+  { id: "capabilities-favorites-enabled", key: "capabilitiesFavoritesEnabled", label: "Capabilities favorites", status: "capabilities-status" },
   { id: "job-file-viewer-enabled", key: "jobFileViewerEnabled", label: "Enable JSON and CSV viewer", status: "job-file-viewer-status" },
   { id: "remember-width", key: "rememberWidth", label: "Remember Resized Width", status: "navigation-status" },
   { id: "favorites-enabled", key: "favoritesEnabled", label: "Pinned Packages", status: "navigation-status" },

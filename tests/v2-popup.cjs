@@ -16,7 +16,7 @@ function installStub() {
   window.__page = 'packages';
   const runtime = { lastError: undefined, getManifest: () => ({ version: '2.1.9', content_scripts: [{ matches: [] }] }),
     sendMessage: async message => { window.__messages.push(message); return { ok: true }; }, onMessage: { addListener() {} } };
-  window.chrome = { runtime, storage: { local: {
+  window.chrome = { runtime, storage: { onChanged: {addListener() {}}, local: {
     get(defaults, callback) { const result = { ...defaults }; for (const key of Object.keys(result)) if (Object.hasOwn(saved, key)) result[key] = saved[key]; if (callback) setTimeout(() => callback(result), 0); return Promise.resolve(result); },
     set(values, callback) {
       const failed = window.__failWrite === true;

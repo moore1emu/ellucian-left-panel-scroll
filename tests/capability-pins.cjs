@@ -82,6 +82,25 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     };
     const star = (page, app) => page.getByRole('button',{name:'Favorite '+app, exact:true});
     const shortcut = (page, app) => page.getByRole('navigation',{name:'Favorite capabilities'}).getByRole('link',{name:app,exact:true});
+    // Existing pins remain stored but hidden until this profile explicitly opts in.
+    const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
+    const savedKey = 'capabilityPins:' + origin + '/upgrade/';
+    await worker.evaluate(key => chrome.storage.local.set({[key]:[{name:'Designer', path:'/upgrade/app/all-accounts/Ellucian/data-connect-designer/', icon:''}]}), savedKey);
+    const upgrade = await openPage('/upgrade/');
+    await upgrade.getByRole('button',{name:'Capabilities'}).click();
+    const settings = await context.newPage();
+    await settings.goto(new URL('popup.html',worker.url()).href);
+    await settings.locator('#tab-navigation').click();
+    await settings.waitForFunction(()=>!document.querySelector('#capabilities-favorites-enabled').disabled);
+    const toggle = settings.getByRole('checkbox',{name:'Capabilities favorites',exact:true});
+    assert.equal(await toggle.isChecked(),false);
+    assert.equal(await upgrade.locator('.inav-cap-star,.inav-cap-pins').count(),0);
+    const initial = await worker.evaluate(async () => FavoritesData.exportData(await chrome.storage.local.get(null),'test').capabilityFavorites);
+    assert.equal(initial.enabled,false);
+    assert.equal(initial.lists[0].apps[0].name,'Designer');
+    await toggle.press('Space');
+    await shortcut(upgrade,'Designer').waitFor();
+    await upgrade.close();
     const packages = await openPage(base+'app/all-accounts/Ellucian/data-connect/jobRuns');
     const home = await openPage(base);
     await Promise.all([packages,home].map(page => page.getByRole('button',{name:'Capabilities'}).click()));
@@ -223,7 +242,6 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     await packages.locator('.inav-cap-pins').waitFor({state:'detached'});
 
     // Exercise the actual worker registration on a granted custom domain and deny its unapproved subdomain.
-    const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     const registered = await worker.evaluate(async custom => {
       await CustomSites.sync();
       const entries = await chrome.scripting.getRegisteredContentScripts();
@@ -251,6 +269,48 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     await shortcut(college,'Reports').waitFor();
     await college.goto(customOrigin+'/page/all-accounts/School/Card');
     await shortcut(college,'Reports').waitFor();
+    // Switch off from the real popup with a saved root-tenant shortcut and an open drawer.
+    await college.getByRole('button',{name:'Capabilities'}).click();
+    await star(college,'Reports').waitFor();
+    await settings.locator('#tab-navigation').click();
+    assert.equal(await toggle.isChecked(),true);
+    await toggle.press('Space');
+    await star(college,'Reports').waitFor({state:'detached'});
+    await shortcut(college,'Reports').waitFor({state:'detached'});
+    await star(home,'Reports').waitFor({state:'detached'});
+    const nativeTab = context.waitForEvent('page');
+    await college.getByRole('link',{name:'Packages',exact:true}).click();
+    await (await nativeTab).close();
+    await college.reload();
+    await college.getByRole('button',{name:'Capabilities'}).click();
+    assert.equal(await star(college,'Reports').count(),0);
+
+    // Export while hidden. Restore into empty storage for this list, leaving the other tenants intact.
+    await settings.locator('#tab-export').click();
+    const download = settings.waitForEvent('download');
+    await settings.locator('#export-shared-from').click();
+    const backup = JSON.parse(fs.readFileSync(await (await download).path(), 'utf8'));
+    assert.equal(backup.capabilityFavorites.enabled,false);
+    const savedList = backup.capabilityFavorites.lists.find(group=>group.home===customOrigin+'/' && group.tenantId===rootTenant);
+    assert.equal(savedList.apps[0].name,'Reports');
+    await settings.locator('#tab-navigation').click();
+    await toggle.press('Space');
+    await shortcut(college,'Reports').waitFor();
+    await star(college,'Reports').click();
+    await shortcut(college,'Reports').waitFor({state:'detached'});
+    await settings.locator('#tab-export').click();
+    await settings.locator('#backup-file').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
+    await settings.locator('#backup-preview').waitFor();
+    assert.match(await settings.locator('#backup-summary').textContent(),/Capabilities favorites setting: off/);
+    await settings.locator('#confirm-backup').click();
+    await settings.waitForFunction(()=>document.querySelector('#backup-status').textContent.includes('imported'));
+    await settings.locator('#tab-navigation').click();
+    assert.equal(await toggle.isChecked(),false);
+    await star(college,'Reports').waitFor({state:'detached'});
+    await toggle.press('Space');
+    await shortcut(college,'Reports').waitFor();
+    assert.equal(await star(college,'Reports').getAttribute('aria-pressed'),'true');
+    await settings.close();
     // Two tenants can share the same root URL. Neither a new tenant nor a missing identity inherits a pin.
     rootTenant = 'school-two';
     await college.goto(customOrigin+'/');
@@ -274,10 +334,12 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     await shortcut(college,'Designer').waitFor();
     assert.equal(await shortcut(college,'Reports').count(),0);
     await college.getByRole('button',{name:'Close'}).click();
+    // Edge can open its own Downloads hub after exporting. Count tabs around this activation.
+    const beforeShortcut = context.pages().length;
     await shortcut(college,'Designer').press('Enter');
     await college.waitForURL(customOrigin+'/portal/east/app/all-accounts/Ellucian/data-connect-designer/');
     await shortcut(college,'Designer').waitFor();
-    assert.equal(context.pages().length,tabCount);
+    assert.equal(context.pages().length,beforeShortcut);
     await college.goto(unapproved+'/portal/east/');
     await college.getByRole('button',{name:'Capabilities'}).click();
     assert.equal(await college.locator('.inav-cap-star,.inav-cap-pins').count(),0);
@@ -292,7 +354,8 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
       window.chrome.storage = {
         onChanged:{ addListener(fn) { listener=fn; } },
         local:{
-          get:async () => {
+          get:async keys => {
+            if (Object.hasOwn(keys, 'capabilitiesFavoritesEnabled')) return {capabilitiesFavoritesEnabled:true};
             if (capStore.failRead) throw Error('Storage unavailable');
             return capStore.pins;
           },
@@ -306,6 +369,14 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
         }
       };
     });
+    // Model a failed worker save, then a successful reply and its local storage notification.
+    await failed.evaluate(() => {
+      window.chrome.runtime = {onMessage:{addListener(){}},sendMessage:async ({key,item})=>{
+        await chrome.storage.local.set({[key]:[item]});
+        return {ok:true};
+      }};
+    });
+    await failed.addScriptTag({path:path.join(root,'favorites-data.js')});
     await failed.addScriptTag({path:path.join(root,'favorite-appearance.js')});
     await failed.addScriptTag({path:path.join(root,'capability-pins.js')});
     await failed.getByRole('button',{name:'Capabilities'}).click();
@@ -325,7 +396,7 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     await shortcut(failed,'Designer').waitFor();
 
     assert.deepEqual(unexpected, []);
-    console.log('PASS Capabilities: independent stars, SVG and name shortcuts, keyboard navigation, reload, both concurrent pins, custom-site registration, root and nested Home paths, same-tab navigation, native icon spacing, Home overlay, Reporting and other capability routes, tenant separation, header replacement, native controls and unpin.');
+    console.log('PASS Capabilities: independent stars, SVG and name shortcuts, keyboard navigation, reload, both concurrent pins, custom-site registration, root and nested Home paths, same-tab navigation, native icon spacing, Home overlay, Reporting and other capability routes, tenant separation, header replacement, native controls, live opt-out, JSON backup round trip and unpin.');
   } finally {
     try { await context?.close(); }
     finally {

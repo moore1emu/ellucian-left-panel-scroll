@@ -32,10 +32,11 @@ function fixture() {
   const store = { packageArtifactsEnabled: false, searchDisplayMode: 'box', designerSearchDisplayMode: 'box' };
   const scope = {
     document: { querySelector: node, addEventListener() {}, dispatchEvent() {} },
-    chrome: { runtime, storage: { local: {
+    chrome: { runtime, storage: { onChanged: {addListener() {}}, local: {
       get(defaults, callback) { openingRead = { defaults, callback }; },
       set(values, callback) { writes.push({ values, callback }); },
     } } },
+    FavoritesData: { CAPABILITIES_ENABLED: "capabilitiesFavoritesEnabled" },
     IconAppearance: { KEY: 'iconAppearance', DEFAULT: {}, normalize: () => ({ color: '#123456', letters: 'E', textColor: '#000000' }) },
     FavoriteAppearance: { KEY: 'favoriteAppearance', DEFAULT: { color: '#123456' },
       normalize: () => ({ color: '#123456', matchIcon: false, shape: 'star' }), resolve: () => '#123456', render() {} },

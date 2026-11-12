@@ -443,6 +443,7 @@ footer {
 .settings-panels { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
 .settings-panel { background: transparent; border: 0; border-radius: 0; padding: 0 2px 8px; overflow: visible; }
 /* Indent controls, not scope headings, to make their parent group apparent without extra height. */
+.settings-panel.navigation-card { padding-bottom: 4px; }
 .navigation-card .navigation-group { padding: 0 0 0 8px; }
 /* Keep: normal Navigation fits without scrolling; long notices still use the panel scroller (2.1.4). */
 .navigation-group + .navigation-group { border-top: 1px solid var(--border); margin-top: 3px; padding-top: 4px !important; }
