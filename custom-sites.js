@@ -49,10 +49,13 @@ globalThis.CustomSites = (() => {
   async function readSites() {
     const saved = await chrome.storage.local.get({ [KEY]: [] });
     const granted = await chrome.permissions.getAll();
+    // Keep: Git API grants never enroll a server as an Experience site or inject page scripts (3.0.1).
+    const git = await chrome.storage.local.get({ gitProviderOrigins: [] });
+    const reserved = normalizeList(git.gitProviderOrigins);
     const builtIn = defaults();
     // Ignore wildcard grants and standard sites rather than expanding their scope.
     const exactHosts = (granted.origins || []).filter((origin) => /^https:\/\/[^/*]+\/\*$/u.test(origin));
-    return normalizeList([...normalizeList(saved[KEY]), ...exactHosts]).filter((origin) => !builtIn.includes(origin));
+    return normalizeList([...normalizeList(saved[KEY]), ...exactHosts]).filter((origin) => !builtIn.includes(origin) && !reserved.includes(origin));
   }
 
   // Complete revocation and list removal in the worker even if the popup closes.

@@ -22,7 +22,7 @@ function fixture() {
   const getJwt = () => { throw new Error('Extension code must not invoke the session callback'); };
   const owner = { context: { getJwt, tenantId: 'synthetic-tenant' }, state: { menu: packages.map((pkg) => ({ 'package-element': pkg })) } };
   const row = { __reactFiber$fixture: { return: { stateNode: owner } } };
-  const saved = { sharedFromEnabled: true, designerOwnershipCache: { 'synthetic-tenant': { environment: 'synthetic-production', packages: packages.slice(0, 120).map((pkg) => ({ name: pkg.name, pipelines: pkg.pipelines.map((item) => item.name) })) } } };
+  const saved = { exportToolsEnabled:true, sharedFromEnabled: true, designerOwnershipCache: { 'synthetic-tenant': { environment: 'synthetic-production', packages: packages.slice(0, 120).map((pkg) => ({ name: pkg.name, pipelines: pkg.pipelines.map((item) => item.name) })) } } };
   const stats = { active: 0, max: 0, reads: 0, packageReads: 0, lists: 0, storageReads: 0 };
   const holds = [];
   const flags = { hold: false, missingVersion: false, mismatch: false, returnedVersion: undefined, wrongName: false, wrongType: false };
@@ -52,10 +52,14 @@ function fixture() {
   window.webpackChunkexperience_exchange_extension = [];
   window.webpackChunkexperience_exchange_extension.push = (entry) => entry[2]((name) => { assert.equal(name, './src/server/ServerHelper.js'); return server; });
   const document = { querySelector: (selector) => selector === 'li[data-level="1"]' ? row : null };
-  const main = vm.createContext({ window, document, crypto: { randomUUID }, TextEncoder, Blob });
+  const main = vm.createContext({ window, document, crypto: { randomUUID }, TextEncoder, Blob, ExperienceIdentity:{read:()=>flags.identity || null} });
   for (const file of ['pipeline-export-native.js', 'page-index.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), main);
   const chrome = { runtime: { id: 'synthetic', getURL: (file) => 'chrome-extension://synthetic/' + file, onMessage: { addListener: (callback) => { runtimeListener = callback; } } },
-    storage: { local: { get: async (defaults) => { stats.storageReads++; return { ...defaults, ...saved }; } }, onChanged: { addListener: (callback) => { storageListener = callback; } } } };
+    storage: { local: { get: async (defaults) => {
+      // Count full consent/source-cache reads separately from the small group-authorization read.
+      if (Object.hasOwn(defaults,'designerOwnershipCache')) stats.storageReads++;
+      return { ...defaults, ...saved };
+    } }, onChanged: { addListener: (callback) => { storageListener = callback; } } } };
   const isolated = vm.createContext({ window, chrome, crypto: { randomUUID }, TextEncoder, Uint8Array, Uint32Array, DataView, Blob });
   for (const file of ['pipeline-export-core.js', 'pipeline-export-session.js', 'pipeline-export-bridge.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), isolated);
   // Model the worker relay, not the fabricated direct sender.tab that hid the browser contract bug.
@@ -68,7 +72,13 @@ async function run() {
   const f = fixture();
   const preview = await f.call({ type: 'pipeline-export-preview' });
   assert.equal(preview.ok, true);
-  assert.equal(preview.environment, 'synthetic-production');
+  assert.equal(preview.environment, 'synthetic-tenant', 'Without a ready Experience name, use the native ID rather than a saved label');
+  const named = fixture();
+  named.flags.identity = {tenantId:'synthetic-tenant',label:'Native Test'};
+  assert.equal((await named.call({type:'pipeline-export-preview'})).environment,'Native Test');
+  const wrongIdentity = fixture();
+  wrongIdentity.flags.identity = {tenantId:'different',label:'Wrong Tenant'};
+  assert.equal((await wrongIdentity.call({type:'pipeline-export-preview'})).ok,false);
   // A missing/malformed name or another tenant's snapshot must not mislabel this export.
   const unnamed = fixture();
   delete unnamed.saved.designerOwnershipCache['synthetic-tenant'].environment;
@@ -130,14 +140,20 @@ async function run() {
   assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry: sub })).reason, 'version-mismatch');
   f.flags.mismatch = false;
 
-  // Keep exact full-version checks for normal pipelines/APIs and identity/type checks for Sub-Pipelines.
+  // Match auto-sync's package-reported full-version requests without manufacturing source version fields.
   for (const kind of ['pipeline', 'api']) {
     const entry = all.plan.entries.find((item) => item.type === kind);
-    // Normal Pipeline/API JSON must prove its exact release; the null/omitted exception belongs only to Sub-Pipelines.
+    // Native Pipeline/API definitions may omit or null their version; the exact request still uses package metadata.
     f.flags.missingVersion = true;
-    assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');
+    const nullVersion = await f.call({ type: 'pipeline-export-read', context: all.context, entry });
+    assert.equal(nullVersion.ok, true);
+    assert.equal(nullVersion.data.version, null);
+    assert.equal(nullVersion.data.routeUsed, 'v1.2.3');
     f.flags.omitVersion = true;
-    assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');
+    const omittedVersion = await f.call({ type: 'pipeline-export-read', context: all.context, entry });
+    assert.equal(omittedVersion.ok, true);
+    assert.equal(omittedVersion.data.version, undefined);
+    assert.equal(omittedVersion.data.routeUsed, 'v1.2.3');
     f.flags.missingVersion = false; f.flags.omitVersion = false;
     f.flags.returnedVersion = '';
     assert.equal((await f.call({ type: 'pipeline-export-read', context: all.context, entry })).reason, 'version-mismatch');

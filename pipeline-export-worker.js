@@ -8,6 +8,8 @@ const pipelineExportGrants = new Map();
 // Keep: browser-memory session storage survives worker sleep, not extension reload or browser restart (2.0.5).
 const pipelineExportGrantKey = 'pipelineExportDocumentGrants';
 const pipelineExportVersion = chrome.runtime.getManifest().version;
+// Bind allowed source kinds to exact top-level application routes, never arbitrary caller URLs.
+const exportSourceRoutes = {packages:/\/data-connect\/home\/?$/iu,designer:/\/data-connect-designer\/?$/iu,'api-designer':/\/APIDesigner\/?$/u};
 let pipelineExportStateFailed = false;
 let pendingPipelineExportSave = Promise.resolve();
 // Contain missing/synchronously failing session APIs so export failure cannot abort unrelated favorites startup.
@@ -21,7 +23,7 @@ const pipelineExportGrantsReady = Promise.resolve().then(() => chrome.storage.se
     if (!Number.isInteger(record?.tabId) || !Number.isInteger(record.sourceTabId) || !['sourceDocumentId', 'exportDocumentId', 'clientId'].every((field) => text(field)) ||
       !text('sourceUrl', 2048) || !Number.isSafeInteger(record.generation) || record.generation < 0 || typeof record.overrideConfirmed !== 'boolean') continue;
     const url = new URL(record.sourceUrl);
-    if (url.protocol !== 'https:' || !/\/data-connect\/home\/?$/iu.test(url.pathname)) continue;
+    if (url.protocol !== 'https:' || !exportSourceRoutes[record.sourceKind || 'packages']?.test(url.pathname)) continue;
     pipelineExportGrants.set(record.tabId, record);
   }
 }).catch(() => { pipelineExportStateFailed = true; pipelineExportGrants.clear(); });
@@ -32,7 +34,8 @@ function savePipelineExportGrants() {
     if (pipelineExportStateFailed) throw new Error('Session storage unavailable');
     const records = [...pipelineExportGrants.entries()].map(([tabId, record]) => ({ tabId,
       sourceTabId: record.sourceTabId, sourceDocumentId: record.sourceDocumentId, sourceUrl: record.sourceUrl,
-      exportDocumentId: record.exportDocumentId, clientId: record.clientId, generation: record.generation, overrideConfirmed: record.overrideConfirmed }));
+      exportDocumentId: record.exportDocumentId, clientId: record.clientId, generation: record.generation, overrideConfirmed: record.overrideConfirmed,
+      sourceKind:record.sourceKind || 'packages', exportMode:record.exportMode || 'published' }));
     try { await chrome.storage.session.set({ [pipelineExportGrantKey]: { version: pipelineExportVersion, records } }); }
     catch {
       // Failed durability must not authorize native work or fall back to permanent local storage.
@@ -55,7 +58,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       const url = new URL(message.url);
       if (!record || record.expires < Date.now() || record.sourceDocumentId || sender.tab?.id !== record.sourceTabId || sender.frameId !== 0 ||
         typeof sender.documentId !== 'string' || !sender.documentId || url.protocol !== 'https:' || url.origin !== new URL(sender.url).origin ||
-        !/\/data-connect\/home\/?$/iu.test(url.pathname)) throw new Error('Invalid source document');
+        !exportSourceRoutes[record.sourceKind]?.test(url.pathname)) throw new Error('Invalid source document');
       record.sourceDocumentId = sender.documentId;
       record.sourceUrl = url.href;
       respond({ ok: true });
@@ -78,6 +81,10 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       // Generations revoke late replies after refresh/cancel without freeing native request slots early.
       if (operation === 'preview' || operation === 'cancel') record.generation += 1;
       const generation = record.generation;
+      // Capture generation before this read so cancellation cannot be overtaken by an older preview.
+      if (operation !== 'cancel' && (await chrome.storage.local.get({ exportToolsEnabled:false })).exportToolsEnabled !== true) {
+        respond({ok:false,reason:'tools-disabled'}); return;
+      }
       // A caller may narrow previously confirmed advanced mode, but can never elevate a default grant.
       if (operation === 'preview') record.overrideConfirmed = record.overrideConfirmed && message.overrideConfirmed === true;
       if (operation === 'cancel' && message.revokeOverride === true) record.overrideConfirmed = false;
@@ -88,6 +95,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       await chrome.tabs.sendMessage(record.sourceTabId, {
         type: `pipeline-export-${operation}`, clientId: record.clientId, sourceUrl: record.sourceUrl,
         overrideConfirmed: record.overrideConfirmed, context: message.context, entry: message.entry,
+        sourceKind:record.sourceKind || 'packages', exportMode:record.exportMode || 'published',
       }, { frameId: 0, documentId: record.sourceDocumentId }).then((result) => {
         // A closed/replaced export document cannot receive a late source result through a renewed grant.
         if (operation !== 'cancel' && (pipelineExportGrants.get(sender.tab.id) !== record || generation !== record.generation)) respond({ ok: false, reason: 'cancelled' });
@@ -98,6 +106,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   }
   if (message?.type === 'pipeline-export-open' && sender.url === popupUrl) {
     (async () => {
+      if ((await chrome.storage.local.get({ exportToolsEnabled:false })).exportToolsEnabled !== true) throw new Error('tools-disabled');
       await pipelineExportGrantsReady;
       if (pipelineExportStateFailed) throw new Error('Session storage unavailable');
       // Expire abandoned previews without alarms, storage writes, or idle polling.
@@ -106,7 +115,12 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       const [source] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!Number.isInteger(source?.id)) throw new Error('no-source-tab');
       const ticket = crypto.randomUUID();
-      const record = { sourceTabId: source.id, overrideConfirmed: message.overrideConfirmed === true, expires: Date.now() + 300000, tabId: null };
+      const sourceKind = message.sourceKind || 'packages';
+      if (!Object.hasOwn(exportSourceRoutes,sourceKind) || sourceKind === 'packages' && message.packagesRevealed !== true && message.sourceKind) throw new Error('Source not enabled');
+      const record = { sourceTabId: source.id, sourceKind, exportMode:['draft','published','both'].includes(message.exportMode) ? message.exportMode : 'published',
+        // Initial view is presentation-only; keep it inside the ticket without altering claim URLs or source scope.
+        initialView: ['export','connections','configuration'].includes(message.initialView) ? message.initialView : 'export',
+        overrideConfirmed: sourceKind === 'packages' && message.overrideConfirmed === true, expires: Date.now() + 300000, tabId: null };
       pipelineExportTickets.set(ticket, record);
       try {
         // Capture the original top-level source document before opening the export tab, including SPA entry.
@@ -145,7 +159,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       // Keep the source target and advanced consent in the worker, not in caller-controlled relay fields.
       pipelineExportGrants.set(sender.tab.id, { ...ticket, creation: undefined, exportDocumentId: sender.documentId, clientId: crypto.randomUUID(), generation: 0 });
       await savePipelineExportGrants();
-      respond({ ok: true, overrideConfirmed: ticket.overrideConfirmed });
+      respond({ ok: true, overrideConfirmed: ticket.overrideConfirmed, sourceKind:ticket.sourceKind, exportMode:ticket.exportMode, initialView:ticket.initialView });
     })().catch(() => respond({ ok: false }));
     return true;
   }
@@ -164,4 +178,19 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   for (const [key, ticket] of pipelineExportTickets) if (ticket.tabId === tabId || ticket.sourceTabId === tabId) pipelineExportTickets.delete(key);
   // Remove closed grants without writing session storage for unrelated browser-tab events.
   if (changed) await savePipelineExportGrants().catch(() => {});
+});
+
+// Retire transient grants on opt-out; native requests already sent retain their six-slot accounting.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local' || !changes.exportToolsEnabled || changes.exportToolsEnabled.newValue === true) return;
+  (async () => {
+    await pipelineExportGrantsReady;
+    pipelineExportTickets.clear(); pipelineExportBindings.clear();
+    const records = [...pipelineExportGrants.values()];
+    pipelineExportGrants.clear();
+    await savePipelineExportGrants();
+    for (const record of records) chrome.tabs.sendMessage(record.sourceTabId,
+      {type:'pipeline-export-cancel',clientId:record.clientId,sourceUrl:record.sourceUrl},
+      {frameId:0,documentId:record.sourceDocumentId}).catch(() => {});
+  })().catch(() => console.warn('[Integration Navigator] EXPORT_REVOKE_FAILED'));
 });

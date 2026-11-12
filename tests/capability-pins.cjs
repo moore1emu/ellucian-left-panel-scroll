@@ -310,6 +310,21 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     await toggle.press('Space');
     await shortcut(college,'Reports').waitFor();
     assert.equal(await star(college,'Reports').getAttribute('aria-pressed'),'true');
+    // A restore can enable this preference while Navigation Tools independently stays off.
+    await worker.evaluate(()=>chrome.storage.local.set({navigationToolsEnabled:false}));
+    await shortcut(college,'Reports').waitFor({state:'detached'});
+    await settings.locator('#tab-export').click();
+    backup.capabilityFavorites.enabled = true;
+    await worker.evaluate(()=>chrome.storage.local.set({capabilitiesFavoritesEnabled:false}));
+    await settings.locator('#backup-file').setInputFiles({name:'enabled.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
+    await settings.locator('#backup-preview').waitFor();
+    await settings.locator('#confirm-backup').click();
+    await settings.locator('#backup-preview').waitFor({state:'hidden'});
+    assert.deepEqual(await worker.evaluate(()=>chrome.storage.local.get(['capabilitiesFavoritesEnabled','navigationToolsEnabled'])),
+      {capabilitiesFavoritesEnabled:true,navigationToolsEnabled:false});
+    assert.equal(await college.locator('.inav-cap-star,.inav-cap-pins').count(),0);
+    await worker.evaluate(()=>chrome.storage.local.set({navigationToolsEnabled:true}));
+    await shortcut(college,'Reports').waitFor();
     await settings.close();
     // Two tenants can share the same root URL. Neither a new tenant nor a missing identity inherits a pin.
     rootTenant = 'school-two';
@@ -378,6 +393,7 @@ function fixture(base, homeOverlay = false, tenant = 'fixture-tenant') {
     });
     await failed.addScriptTag({path:path.join(root,'favorites-data.js')});
     await failed.addScriptTag({path:path.join(root,'favorite-appearance.js')});
+    await failed.evaluate(()=>{ window.FeatureTools = {subscribe: fn => fn({navigation:true})}; });
     await failed.addScriptTag({path:path.join(root,'capability-pins.js')});
     await failed.getByRole('button',{name:'Capabilities'}).click();
     await failed.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));

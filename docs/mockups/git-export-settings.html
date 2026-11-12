@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="mockup-version" content="1.0.0">
+  <!-- Keep this design-only page offline; inline assets belong to the mockup, not extension runtime. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <title>Integration Navigator — v3 Git Export Preview</title>
+  <style>
+    /* Match the established popup palette while keeping the preview self-contained. */
+    :root { color-scheme: light dark; --bg:#f4f6f8; --surface:#fff; --raised:#f0f2f5; --text:#17202a; --muted:#5c6875; --border:#dce1e6; --purple:#6d28d9; --soft:#f0e9ff; --green:#08783e; }
+    @media(prefers-color-scheme:dark) { :root { --bg:#1c1f23; --surface:#272b30; --raised:#30353b; --text:#f1f4f6; --muted:#aeb7c1; --border:#3c424a; --purple:#b999ff; --soft:#35245a; --green:#66cf8a; } }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--raised); color:var(--text); font:13px/1.45 "Segoe UI",Arial,sans-serif; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:7px 10px; }
+    button:hover:not(:disabled) { border-color:var(--purple); background:var(--soft); }
+    button:disabled { cursor:default; opacity:.5; }
+    button:focus-visible,input:focus-visible,select:focus-visible { outline:2px solid var(--purple); outline-offset:2px; }
+    .primary { background:var(--soft); border-color:var(--purple); font-weight:600; }
+    [hidden] { display:none !important; }
+    .toolbar { max-width:820px; margin:26px auto 14px; display:flex; gap:14px; align-items:center; justify-content:space-between; padding:0 12px; flex-wrap:wrap; }
+    .eyebrow { color:var(--purple); font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
+    .toolbar p { margin:4px 0 0; color:var(--muted); font-size:12px; }
+    .layout { display:grid; grid-template-columns:360px minmax(0,420px); gap:24px; max-width:820px; margin:0 auto 32px; padding:0 8px; align-items:start; }
+    /* Keep the real popup's compact height; longer setup belongs outside that popup. */
+    .popup { height:580px; background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:9px; box-shadow:0 12px 35px #0002; }
+    header { display:flex; align-items:center; gap:11px; }
+    .mark { width:38px; height:38px; border-radius:10px; background:#b80bc9; color:#000; display:grid; place-items:center; font-size:21px; font-weight:700; }
+    h1 { margin:0; font-size:16px; line-height:1.25; }
+    .small { font-size:12px; color:var(--muted); }
+    .context { font-size:12px; margin:0; color:var(--muted); }
+    nav { display:flex; border-bottom:1px solid var(--border); }
+    nav button { flex:1 0 auto; min-width:max-content; padding:9px 6px; border:0; border-radius:0; border-bottom:2px solid transparent; background:transparent; font-size:12px; }
+    nav button[aria-current="page"] { color:var(--purple); font-weight:700; border-bottom-color:var(--purple); }
+    .scroll { overflow:auto; flex:1; padding:2px; scrollbar-width:thin; }
+    h2 { margin:0 0 4px; font-size:14px; }
+    h3 { margin:0; font-size:13px; }
+    p { margin:5px 0 10px; }
+    .group { padding:10px; background:var(--surface); border:1px solid var(--border); border-radius:9px; margin-bottom:12px; }
+    .group p { color:var(--muted); font-size:12px; }
+    .full { width:100%; margin-top:5px; }
+    .row { display:flex; align-items:center; gap:8px; justify-content:space-between; }
+    .pill { background:var(--soft); color:var(--purple); border-radius:20px; font-size:11px; padding:3px 8px; white-space:nowrap; }
+    .ready { color:var(--green); }
+    .summary { overflow-wrap:anywhere; margin:8px 0; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .actions button { flex:1; }
+    footer { border-top:1px solid var(--border); padding-top:8px; text-align:center; font-size:11px; color:var(--muted); }
+    .setup { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; box-shadow:0 12px 35px #0001; }
+    .setup > .row { margin-bottom:12px; }
+    .setup .row h2 { margin:0; }
+    .close { padding:2px 8px; font-size:18px; }
+    label.field { display:block; font-size:12px; font-weight:600; margin:12px 0; }
+    input,select { background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:7px 9px; width:100%; margin-top:5px; min-width:0; }
+    input[readonly] { color:var(--muted); }
+    .two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .hint { color:var(--muted); font-size:12px; margin:5px 0 12px; }
+    .notice { padding:9px; border-radius:7px; background:var(--soft); font-size:12px; margin:12px 0; }
+    .check { display:flex; align-items:flex-start; gap:8px; font-size:12px; margin:12px 0; }
+    .check input { width:auto; margin:3px 0 0; }
+    .status { font-size:12px; min-height:18px; margin:8px 0 0; color:var(--green); }
+    .history { border-top:1px solid var(--border); padding-top:12px; margin-top:14px; }
+    .history p { font-size:12px; color:var(--muted); }
+    dialog { color:var(--text); background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; width:min(440px,calc(100% - 24px)); }
+    dialog::backdrop { background:#0008; }
+    ul { padding-left:19px; }
+    li { margin:8px 0; }
+    .files { list-style:none; padding:0; font-size:12px; }
+    .files li { padding:8px; border-bottom:1px solid var(--border); overflow-wrap:anywhere; }
+    .files span { color:var(--green); margin-right:7px; }
+    @media(max-width:760px) { .layout { grid-template-columns:minmax(0,420px); justify-content:center; padding:0 12px; } .popup { width:min(360px,100%); justify-self:center; } .toolbar { margin-top:14px; } }
+    @media(max-width:380px) { .popup { padding:10px; } nav button { padding-inline:4px; font-size:11px; } .two { grid-template-columns:1fr; gap:0; } }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div><div class="eyebrow">v3 Design Preview · 1.0.0</div><p>Simulation only. No real tokens, encryption, storage, or uploads.</p></div>
+    <button id="restart" type="button">Simulate Browser Restart</button>
+  </div>
+  <main class="layout">
+    <section class="popup" aria-label="Proposed extension settings">
+      <header><div class="mark" aria-hidden="true">E</div><div><h1>Integration Navigator</h1><span class="small">Settings</span></div></header>
+      <p class="context">Integration Packages</p>
+      <nav aria-label="Settings tasks"><button type="button" disabled>Navigation</button><button type="button" disabled>Sharing</button><button type="button" disabled>Appearance</button><button type="button" disabled>Sites</button><button type="button" aria-current="page">Export</button></nav>
+      <div class="scroll">
+        <section class="group"><h2>Pipeline Export</h2><p>Choose packages, then download or push.</p><button class="full primary" id="preview" type="button">Preview Pipeline Export</button><p class="status" id="export-status" role="status" aria-live="polite"></p></section>
+        <section class="group"><div class="row"><h2>Git Connection</h2><span class="pill" id="badge">Demo Ready</span></div><p>Save your repository and token once.</p><div class="summary" id="destination">GitHub · example-org/pipeline-backups</div><div class="small" id="connection-detail">exports · DataConnect/SaaSTest</div><button class="full" id="manage" type="button">Manage Connection</button></section>
+        <section class="history"><h2>Backup &amp; Restore</h2><p class="small">Favorites and saved source observations.</p><div class="actions"><button id="backup" type="button">Export JSON</button><button id="restore" type="button">Import JSON</button></div><p class="status" id="backup-status" role="status"></p></section>
+      </div>
+      <footer>Version 3.0.0 · Design Preview<p>This extension is not affiliated with or supported by Ellucian.</p></footer>
+    </section>
+    <!-- Connection setup is a larger export-page surface, not another long section in the popup. -->
+    <section class="setup" id="setup" aria-labelledby="setup-title">
+      <div class="row"><div><h2 id="setup-title">Git Connection</h2><span class="small">Proposed export-page setup</span></div><button class="close" id="close-setup" aria-label="Close connection setup" type="button">×</button></div>
+      <label class="field" for="provider">Provider<select id="provider"><option value="github">GitHub</option><option value="gitlab">GitLab</option></select></label>
+      <label class="field" id="server-field" for="server" hidden>GitLab Server<input id="server" value="https://gitlab.example.edu" readonly></label>
+      <label class="field" for="repository">Repository<input id="repository" value="example-org/pipeline-backups" readonly></label>
+      <div class="two"><label class="field" for="branch">Branch<input id="branch" value="exports" readonly></label><label class="field" for="folder">Folder<input id="folder" value="DataConnect/SaaSTest" readonly></label></div>
+      <div class="row"><label class="field" for="token">Access Token</label><button id="token-help" type="button">How to Get One</button></div>
+      <input id="token" type="password" value="DEMO_NOT_A_REAL_TOKEN" readonly aria-label="Synthetic access token, not a credential field">
+      <p class="hint">Demo placeholder. Real setup would accept your provider's token, never your account password.</p>
+      <label class="field" for="storage">Remember Token<select id="storage"><option value="device">Encrypted on This Device</option><option value="password">Encrypted with Password Unlock</option><option value="session">This Session Only</option></select></label>
+      <p class="hint" id="storage-help">Automatic reuse after restart. Not protection against a compromised browser profile.</p>
+      <button id="unlock" type="button" hidden>Simulate Password Unlock</button>
+      <label class="check"><input id="remember-history" type="checkbox" checked>Keep recent push history on this device. No tokens or pipeline contents.</label>
+      <div class="notice">Git uploads would need separate consent. Use a private backup repository and review source for embedded secrets.</div>
+      <div class="actions"><button id="forget" type="button">Forget Demo Token</button><button class="primary" id="save" type="button">Save Demo Connection</button></div>
+      <p class="status" id="setup-status" role="status" aria-live="polite">Demo token available. Nothing is actually saved.</p>
+      <section class="history"><h3>Recent Pushes</h3><p id="history">No simulated pushes yet.</p></section>
+    </section>
+  </main>
+  <dialog id="help"><h2>Create an Access Token</h2><p id="help-copy"></p><p class="hint">Tokens can expire, require organization approval, or be revoked. Do not paste a real token into this preview.</p><button id="close-help" type="button">Close</button></dialog>
+  <dialog id="changes"><h2>Preview Git Changes</h2><p class="small">Synthetic examples · no source files retrieved</p><p id="commit-destination"></p><ul class="files"><li><span>ADD</span>Utilities/Source/Example_v1.json</li><li><span>UPDATE</span>Utilities/Source/Example_v2.json</li><li><span>ADD</span>Utilities/README.md</li></ul><p class="hint">3 demo files · no deletions · unrelated paths preserved</p><label class="check"><input id="confirm" type="checkbox">I confirm this demo destination and file list.</label><div class="actions"><button id="cancel" type="button">Cancel</button><button class="primary" id="push" type="button" disabled>Simulate Push</button></div><p class="status" id="push-status" role="status"></p></dialog>
+  <script>
+    // Keep: mockup state is memory-only; no credential, storage, network, or extension API is called (3.0.0).
+    const find = id => document.getElementById(id);
+    let available = true;
+    let locked = false;
+    let simulatedPushes = 0;
+    const helpers = {
+      device: 'Automatic reuse after restart. Not protection against a compromised browser profile.',
+      password: 'Unlock with a local password after restarting the browser; no repeat provider sign-in.',
+      session: 'Paste a token again after browser restart. No token is kept on disk.'
+    };
+    // Reflect proposed provider/storage states without claiming real authentication or encryption.
+    function render() {
+      const provider = find('provider').value === 'github' ? 'GitHub' : 'GitLab';
+      find('server-field').hidden = provider !== 'GitLab';
+      find('destination').textContent = provider + ' · example-org/pipeline-backups';
+      find('badge').textContent = !available ? 'Not Connected' : locked ? 'Demo Locked' : 'Demo Ready';
+      find('badge').classList.toggle('ready', available && !locked);
+      find('storage-help').textContent = helpers[find('storage').value];
+      find('unlock').hidden = find('storage').value !== 'password' || !available || !locked;
+      find('token').value = available ? 'DEMO_NOT_A_REAL_TOKEN' : '';
+    }
+    // Opening setup and changing options remain local visual interactions only.
+    find('manage').addEventListener('click', () => { find('setup').hidden = false; find('provider').focus(); });
+    find('close-setup').addEventListener('click', () => { find('setup').hidden = true; find('manage').focus(); });
+    find('provider').addEventListener('change', render);
+    find('storage').addEventListener('change', () => { locked = available && find('storage').value === 'password'; render(); });
+    find('unlock').addEventListener('click', () => { locked = false; find('setup-status').textContent = 'Demo unlocked for this session. No password was read.'; render(); });
+    // Restart illustrates storage lifetime, not a real browser restart or saved-key operation.
+    find('restart').addEventListener('click', () => {
+      if (find('storage').value === 'session') available = false;
+      locked = available && find('storage').value === 'password';
+      find('setup-status').textContent = !available ? 'Demo token cleared. Save Demo Connection to simulate entering a new one.' : locked ? 'Demo restart: unlock the saved token before pushing.' : 'Demo restart: saved connection is ready without signing in again.';
+      render();
+    });
+    find('forget').addEventListener('click', () => { available = false; locked = false; find('setup-status').textContent = 'Demo token forgotten locally. Real provider revocation would be separate.'; render(); });
+    find('save').addEventListener('click', () => { available = true; locked = false; find('setup-status').textContent = 'Demo connection ready. This preview stores nothing and validates no access.'; render(); });
+    // Explain provider-specific token setup instead of navigating to an account or accepting a secret.
+    find('token-help').addEventListener('click', () => {
+      find('help-copy').textContent = find('provider').value === 'github' ? 'GitHub: create a fine-grained personal access token for the selected repository with Contents read/write access, then copy it once.' : 'GitLab: create a narrowly scoped token appropriate to your server. Prefer project/resource-scoped access where available; legacy write_repository alone is not commit-API authorization.';
+      find('help').showModal();
+    });
+    find('close-help').addEventListener('click', () => find('help').close());
+    // An upload preview requires the proposed connection state but retrieves no actual pipeline records.
+    find('preview').addEventListener('click', () => {
+      if (!available || locked) { find('export-status').textContent = available ? 'Unlock the demo connection first.' : 'Configure a demo connection first.'; find('setup').hidden = false; return; }
+      find('confirm').checked = false; find('push').disabled = true; find('push-status').textContent = '';
+      find('commit-destination').textContent = find('destination').textContent + ' · exports · DataConnect/SaaSTest';
+      find('changes').showModal();
+    });
+    find('confirm').addEventListener('change', () => { find('push').disabled = !find('confirm').checked; });
+    find('cancel').addEventListener('click', () => find('changes').close());
+    // Confirmation adds only a synthetic history label, never a real commit or file payload.
+    find('push').addEventListener('click', () => {
+      if (!find('confirm').checked || !available || locked) return;
+      simulatedPushes += 1;
+      if (find('remember-history').checked) find('history').textContent = 'Demo push ' + simulatedPushes + ' · 3 files · no real commit created.';
+      find('export-status').textContent = 'Demo complete. No files were uploaded.';
+      find('changes').close();
+    });
+    find('remember-history').addEventListener('change', () => { if (!find('remember-history').checked) find('history').textContent = 'Local demo history is off.'; });
+    for (const id of ['backup', 'restore']) find(id).addEventListener('click', () => { find('backup-status').textContent = 'Independent local backup action — not simulated here.'; });
+    render();
+  </script>
+</body>
+</html>

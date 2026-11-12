@@ -15,23 +15,38 @@
   }
 
   // Keep the README inventory limited to selected records and existing metadata, without extra audit lookups.
-  function packageReadme(name, entries, environment) {
+  function packageReadme(name, entries, environment, layout) {
     const labels = { pipeline: 'Pipeline', 'sub-pipeline': 'Sub-Pipeline', api: 'API', transformer: 'Transformer' };
     const lines = ['# ' + cell(name), '', 'Environment: ' + cell(environment || 'Not available'), '',
-      'Source contains the importable JSON or original JavaScript. Formatted is a readable review copy, not for import or execution.', '',
-      'Versions below are package-reported. Sub-Pipeline source resolves within its major; transformer source resolves to latest. Source versions are not rewritten.', '',
-      '| Name | Type | Major | Published Version |', '|---|---|---:|---|'];
+      entries[0]?.state ? 'Source contains native JSON or original JavaScript. Any Formatted copies are for review, not import or execution.' : 'Source contains the importable JSON or original JavaScript. Formatted is a readable review copy, not for import or execution.', '',
+      entries[0]?.state ? 'Folder organization follows the saved export configuration. Draft names are unversioned; published names retain their version suffix. Source versions are not rewritten.' : 'Versions below are package-reported. Sub-Pipeline source resolves within its major; transformer source resolves to latest. Source versions are not rewritten.', '',
+      entries[0]?.state ? '| Name | Type | Major | Version | State | File |' : '| Name | Type | Major | Published Version |', entries[0]?.state ? '|---|---|---:|---|---|---|' : '|---|---|---:|---|'];
     for (const entry of entries) {
-      const major = entry.type === 'transformer' ? '—' : entry.version.replace(/^v/u, '').split('.')[0];
-      lines.push('| ' + [entry.name, labels[entry.type], major, entry.version].map(cell).join(' | ') + ' |');
+      const major = entry.state === 'draft' || entry.type === 'transformer' ? '—' : entry.version.replace(/^v/u, '').split('.')[0];
+      const values = [entry.name, labels[entry.type], major, entry.version];
+      if (entry.state) values.push(entry.state === 'draft' ? 'Draft' : 'Published', entryPaths(entry,false,layout)[0].path);
+      lines.push('| ' + values.map(cell).join(' | ') + ' |');
+    }
+    // Do not imply a draft was published, or absent sharing observations prove no destinations exist.
+    if (entries[0]?.state) {
+      lines.push('', '## Shared To', '', 'Cached observations only; destinations may have changed.', '');
+      for (const entry of entries) {
+        const observed = entry.sharing;
+        const destinations = observed?.destinations.map(d=>cell(d.environment)+' (v'+cell(d.version)+')').join(', ');
+        lines.push('- ' + cell(PipelineExportCore.filePath(entry).split('/').at(-1)) + ': ' + (observed ? (destinations || 'None observed') + ' — observed ' + new Date(observed.observedAt).toISOString() : entry.state === 'draft' ? 'Not applicable to this draft.' : 'Not observed in this page session.'));
+      }
     }
     return lines.join('\r\n') + '\r\n';
   }
 
   // Optional review files share the existing bounded, all-or-nothing collection and require no new requests.
-  async function collect(entries, { read, verify, signal, onProgress = () => {}, formatted = false, environment = '' }) {
+  async function collectFiles(entries, { read, verify, signal, onProgress = () => {}, formatted = false, environment = '', layout = null }) {
     // Count physical generated files before requesting source code, retaining the existing archive file cap.
-    if (formatted && entries.length * 2 + new Set(entries.map(entry => entry.packageName)).size > PipelineExportCore.MAX_FILES) throw new Error('Too many export files.');
+    const withReadme = formatted || layout || entries.some(entry => entry.state);
+    const plannedPaths = paths(entries, formatted, layout);
+    if (plannedPaths.length > PipelineExportCore.MAX_FILES) throw new Error('Too many export files.');
+    // Reject any raw/formatted/README collision before source reads or provider operations.
+    if (new Set(plannedPaths.map(path => path.toLowerCase())).size !== plannedPaths.length) throw new Error('Export filenames collide.');
     const files = new Array(entries.length);
     let next = 0;
     let completed = 0;
@@ -70,10 +85,8 @@
           const path = PipelineExportCore.filePath(entry);
           const separator = path.indexOf('/');
           // Unchecked exports retain exactly the previous two-level layout and source serialization.
-          files[index] = formatted ? [
-            file(path.slice(0, separator + 1) + 'Source/' + path.slice(separator + 1), encoder.encode(content)),
-            file(path.slice(0, separator + 1) + 'Formatted/' + path.slice(separator + 1), encoder.encode(formatReview(content))),
-          ] : [file(path, encoder.encode(content))];
+          files[index] = entryPaths(entry,formatted,layout).map(item=>file(item.path,encoder.encode(item.formatted ? formatReview(content) : content)));
+          // Keep: both Designer states live under the package, with state recorded in its README (3.1.4).
           completed += 1;
           onProgress({ completed, total: entries.length, bytes });
         } catch (error) {
@@ -91,22 +104,55 @@
     await verify();
     check();
     const output = files.flat();
-    if (formatted) {
+    if (withReadme) {
       // Build one inventory per selected package only after every source has succeeded.
       const packages = new Map();
       for (const entry of entries) {
-        if (!packages.has(entry.packageName)) packages.set(entry.packageName, []);
-        packages.get(entry.packageName).push(entry);
+        const key = entry.packageName;
+        if (!packages.has(key)) packages.set(key, []);
+        packages.get(key).push(entry);
       }
-      for (const [name, items] of packages) {
+      for (const items of packages.values()) {
         check();
-        output.push(file(PipelineExportCore.folderName(name) + '/README.md', encoder.encode(packageReadme(name, items, environment))));
+        const name = items[0].packageName;
+        output.push(file(PipelineExportCore.folderName(name) + '/README.md', encoder.encode(packageReadme(name, items, environment,layout))));
       }
     }
     check();
-    return PipelineExportCore.makeZip(output);
+    return output;
+  }
+
+  // Keep ZIP byte construction unchanged while Git can reuse the same verified generated files.
+  async function collect(entries, options) {
+    return PipelineExportCore.makeZip(await collectFiles(entries, options),options.root || '');
   }
 
   // Keep the runner free of storage, live network calls, and authentication handling.
-  globalThis.PipelineExportSession = Object.freeze({ collect });
+  // Describe the same physical layout using metadata only; destination previews never retrieve source code.
+  function paths(entries, formatted, layout = null) {
+    const output = [];
+    const readmes = new Set();
+    const withReadme = formatted || layout || entries.some(entry=>entry.state);
+    for (const entry of entries) {
+      for (const item of entryPaths(entry,formatted,layout)) output.push(item.path);
+      if (withReadme) readmes.add(PipelineExportCore.folderName(entry.packageName)+'/README.md');
+    }
+    return [...output,...readmes];
+  }
+  // Build exactly the same physical paths for preview and collection, without reading source contents.
+  function entryPaths(entry,formatted,layout) {
+    const path=PipelineExportCore.filePath(entry);
+    const split=path.indexOf('/');
+    const name=path.slice(split+1),extension=name.slice(name.lastIndexOf('.')),stem=name.slice(0,name.lastIndexOf('.'));
+    const state=entry.state==='draft' ? 'draft' : 'published';
+    const root=(layout?.folderStructure.separateDraftAndPublished && entry.state ? (state==='draft'?'Draft/':'Published/') : '')+path.slice(0,split+1);
+    const types=layout?.exportFileTypes || {source:true,formatted};
+    const separate=layout ? layout.folderStructure.separateSourceAndFormatted : formatted;
+    const suffix=layout?.filenameSuffixes || {};
+    return ['source','formatted'].filter(type=>types[type]).map(type=>({
+      path:root+(separate ? (type==='source'?'Source/':'Formatted/') : '')+stem+(entry.state ? suffix[state] || '' : '')+(suffix[type] || '')+extension,
+      formatted:type==='formatted'
+    }));
+  }
+  globalThis.PipelineExportSession = Object.freeze({ collect, collectFiles, paths });
 })();

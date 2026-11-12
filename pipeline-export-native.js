@@ -73,8 +73,9 @@
         if (isSubPipeline) {
           // If the service supplies a version, reject another major but allow compatible minor/patch updates.
           if (result.version != null && version(result.version).split('.')[0] !== route) throw fail('version-mismatch');
-        } else if (typeof result.version !== 'string' || !result.version || version(result.version) !== expected) {
-          // Only Sub-Pipelines may omit their resolved version; normal Pipeline/API sources must prove the exact release.
+        } else if (result.version != null && (typeof result.version !== 'string' || !result.version || version(result.version) !== expected)) {
+          // Keep: package metadata plus the exact versioned request identifies omitted/null source versions, matching auto-sync (3.0.2).
+          // An explicitly supplied version must still match; never inject metadata into the downloaded JSON.
           throw fail('version-mismatch');
         }
         if (result.type && type(result.type) !== entry.type) throw fail('source-mismatch');

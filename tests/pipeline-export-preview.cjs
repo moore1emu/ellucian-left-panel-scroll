@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 
 function stub() {
   const pipelines = Array.from({ length: 120 }, (_, index) => ({ name: `Pipeline ${index}`, version: '1.0.0', type: index % 2 ? 'api' : 'pipeline' }));
-  const saved = { sharedFromEnabled: true, designerOwnershipCache: { synthetic: { packages: [{ name: 'Demo Package', pipelines: pipelines.map((item) => item.name) }] } } };
+  const saved = { exportToolsEnabled:true, sharedFromEnabled: true, designerOwnershipCache: { synthetic: { packages: [{ name: 'Demo Package', pipelines: pipelines.map((item) => item.name) }] } } };
   window.__requests = [];
   window.__saved = saved;
   window.__storageChange = null;

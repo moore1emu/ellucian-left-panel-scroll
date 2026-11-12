@@ -62,9 +62,9 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       if (!CustomSites.defaults().includes(origin) && (!(await CustomSites.readSites()).includes(origin) ||
           !await chrome.permissions.contains({ origins:[CustomSites.pattern(origin)] }))) throw new Error('Enable access to this site first.');
       const [item] = data.capabilityApps(scope.home, [message.item]);
-      const saved = await chrome.storage.local.get({[message.key]:[], [data.CAPABILITIES_ENABLED]:false});
+      const saved = await chrome.storage.local.get({[message.key]:[], [data.CAPABILITIES_ENABLED]:false, navigationToolsEnabled:true});
       const active = await chrome.tabs.sendMessage(sender.tab.id, {type:'capability-pin-context'}, {frameId:0, documentId:sender.documentId});
-      if (active !== message.key || saved[data.CAPABILITIES_ENABLED] !== true) throw new Error('Capabilities favorites are unavailable.');
+      if (active !== message.key || saved[data.CAPABILITIES_ENABLED] !== true || saved.navigationToolsEnabled === false) throw new Error('Capabilities favorites are unavailable.');
       const list = data.capabilityApps(scope.home,saved[message.key]);
       const exists = list.some(pin => pin.path === item.path);
       if (message.add !== exists) await chrome.storage.local.set({[message.key]:message.add ? [...list,item] : list.filter(pin => pin.path !== item.path)});

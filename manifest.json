@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Integration Navigator",
-  "version": "2.2.2",
+  "version": "3.2.2",
   "minimum_chrome_version": "106",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none';"
@@ -43,7 +43,9 @@
         "https://experience.elluciancloud.com/*"
       ],
       "js": [
+        "experience-identity.js",
         "pipeline-export-native.js",
+        "source-export-native.js",
         "page-index.js",
         "job-file-viewer.js"
       ],
@@ -61,6 +63,7 @@
         "capability-pins.css"
       ],
       "js": [
+        "feature-tools.js",
         "shared.js",
         "favorites-data.js",
         "favorite-appearance.js",

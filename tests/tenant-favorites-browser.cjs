@@ -134,7 +134,7 @@ const html = `<style>[data-testid=master]{width:480px;height:650px}li{min-height
     await popup.locator('#assign-favorites').click();
     await popup.waitForFunction(() => document.querySelector('#backup-status').textContent.includes('assigned'));
     // Keep portable backup actions together in the final section, with source Refresh unmoved.
-    assert.deepEqual(await popup.locator('[role="tab"]').allTextContents(), ['Navigation', 'Sharing', 'Appearance', 'Sites', 'Export']);
+    assert.deepEqual(await popup.locator('[role="tab"]').allTextContents(), ['General', 'Navigation', 'Sharing', 'Appearance', 'Sites', 'Export']);
     assert.equal(await popup.locator('.backup-card #export-shared-from').count(), 1);
     assert.equal(await popup.locator('.backup-card #import-favorites').count(), 1);
     assert.equal(await popup.locator('.page-behavior-card #export-shared-from').count(), 0);

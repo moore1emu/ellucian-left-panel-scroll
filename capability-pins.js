@@ -10,6 +10,8 @@
   const enabledKey = FavoritesData.CAPABILITIES_ENABLED;
   let enabled = false;
   let preferenceChanged = false;
+  let favoritesEnabled = false;
+  let navigationEnabled = false;
   let scopeCheck = 0;
   let pendingRootRead;
 
@@ -251,7 +253,8 @@
     if (area !== 'local') return;
     if (changes[enabledKey]) {
       preferenceChanged = true;
-      setEnabled(changes[enabledKey].newValue === true);
+      favoritesEnabled = changes[enabledKey].newValue === true;
+      updateEnabled();
     }
     if (scope && changes[scope.key]) {
       revision++;
@@ -273,7 +276,8 @@
       }
     }
   });
-  function setEnabled(value) {
+  function updateEnabled() {
+    const value = favoritesEnabled && navigationEnabled;
     if (enabled === value) return;
     enabled = value;
     if (enabled) {
@@ -294,8 +298,14 @@
   }
   // A change delivered during startup takes precedence over an older preference read.
   chrome.storage.local.get({ [enabledKey]: false }).then(settings => {
-    if (!preferenceChanged) setEnabled(settings[enabledKey] === true);
+    if (!preferenceChanged) favoritesEnabled = settings[enabledKey] === true;
+    updateEnabled();
   }).catch(() => {});
+  // Navigation Tools can suspend the feature without overwriting its own preference.
+  FeatureTools.subscribe(state => {
+    navigationEnabled = state.navigation;
+    updateEnabled();
+  });
   window.addEventListener('popstate', schedule);
   window.addEventListener('pageshow', schedule);
   if (window.navigation) window.navigation.addEventListener('navigatesuccess', schedule);

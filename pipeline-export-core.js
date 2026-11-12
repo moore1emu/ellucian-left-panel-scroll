@@ -80,6 +80,22 @@
     return { entries, skipped, override: overrideConfirmed };
   }
 
+  // New source plans keep drafts distinct and retain each published major, including API Designer APIs.
+  function buildSourcePlan(packages) {
+    const selected = new Map();
+    let total = 0;
+    for (const pkg of packages) for (const item of pkg.pipelines) {
+      if (++total > 100000 || !['draft','published'].includes(item.state) || !['pipeline','sub-pipeline','api','transformer'].includes(item.type)) throw new Error('Incomplete package metadata.');
+      if (item.state === 'draft' ? item.version !== 'Draft' : !item.version) throw new Error('Unsupported published version.');
+      const major = item.state === 'draft' ? 'draft' : item.type === 'transformer' ? '' : versionParts(item.version)[0];
+      const key = JSON.stringify([pkg.name,item.name,item.type,item.state,major]);
+      const prior = selected.get(key);
+      if (!prior || item.state !== 'draft' && compareVersions(item.version,prior.version) > 0) selected.set(key,{packageName:pkg.name,...item});
+    }
+    if (selected.size > MAX_FILES) throw new Error('Too many export files.');
+    return { entries:[...selected.values()], skipped:0, override:false };
+  }
+
   // Escape Windows-invalid characters without collapsing different source names into one filename.
   function folderName(name) {
     if (typeof name !== "string" || !name || name.length > 500) throw new Error("Invalid export name.");
@@ -91,7 +107,8 @@
 
   // Give independent Pipeline/Sub-Pipeline majors stable filenames without rewriting source JSON.
   function filePath(entry) {
-    const suffix = entry.type === 'pipeline' || entry.type === 'sub-pipeline' ? `_v${versionParts(entry.version)[0]}` : '';
+    // Keep: Designer drafts have no version/state suffix; published majors remain versioned (3.1.4).
+    const suffix = entry.state === 'draft' ? '' : entry.type === 'pipeline' || entry.type === 'sub-pipeline' || entry.type === 'api' && entry.state ? `_v${versionParts(entry.version)[0]}` : '';
     return `${folderName(entry.packageName)}/${folderName(entry.name)}${suffix}.${entry.type === 'transformer' ? 'js' : 'json'}`;
   }
 
@@ -115,7 +132,9 @@
   }
 
   // Produce a standard uncompressed ZIP locally; the browser adapter owns download hand-off.
-  function makeZip(files) {
+  function makeZip(files, root = '') {
+    // Only validated relative configuration folders may prefix an otherwise unchanged archive plan.
+    if (typeof root!=='string' || root && (root.length>500 || root.split('/').some(part=>!(/^[\p{L}\p{N}_][\p{L}\p{N} ._-]{0,99}$/u.test(part)) || /[. ]$/u.test(part)))) throw new Error('Invalid export folder.');
     if (!Array.isArray(files) || files.length > MAX_FILES) throw new Error("Too many export files.");
     const parts = [];
     const directory = [];
@@ -124,13 +143,13 @@
     let payloadBytes = 0;
     for (const file of files) {
       // Allow only raw package files, fixed Source/Formatted children, or a package README—not arbitrary nesting.
-      if (!/^[^\u0000-\u001f<>:"/\\|?*]+\/(?:(?:(?:Source|Formatted)\/)?[^\u0000-\u001f<>:"/\\|?*]+\.(?:json|js)|README\.md)$/u.test(file.path) || file.path.split("/").some((part) => part === "." || part === "..") || !(file.bytes instanceof Uint8Array)) throw new Error("Invalid export file.");
+      if (!/^(?:(?:Draft|Published)\/)?[^\u0000-\u001f<>:"/\\|?*]+\/(?:(?:(?:Source|Formatted)\/)?[^\u0000-\u001f<>:"/\\|?*]+\.(?:json|js)|README\.md)$/u.test(file.path) || file.path.split("/").some((part) => part === "." || part === "..") || !(file.bytes instanceof Uint8Array)) throw new Error("Invalid export file.");
       const key = file.path.toLowerCase();
       if (seen.has(key)) throw new Error("Export filenames collide.");
       seen.add(key);
       payloadBytes += file.bytes.length;
       if (payloadBytes > MAX_BYTES) throw new Error("Export exceeds the 64 MB development limit.");
-      const name = encoder.encode(file.path);
+      const name = encoder.encode((root ? root+'/' : '')+file.path);
       if (name.length > 65535) throw new Error("Export filename is too long.");
       const checksum = crc32(file.bytes);
 
@@ -179,5 +198,5 @@
   }
 
   // Keep pure planning and archive assembly separate from session access and user confirmation.
-  globalThis.PipelineExportCore = Object.freeze({ buildPlan, sourceNames, compareVersions, folderName, filePath, archiveName, crc32, makeZip, MAX_FILES, MAX_BYTES });
+  globalThis.PipelineExportCore = Object.freeze({ buildPlan, buildSourcePlan, sourceNames, compareVersions, folderName, filePath, archiveName, crc32, makeZip, MAX_FILES, MAX_BYTES });
 })();
