@@ -70,6 +70,19 @@ assert.equal(selectors.includes('#pipelineManager-main-customBlock'), false);
 rowState.currentTenant = '';
 assert.equal(probe(), '');
 
+// The real Packages diagnostic found only context.tenantId on the menu owner, with no state tenant.
+const packageOwner = row.__reactFiber$fixture.stateNode;
+rowState.menu = [];
+packageOwner.context = { tenantId: 'context-tenant', getJwt: () => { throw new Error('Never invoke session callbacks for identity'); } };
+assert.equal(probe(), 'context-tenant');
+packageOwner.context.tenantId = 'switched-context-tenant';
+assert.equal(probe(), 'switched-context-tenant', 'Reread context when the same vanity URL switches tenant');
+packageOwner.context.tenantId = '';
+assert.equal(probe(), '', 'Missing context cannot reuse a previous tenant or stale bootstrap');
+packageOwner.context.tenantId = 'unrelated-context';
+delete rowState.menu;
+assert.equal(probe(), '', 'An unrelated ancestor context is not a verified Packages menu owner');
+
 // Return through Experience Home into a freshly mounted Designer without guessing from the URL.
 window.location.pathname = '/fixture/app/home';
 window.location.href = window.location.origin + window.location.pathname;
@@ -77,4 +90,7 @@ window.location.pathname = designer;
 window.location.href = window.location.origin + designer;
 managerNode = manager('returned-tenant').node;
 assert.equal(probe(), 'returned-tenant');
+managerNode = null;
+rowState.menu = [];
+assert.equal(probe(), '', 'Designer must not inherit a retained Packages context');
 console.log('PASS: direct Designer identity, bounded element lookups, live switch/unmount/remount, stale bootstrap rejection, Packages isolation, and Home return.');

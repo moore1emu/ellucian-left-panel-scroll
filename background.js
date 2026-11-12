@@ -1,7 +1,7 @@
 "use strict";
 
 // Load the same validation and drawing rules used by the settings preview.
-importScripts("icon-appearance.js", "custom-sites.js", "favorites-data.js", "favorites-worker.js");
+importScripts("icon-appearance.js", "custom-sites.js", "favorites-data.js", "favorites-worker.js", "update-summary.js", "pipeline-export-worker.js");
 let pendingIconUpdate = Promise.resolve();
 
 // Serialize site changes so a removal cannot race an earlier registration request.
@@ -47,6 +47,11 @@ function updateIcon() {
 chrome.runtime.onInstalled.addListener(updateIcon);
 chrome.runtime.onStartup.addListener(updateIcon);
 chrome.runtime.onInstalled.addListener(restoreSites);
+// Queue a small summary for the next settings opening, never an automatic tab or data lookup.
+chrome.runtime.onInstalled.addListener((details) => {
+  UpdateSummary.recordUpdate(details, chrome.storage.local, chrome.runtime.getManifest().version)
+    .catch(() => console.warn("[Integration Navigator] UPDATE_SUMMARY_SAVE_FAILED"));
+});
 chrome.runtime.onStartup.addListener(restoreSites);
 chrome.permissions.onAdded.addListener(restoreSites);
 chrome.permissions.onRemoved.addListener(restoreSites);
@@ -152,15 +157,19 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     for (const entry of message.packages) {
       const name = clean(entry?.name);
       if (!name || !Array.isArray(entry?.pipelines)) throw new Error("Incomplete Designer package information.");
-      pipelineCount += entry.pipelines.length;
+      // Old snapshots omit transformFunctions; never infer transformer ownership from pipeline names.
+      if (entry.transformFunctions !== undefined && !Array.isArray(entry.transformFunctions)) throw new Error("Incomplete Designer package information.");
+      pipelineCount += entry.pipelines.length + (entry.transformFunctions?.length || 0);
       if (pipelineCount > 10000) throw new Error("Too many Designer pipeline names.");
-      const names = packagesByName.get(name) || new Set();
+      const names = packagesByName.get(name) || { pipelines: new Set(), transformFunctions: new Set() };
       // Keep only names; versions, descriptions, and pipeline contents are discarded.
-      entry.pipelines.forEach((value) => { const pipeline = clean(value); if (pipeline) names.add(pipeline); });
+      entry.pipelines.forEach((value) => { const pipeline = clean(value); if (pipeline) names.pipelines.add(pipeline); });
+      (entry.transformFunctions || []).forEach((value) => { const transformer = clean(value); if (transformer) names.transformFunctions.add(transformer); });
       packagesByName.set(name, names);
     }
     // Sort once when saving so exported snapshots are easy to scan and compare.
-    const packages = Array.from(packagesByName, ([name, names]) => ({ name, pipelines: [...names].sort() }))
+    const packages = Array.from(packagesByName, ([name, names]) => ({ name, pipelines: [...names.pipelines].sort(),
+      ...(names.transformFunctions.size ? { transformFunctions: [...names.transformFunctions].sort() } : {}) }))
       .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
     // An empty completed snapshot removes this environment's previously observed names.
     const cache = { ...settings.designerOwnershipCache, [tenantId]: { environment, packages, checkedAt: Date.now() } };

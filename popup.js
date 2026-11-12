@@ -13,6 +13,7 @@
   const SHARED_FROM_ENABLED_KEY = "sharedFromEnabled";
   const PACKAGE_ARTIFACTS_ENABLED_KEY = 'packageArtifactsEnabled';
   // Store only the opt-in, never the published fitting's source or values.
+  const JOB_FILE_VIEWER_ENABLED_KEY = 'jobFileViewerEnabled';
   const FITTING_DETAILS_ENABLED_KEY = 'fittingDetailsEnabled';
   const OWNERSHIP_CACHE_KEY = "designerOwnershipCache";
 
@@ -23,7 +24,14 @@
   const sharedFromSwitch = document.querySelector("#shared-from-enabled");
   const packageArtifactsSwitch = document.querySelector('#package-artifacts-enabled');
   const packageArtifactsStatus = document.querySelector('#package-artifacts-status');
+  // Keep navigation and Designer errors beside their own controls after regrouping.
+  const navigationStatus = document.querySelector('#navigation-status');
+  const sharedToStatus = document.querySelector('#shared-to-status');
   // Reuse the confirmed-value switch saver for this independent Designer option.
+  const capabilitiesSwitch = document.querySelector('#capabilities-favorites-enabled');
+  const capabilitiesStatus = document.querySelector('#capabilities-status');
+  const jobFileViewerSwitch = document.querySelector('#job-file-viewer-enabled');
+  const jobFileViewerStatus = document.querySelector('#job-file-viewer-status');
   const fittingDetailsSwitch = document.querySelector('#fitting-details-enabled');
   const fittingDetailsStatus = document.querySelector('#fitting-details-status');
   const sharedFromConfirmation = document.querySelector("#shared-from-confirmation");
@@ -35,6 +43,9 @@
   // Keep export feedback beside the moved backup actions, not under the independent source refresh.
   const backupStatus = document.querySelector('#backup-status');
   const refreshSharedFromButton = document.querySelector("#refresh-shared-from");
+  const refreshAvailability = document.querySelector('#source-refresh-availability');
+  let preferencesLoaded = false;
+  let manualRefreshBusy = false;
   const versionLabel = document.querySelector("#extension-version");
   const iconColorInput = document.querySelector("#icon-color");
   const iconLettersInput = document.querySelector("#icon-letters");
@@ -56,6 +67,10 @@
   // Keep the existing sidebar preference separate from the Designer package search.
   const searchModeSelect = document.querySelector("#search-display-mode");
   const designerSearchModeSelect = document.querySelector("#designer-search-display-mode");
+  // Keep each search choice's save result separate from unrelated switch feedback.
+  const sidebarSearchStatus = document.querySelector('#sidebar-search-status');
+  const designerSearchStatus = document.querySelector('#designer-search-status');
+  const confirmedSearchValues = new WeakMap();
 
   // Accept only one of the three supported search presentation modes.
   function normalizeSearchMode(value) {
@@ -80,6 +95,8 @@
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SHARED_FROM_ENABLED_KEY]: false,
       [PACKAGE_ARTIFACTS_ENABLED_KEY]: null,
+      [FavoritesData.CAPABILITIES_ENABLED]: false,
+      [JOB_FILE_VIEWER_ENABLED_KEY]: true,
       [FITTING_DETAILS_ENABLED_KEY]: false,
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
       [DESIGNER_SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
@@ -87,14 +104,24 @@
       [FavoriteAppearance.KEY]: FavoriteAppearance.DEFAULT,
     },
     (settings) => {
+      // Failed reads must not present defaults as saved values or unlock preference writes.
+      if (chrome.runtime.lastError || !settings || typeof settings !== 'object' || Array.isArray(settings)) {
+        const message = 'Could not load settings. Close and reopen settings to retry.';
+        [navigationStatus, sharedFromStatus, iconStatus].forEach(status => { status.textContent = message; });
+        return;
+      }
       // Display the width preference and its explanatory status.
       rememberWidthSwitch.checked = Boolean(settings[REMEMBER_WIDTH_KEY]);
       sharedVersionSwitch.checked = settings[SHARED_VERSION_ENABLED_KEY] === true;
+      capabilitiesSwitch.checked = settings[FavoritesData.CAPABILITIES_ENABLED] === true;
+      jobFileViewerSwitch.checked = settings[JOB_FILE_VIEWER_ENABLED_KEY] !== false;
       fittingDetailsSwitch.checked = settings[FITTING_DETAILS_ENABLED_KEY] === true;
       // Restore opt-in without collecting anything while the popup initializes.
       sharedFromSwitch.checked = settings[SHARED_FROM_ENABLED_KEY] === true;
       sharedFromSwitch.disabled = false;
-      refreshSharedFromButton.disabled = false;
+      preferencesLoaded = true;
+      updateRefreshAvailability();
+      document.dispatchEvent(new Event('settings-consent-changed'));
       readOwnershipStatus();
 
       // Keep: existing users keep their previous choice once; new installs start with reference rows off (1.21.5).
@@ -115,7 +142,7 @@
         settings[FAVORITES_ENABLED_KEY] !== false;
 
       // Treat the loaded values as confirmed before allowing any switch changes.
-      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch].forEach((input) => {
+      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch, jobFileViewerSwitch, capabilitiesSwitch].forEach((input) => {
         confirmedSwitchValues.set(input, input.checked);
         input.disabled = false;
       });
@@ -123,8 +150,11 @@
       // Restore both independent choices before allowing changes to be saved.
       searchModeSelect.value = normalizeSearchMode(settings[SEARCH_MODE_KEY]);
       designerSearchModeSelect.value = normalizeSearchMode(settings[DESIGNER_SEARCH_MODE_KEY]);
-      searchModeSelect.disabled = false;
-      designerSearchModeSelect.disabled = false;
+      // Restore both confirmed selections before accepting another asynchronous save.
+      [searchModeSelect, designerSearchModeSelect].forEach(select => {
+        confirmedSearchValues.set(select, select.value);
+        select.disabled = false;
+      });
 
       // Show the saved appearance without changing other popup preferences.
       const appearance = IconAppearance.normalize(settings[IconAppearance.KEY]);
@@ -147,6 +177,16 @@
       favoriteShapeSelect.disabled = false;
     },
   );
+
+  // Keep Refresh Sources unavailable outside Integration Designer without disabling saved display preferences.
+  function updateRefreshAvailability() {
+    const designer = PopupTabs.page === 'designer';
+    refreshSharedFromButton.disabled = !preferencesLoaded || manualRefreshBusy || !designer || !sharedFromSwitch.checked;
+    document.querySelector('#source-refresh-block').classList.toggle('is-unavailable', !designer || !sharedFromSwitch.checked);
+    refreshAvailability.textContent = !designer ? 'Open Integration Designer to refresh sources.'
+      : !sharedFromSwitch.checked ? 'Enable Shared From to refresh sources.' : 'Refresh updates this Integration Designer environment only.';
+  }
+  document.addEventListener('settings-context-changed', updateRefreshAvailability);
 
   // Preview color and initials immediately without generating artwork on every keystroke.
   function previewIcon() {
@@ -329,34 +369,66 @@
   // Width behavior remains separate from the new record display switch.
   rememberWidthSwitch.addEventListener("change", () => {
     // Remove old widths only after reset-on-refresh is actually saved.
-    saveSwitch(rememberWidthSwitch, REMEMBER_WIDTH_KEY, 'Remember Resized Width', packageArtifactsStatus, (shouldRemember) => {
+    saveSwitch(rememberWidthSwitch, REMEMBER_WIDTH_KEY, 'Remember Resized Width', navigationStatus, (shouldRemember) => {
       if (!shouldRemember) chrome.storage.local.remove(SAVED_WIDTHS_KEY);
     });
   });
 
   // Apply optional sharing checks immediately to open Designer pages.
   sharedVersionSwitch.addEventListener("change", () => {
-    saveSwitch(sharedVersionSwitch, SHARED_VERSION_ENABLED_KEY, 'Shared To', sharedFromStatus);
+    saveSwitch(sharedVersionSwitch, SHARED_VERSION_ENABLED_KEY, 'Shared To', sharedToStatus);
   });
 
   // Apply published viewing to open Designer pages without touching other preferences.
+  capabilitiesSwitch.addEventListener('change', () => {
+    saveSwitch(capabilitiesSwitch, FavoritesData.CAPABILITIES_ENABLED, 'Capabilities favorites', capabilitiesStatus);
+  });
+  // Reflect restored preferences in the open popup, including its failed-save rollback value.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !changes[FavoritesData.CAPABILITIES_ENABLED]) return;
+    capabilitiesSwitch.checked = changes[FavoritesData.CAPABILITIES_ENABLED].newValue === true;
+    confirmedSwitchValues.set(capabilitiesSwitch, capabilitiesSwitch.checked);
+  });
+
+  jobFileViewerSwitch.addEventListener('change', () => {
+    saveSwitch(jobFileViewerSwitch, JOB_FILE_VIEWER_ENABLED_KEY, 'Enable JSON and CSV viewer', jobFileViewerStatus);
+  });
+
   fittingDetailsSwitch.addEventListener('change', () => {
     saveSwitch(fittingDetailsSwitch, FITTING_DETAILS_ENABLED_KEY, 'View Published Fitting Details', fittingDetailsStatus);
   });
 
   // Show or hide favorite controls immediately while retaining saved packages.
   favoritesEnabledSwitch.addEventListener("change", () => {
-    saveSwitch(favoritesEnabledSwitch, FAVORITES_ENABLED_KEY, 'Pinned Packages', packageArtifactsStatus);
+    saveSwitch(favoritesEnabledSwitch, FAVORITES_ENABLED_KEY, 'Pinned Packages', navigationStatus);
   });
+
+  // Serialize each selector independently and restore its durable value if a write fails.
+  function saveSearchMode(select, key, status) {
+    if (select.disabled || !confirmedSearchValues.has(select)) return;
+    const previous = confirmedSearchValues.get(select);
+    const value = normalizeSearchMode(select.value);
+    select.disabled = true;
+    select.setAttribute('aria-busy', 'true');
+    status.textContent = '';
+    chrome.storage.local.set({ [key]: value }, () => {
+      const failed = Boolean(chrome.runtime.lastError);
+      select.value = failed ? previous : value;
+      if (!failed) confirmedSearchValues.set(select, value);
+      select.disabled = false;
+      select.setAttribute('aria-busy', 'false');
+      status.textContent = failed ? 'Could not save search display. Please try again.' : '';
+    });
+  }
 
   // Save sidebar changes without changing the Designer pipeline preference.
   searchModeSelect.addEventListener("change", () => {
-    chrome.storage.local.set({ [SEARCH_MODE_KEY]: normalizeSearchMode(searchModeSelect.value) });
+    saveSearchMode(searchModeSelect, SEARCH_MODE_KEY, sidebarSearchStatus);
   });
 
   // Apply the selected-package search choice independently on open Designer pages.
   designerSearchModeSelect.addEventListener("change", () => {
-    chrome.storage.local.set({ [DESIGNER_SEARCH_MODE_KEY]: normalizeSearchMode(designerSearchModeSelect.value) });
+    saveSearchMode(designerSearchModeSelect, DESIGNER_SEARCH_MODE_KEY, designerSearchStatus);
   });
 
   // Persist consent only after confirmation; the worker clears data when disabled.
@@ -370,6 +442,8 @@
       sharedFromSwitch.disabled = false;
       sharedFromSwitch.setAttribute('aria-busy', 'false');
       sharedFromStatus.textContent = failed ? "Could not save. Please try again." : enabled ? "Enabled. Visit Designer in each source environment." : "Disabled. Clearing source cache; favorites kept.";
+      updateRefreshAvailability();
+      document.dispatchEvent(new Event('settings-consent-changed'));
       readOwnershipStatus();
     });
   }
@@ -398,11 +472,14 @@
 
   // Ask only the active tab to recollect its own Designer sources, without extra permissions.
   refreshSharedFromButton.addEventListener('click', async () => {
+    // UI availability is advisory; recheck page context before requesting the existing guarded refresh.
+    if (PopupTabs.page !== 'designer' || manualRefreshBusy) return;
     if (!sharedFromSwitch.checked) {
       sharedFromStatus.textContent = 'Enable Shared From first.';
       return;
     }
     refreshSharedFromButton.disabled = true;
+    manualRefreshBusy = true;
     // Show the CSS working circle until collection and persistence return a result.
     refreshSharedFromButton.setAttribute('aria-busy', 'true');
     sharedFromStatus.textContent = 'Refreshing Shared From data…';
@@ -438,7 +515,8 @@
       sharedFromStatus.textContent = 'Open Designer on an enabled site, then try again. If already open, refresh that page once.';
     } finally {
       // Stop the working circle on success, failure, or a lost page connection.
-      refreshSharedFromButton.disabled = false;
+      manualRefreshBusy = false;
+      updateRefreshAvailability();
       refreshSharedFromButton.setAttribute('aria-busy', 'false');
       readOwnershipStatus();
     }
@@ -450,7 +528,8 @@
     // Expose the export's busy state without hiding its eventual error or setup guidance.
     exportSharedFromButton.setAttribute('aria-busy', 'true');
     backupStatus.textContent = "";
-    chrome.storage.local.get({ ...FavoritesData.defaults, [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
+    // Existing Capabilities keys vary by Home scope. Only approved backup fields are serialized.
+    chrome.storage.local.get(null, (settings) => {
       try {
         // Report failed reads instead of downloading an empty or misleading file.
         if (chrome.runtime.lastError) throw new Error("Cache read failed.");
@@ -459,6 +538,7 @@
         const exportedAt = snapshot.exportedAt;
         // Use a local JSON download without new permissions or any network upload.
         const file = new Blob([JSON.stringify(snapshot, null, 2) + "\r\n"], { type: "application/json" });
+        if (file.size > 4000000) throw new Error('Backup exceeds the import size limit.');
         const url = URL.createObjectURL(file);
         const link = document.createElement("a");
         link.href = url;

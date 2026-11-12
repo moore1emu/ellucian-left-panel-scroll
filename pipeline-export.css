@@ -1,0 +1,29 @@
+:root { color-scheme: light dark; font-family: system-ui, sans-serif; background: light-dark(#f3f4f6, #17191d); color: light-dark(#20242b, #eceef4); }
+/* Keep a readable workspace without forcing the narrow settings popup's dimensions. */
+main { max-width: 1050px; margin: 40px auto; padding: 0 24px; }
+header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+h1 { margin: 0; font-size: 25px; } header p { margin: 3px 0 0; opacity: .7; }
+section { padding: 24px; border: 1px solid light-dark(#d7dbe3, #444a55); border-radius: 14px; background: light-dark(#fff, #24282f); }
+h2 { margin-top: 0; font-size: 18px; } p { line-height: 1.5; }
+/* Long institution-specific names scroll within the preview instead of widening the whole page. */
+#export-selection { min-width: 0; padding: 16px; margin: 20px 0; border: 1px solid light-dark(#d7dbe3, #535b69); border-radius: 9px; }
+legend { padding: 0 7px; font-weight: 600; }
+.select-all { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.selection-help { margin: 8px 0 14px; font-size: 13px; opacity: .8; }
+#export-packages { max-height: 55vh; overflow: auto; }
+/* Keep package selection separate from disclosure so checking does not expand a long list. */
+.export-package { border-top: 1px solid light-dark(#e3e6ec, #444a55); }
+.export-package summary { cursor: pointer; padding: 12px 5px; }
+.package-name { margin-left: 8px; font-weight: 600; overflow-wrap: anywhere; }
+/* Allow the added type totals to wrap beside long package names on smaller screens. */
+.package-count { margin-left: 12px; font-size: 13px; opacity: .8; white-space: normal; }
+input[type="checkbox"] { width: 17px; height: 17px; vertical-align: middle; accent-color: #7652bd; }
+.pipeline-list { max-height: 38vh; overflow: auto; margin: 0 5px 12px; }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+th, td { padding: 11px; border-bottom: 1px solid light-dark(#e3e6ec, #444a55); white-space: nowrap; }
+th { position: sticky; top: 0; background: light-dark(#fff, #24282f); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+button, #save-zip { padding: 9px 14px; border: 1px solid light-dark(#b9c0cc, #747d8d); border-radius: 7px; background: light-dark(#f6f7fa, #303640); color: inherit; font: inherit; cursor: pointer; text-decoration: none; }
+button:disabled { opacity: .5; cursor: default; } progress { width: 100%; } .notice { color: light-dark(#75500c, #efc478); }
+/* Preserve semantic hidden state even on styled links and flexible action groups. */
+[hidden] { display: none !important; }

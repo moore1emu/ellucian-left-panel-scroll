@@ -244,12 +244,13 @@ const enter = (tenantId, page = 'packages') => { current = { scope: scope(tenant
 
   // A backup round trip retains tenant IDs, pipeline order, disclosure, and unknown source packages.
   settings.designerOwnershipCache = { 'test-a': { environment: 'Test A', checkedAt: Date.now() - 1000,
-    packages: [{ name: null, pipelines: ['Unknown Package Child'] }] } };
+    packages: [{ name: null, pipelines: ['Unknown Package Child'] }, { name: 'Owned Package', pipelines: [], transformFunctions: ['Owned Function'] }] } };
   const exported = clone(data.exportData(settings, '1.22.1'));
   assert.equal(exported.favorites.length, 3);
   assert.equal(exported.unassignedFavorites.length, 0);
   assert.equal(exported.assignments.length, 1);
   assert.equal(exported.environments[0].packages[0].packageNameRecorded, false);
+  assert.deepEqual(exported.environments[0].packages[1].transformFunctions, ['Owned Function']);
   assert.deepEqual(clone(data.backup(data.backup(exported))), clone(data.backup(exported)));
   const incoming = { ...exported, favorites: [{ ...scope('test-a'), packages: [group('New')], expanded: false }] };
   assert.equal((await send({ type: 'favorites-import', backup: incoming, mode: 'merge' }, popup)).ok, true);
@@ -257,6 +258,40 @@ const enter = (tenantId, page = 'packages') => { current = { scope: scope(tenant
   assert.equal((await send({ type: 'favorites-import', backup: incoming, mode: 'replace' }, popup)).ok, true);
   assert.deepEqual(settings[data.KEY][data.key(scope('test-a'))].map((entry) => entry.packageName), ['New']);
   assert.equal(settings[data.KEY][data.key(scope('test-b'))][0].packageName, 'B');
+
+  // Capabilities backups retain each Home scope and append only missing app paths on merge.
+  const east = site + '/portal/east/';
+  const west = site + '/portal/west/';
+  const app = (mount, name) => ({path:new URL(mount).pathname + 'app/' + name, name, icon:''});
+  const eastKey = data.capabilityKey({home:east});
+  const westKey = data.capabilityKey({home:west});
+  settings[eastKey] = [app(east,'Designer')];
+  settings[westKey] = [app(west,'West')];
+  settings[data.CAPABILITIES_ENABLED] = true;
+  const caps = {enabled:false, lists:[{home:east, apps:[app(east,'Reports'), app(east,'Designer')]}]};
+  const importCaps = (capabilityFavorites, mode='merge') => send({type:'favorites-import', mode,
+    backup:{format:'integration-navigator-backup', schemaVersion:1, favorites:[], unassignedFavorites:[],
+      ...(capabilityFavorites === undefined ? {} : {capabilityFavorites})}},popup);
+  assert.equal((await importCaps(caps)).ok,true);
+  assert.deepEqual(settings[eastKey].map(item=>item.name),['Designer','Reports']);
+  assert.equal(settings[data.CAPABILITIES_ENABLED],false);
+  assert.equal((await importCaps({enabled:true,lists:[{home:east,apps:[]}]},'replace')).ok,true);
+  assert.deepEqual(settings[eastKey],[]);
+  assert.deepEqual(settings[westKey],[app(west,'West')]);
+  assert.equal((await importCaps(undefined,'replace')).ok,true);
+  assert.deepEqual(settings[westKey],[app(west,'West')]);
+  assert.equal(settings[data.CAPABILITIES_ENABLED],true);
+
+  // Invalid files fail atomically, including attempts to mix tenants or supply unsafe links/icons.
+  const beforeInvalid = writes;
+  for (const invalid of [{enabled:'false',lists:[]},{enabled:false,lists:[{home:site+'/',apps:[]}]},
+    {enabled:false,lists:[{home:east,apps:[app(west,'Wrong')]}]},
+    {enabled:false,lists:[{home:east,apps:[{...app(east,'Reports'),icon:'https://example.com/icon'}]}]},
+    {enabled:false,lists:[{home:east,apps:[{...app(east,'Reports'),path:'/portal/east/app/../../wrong'}]}]},
+    {enabled:false,lists:[{home:east,apps:[]},{home:east,apps:[]}]}]) {
+    assert.equal((await importCaps(invalid)).ok,false);
+  }
+  assert.equal(writes,beforeInvalid);
 
   // Source restore is opt-in, cannot enable collection, and never replaces a fresher snapshot.
   const savedSources = clone(settings.designerOwnershipCache);
@@ -267,6 +302,10 @@ const enter = (tenantId, page = 'packages') => { current = { scope: scope(tenant
   assert.equal((await send({ type: 'favorites-import', backup: incoming, mode: 'merge', restoreSources: true }, popup)).ok, true);
   assert.equal(settings.designerOwnershipCache['test-a'].packages[0].name, null);
   assert.ok(settings.designerOwnershipCache['test-a'].checkedAt > Date.parse(exported.environments[0].lastCheckedAt));
+  // Restoring a selected newer source snapshot retains transformer names without changing tenant favorites.
+  settings.designerOwnershipCache['test-a'].checkedAt = 1;
+  assert.equal((await send({ type: 'favorites-import', backup: incoming, mode: 'merge', restoreSources: true }, popup)).ok, true);
+  assert.deepEqual(settings.designerOwnershipCache['test-a'].packages[1].transformFunctions, ['Owned Function']);
 
   // Invalid backups must fail before any write; importing cannot be called by a web page sender.
   const count = writes;
