@@ -444,6 +444,7 @@ footer {
 .settings-panel { background: transparent; border: 0; border-radius: 0; padding: 0 2px 8px; overflow: visible; }
 .settings-panel[inert] { opacity: 0.55; }
 /* Indent controls, not scope headings, to make their parent group apparent without extra height. */
+.settings-panel.navigation-card { padding-bottom: 4px; }
 .navigation-card .navigation-group { padding: 0 0 0 8px; }
 /* Keep: normal Navigation fits without scrolling; long notices still use the panel scroller (2.1.4). */
 .navigation-group + .navigation-group { border-top: 1px solid var(--border); margin-top: 3px; padding-top: 4px !important; }

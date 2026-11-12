@@ -1,5 +1,10 @@
 # Update history
 
+## 3.2.2 — 2026-11-12
+
+- Enable **Capabilities favorites** in Navigation to see stars and header shortcuts. It defaults off, and saved pins return when you enable it.
+- JSON backups now include the Capabilities switch and app links for each Home scope. Merge appends missing links. Replace updates matching lists. Older backups preserve the current switch and links.
+
 ## 3.2.1 — 2026-11-11
 
 - Pin or unpin apps from the nine-dot Capabilities menu. Favorites open in the current tab and follow the tenant across Home, apps, card pages and approved custom sites.

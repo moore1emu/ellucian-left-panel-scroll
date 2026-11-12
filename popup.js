@@ -28,6 +28,8 @@
   const navigationStatus = document.querySelector('#navigation-status');
   const sharedToStatus = document.querySelector('#shared-to-status');
   // Reuse the confirmed-value switch saver for this independent Designer option.
+  const capabilitiesSwitch = document.querySelector('#capabilities-favorites-enabled');
+  const capabilitiesStatus = document.querySelector('#capabilities-status');
   const jobFileViewerSwitch = document.querySelector('#job-file-viewer-enabled');
   const jobFileViewerStatus = document.querySelector('#job-file-viewer-status');
   const fittingDetailsSwitch = document.querySelector('#fitting-details-enabled');
@@ -93,6 +95,7 @@
       [SHARED_VERSION_ENABLED_KEY]: false,
       [SHARED_FROM_ENABLED_KEY]: false,
       [PACKAGE_ARTIFACTS_ENABLED_KEY]: null,
+      [FavoritesData.CAPABILITIES_ENABLED]: false,
       [JOB_FILE_VIEWER_ENABLED_KEY]: true,
       [FITTING_DETAILS_ENABLED_KEY]: false,
       [SEARCH_MODE_KEY]: DEFAULT_SEARCH_MODE,
@@ -110,6 +113,7 @@
       // Display the width preference and its explanatory status.
       rememberWidthSwitch.checked = Boolean(settings[REMEMBER_WIDTH_KEY]);
       sharedVersionSwitch.checked = settings[SHARED_VERSION_ENABLED_KEY] === true;
+      capabilitiesSwitch.checked = settings[FavoritesData.CAPABILITIES_ENABLED] === true;
       jobFileViewerSwitch.checked = settings[JOB_FILE_VIEWER_ENABLED_KEY] !== false;
       fittingDetailsSwitch.checked = settings[FITTING_DETAILS_ENABLED_KEY] === true;
       // Restore opt-in without collecting anything while the popup initializes.
@@ -138,7 +142,7 @@
         settings[FAVORITES_ENABLED_KEY] !== false;
 
       // Treat the loaded values as confirmed before allowing any switch changes.
-      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch, jobFileViewerSwitch].forEach((input) => {
+      [rememberWidthSwitch, favoritesEnabledSwitch, sharedVersionSwitch, fittingDetailsSwitch, jobFileViewerSwitch, capabilitiesSwitch].forEach((input) => {
         confirmedSwitchValues.set(input, input.checked);
         input.disabled = false;
       });
@@ -378,6 +382,16 @@
   });
 
   // Apply published viewing to open Designer pages without touching other preferences.
+  capabilitiesSwitch.addEventListener('change', () => {
+    saveSwitch(capabilitiesSwitch, FavoritesData.CAPABILITIES_ENABLED, 'Capabilities favorites', capabilitiesStatus);
+  });
+  // Reflect restored preferences in the open popup, including its failed-save rollback value.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !changes[FavoritesData.CAPABILITIES_ENABLED]) return;
+    capabilitiesSwitch.checked = changes[FavoritesData.CAPABILITIES_ENABLED].newValue === true;
+    confirmedSwitchValues.set(capabilitiesSwitch, capabilitiesSwitch.checked);
+  });
+
   jobFileViewerSwitch.addEventListener('change', () => {
     saveSwitch(jobFileViewerSwitch, JOB_FILE_VIEWER_ENABLED_KEY, 'Enable JSON and CSV viewer', jobFileViewerStatus);
   });
@@ -516,7 +530,8 @@
     // Expose the export's busy state without hiding its eventual error or setup guidance.
     exportSharedFromButton.setAttribute('aria-busy', 'true');
     backupStatus.textContent = "";
-    chrome.storage.local.get({ ...FavoritesData.defaults, [OWNERSHIP_CACHE_KEY]: {} }, (settings) => {
+    // Existing Capabilities keys vary by Home scope. Only approved backup fields are serialized.
+    chrome.storage.local.get(null, (settings) => {
       try {
         // Report failed reads instead of downloading an empty or misleading file.
         if (chrome.runtime.lastError) throw new Error("Cache read failed.");
@@ -525,6 +540,7 @@
         const exportedAt = snapshot.exportedAt;
         // Use a local JSON download without new permissions or any network upload.
         const file = new Blob([JSON.stringify(snapshot, null, 2) + "\r\n"], { type: "application/json" });
+        if (file.size > 4000000) throw new Error('Backup exceeds the import size limit.');
         const url = URL.createObjectURL(file);
         const link = document.createElement("a");
         link.href = url;

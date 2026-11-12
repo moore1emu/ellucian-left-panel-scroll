@@ -7,6 +7,10 @@
 
   // Describe completed candidate behavior without claiming an approved store release.
   const NOTES = Object.freeze({
+    "3.2.2": Object.freeze([
+      "Turn on Capabilities favorites in Navigation to show header links. JSON backups now include the links and this setting.",
+      "Wrap wide JSON and CSV job files or switch back to the original text from Navigation settings.",
+    ]),
     "3.2.1": Object.freeze([
       "Pin apps in the Capabilities menu to see their shortcuts throughout Experience.",
       "Wrap wide JSON and CSV job files or switch back to the original text from Navigation settings.",

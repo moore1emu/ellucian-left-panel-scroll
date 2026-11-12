@@ -2,7 +2,7 @@
 
 ## Scope and Approval
 
-- Capabilities favorites use the native Home path and the site origin across pages with the Experience header and nine-dot menu. Root-mounted custom sites also require tenant identity. Keep launch links tenant-scoped and preserve current-tab navigation, dynamic rows and native icon spacing.
+- Capabilities favorites use the native Home path and the site origin across pages with the Experience header and nine-dot menu. Root-mounted custom sites also require tenant identity. Keep launch links tenant-scoped and preserve current-tab navigation, dynamic rows and native icon spacing. Keep Capabilities favorites off until explicitly enabled or restored from a backup. Older backups preserve existing links and the switch. Navigation Tools also gates live links and pin writes, independently of JSON restore.
 - The Job Run Files viewer setting, Formatted view and Wrap text are independent local preferences. Keep headings on one line and preserve both footer choices when the viewer is disabled. Both features follow the Navigation Tools switch.
 
 - At 3.1.9 the owner removed visible card chrome from Export while retaining all four groups, their geometry, controls and order. Keep the bold red page hint at the top, independent backups and all existing source/consent/configuration/credential guards. Next checkpoint is 3.2.0; no main/store change.
@@ -73,7 +73,7 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v3 candidate after 3.2.1 is 3.2.2. Do not rename historical releases.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v3 candidate after 3.2.2 is 3.2.3. Do not rename historical releases.
 
 - Maintain CHROMEWEBSTORE.md for store preparation, separate public listing copy from reviewer instructions, and keep Shift+D out of the public store description while disclosing it in GitHub/reviewer documentation. Never certify live dashboard/privacy/asset state from a local draft. Keep this preparation file out of release ZIPs. Consult official Chrome guidance selectively; generic skill advice does not override these project rules or authorize tooling installation, permissions, normal-profile debugging, main merges, or publication.
 - Preserve the 2.1.9 explicit extension-page CSP and Chrome 106 API-derived minimum; verify the installed popup/export flow, including blob downloads, before changing them. Historical Chrome 106 runtime compatibility is not proven by current-browser fixtures. No extra permissions are introduced by this hardening.

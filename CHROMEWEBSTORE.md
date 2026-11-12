@@ -1,6 +1,6 @@
 # Chrome Web Store Preparation — Integration Navigator
 
-Updated: 2026-11-11 · Candidate: 3.2.1 · Status: manual-test candidate
+Updated: 2026-11-12 · Candidate: 3.2.2 · Status: manual-test candidate
 
 3.1.9 preparation: Export uses matching flat task sections without card backgrounds, visible outlines or rounded corners. The red unavailable-page hint remains above all groups; Preview & Export stays third. No data, permission, consent, credential or source/provider behavior changes. Refresh settings screenshots before future submission; no store action is authorized.
 

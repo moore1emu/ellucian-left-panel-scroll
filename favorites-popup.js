@@ -72,6 +72,12 @@
       pendingBackup = data.backup(JSON.parse(contents));
       const groups = pendingBackup.favorites;
       const labels = groups.map((group) => `${group.site} · ${group.tenantId} · ${group.page} (${group.packages.length} packages)`);
+      // Show both the affected Home scopes and the preference before the user confirms.
+      const capabilities = pendingBackup.capabilityFavorites;
+      if (capabilities) {
+        for (const group of capabilities.lists) labels.push(`${group.home}${group.tenantId ? ' (' + group.tenantId + ')' : ''} (${group.apps.length} Capabilities favorites)`);
+        labels.push('Capabilities favorites setting: ' + (capabilities.enabled ? 'on' : 'off'));
+      }
       document.querySelector('#backup-summary').textContent = `${groups.length} tenant lists, ${pendingBackup.unassignedFavorites.length} retained old lists, ${pendingBackup.environments.length} source environments. ${labels.join('; ')}`;
       document.querySelector('#backup-mode').value = 'merge';
       sourceSwitch.checked = false;
