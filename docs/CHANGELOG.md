@@ -2,6 +2,81 @@
 
 Reconstructed from this development chat, including recorded file changes. Dates use America/Denver. Intermediate builds are identified below; entries describe changes made at the time, with later fixes listed separately.
 
+## 1.24.3 — 2026-11-11
+
+- Toggle **Capabilities favorites** under Page Behavior. JSON export and import now include its saved links and switch. Older backups preserve both.
+
+## 1.24.2 — 2026-11-11
+
+- Shortened the What’s New notice to three bullets covering Capabilities favorites, the JSON and CSV viewer, and bug fixes.
+
+## 1.24.1 — 2026-11-11
+
+- The settings popup now shows **What’s New** after an update, with highlights since the last store release. Select **Dismiss** to hide the notes for this version.
+
+## 1.24.0 — 2026-11-11
+
+- All pages under the tenant Home path with the Experience header and Capabilities button, including Application Processing, show the same Capabilities favorites as Home and reflect pin and unpin actions across the tenant.
+
+## 1.23.9 — 2026-11-11
+
+- Moved the favorite star to the left of each app icon in the **Capabilities** menu. The visual and keyboard order follows the current list as apps appear or disappear.
+
+## 1.23.8 — 2026-11-11
+
+- Capabilities favorites now support custom domains with nested Home paths and with Home at the root when Experience supplies the tenant ID. Header shortcuts and eligible Capabilities menu links open in the current tab. Shortcut size and spacing match the native header icons.
+
+## 1.23.7 — 2026-11-11
+
+- Restored the Capabilities stars and header shortcuts on Reporting & Analytics and other same-tenant capability pages. Fixed a Home page layer that could intercept clicks on the saved shortcuts.
+
+## 1.23.6 — 2026-11-11
+
+- Star an app in the **Capabilities** menu to put its shortcut beside **Tasks** on Experience Home, Integration Packages and Integration Designer. Pins are saved locally for the current site and tenant Home path.
+
+## 1.23.5 — 2026-11-11
+
+- **Wrap text** keeps CSV column headings on one line while wrapping data values. If the headings cannot fit side by side, the preview scrolls horizontally.
+
+## 1.23.4 — 2026-11-11
+
+- **Wrap text** stays visible but grayed out when **Formatted view** is off. Turning formatting back on re-enables it with the same checkmark.
+
+## 1.23.3 — 2026-11-11
+
+- Added **Enable JSON and CSV viewer** under **Page Behavior**, on by default. Turning it off restores the native viewer immediately. Turning it back on restores both footer preferences.
+
+## 1.23.2 — 2026-11-11
+
+- In the Job Run Files footer, **Formatted view** and **Wrap text** now appear to the left of **Close**. Tab moves through the controls in that order.
+
+## 1.23.1 — 2026-11-11
+
+- Moved **Formatted view** beside **Close** and added a remembered **Wrap text** checkbox. Long CSV fields and JSON lines scroll horizontally by default. Changing wrapping keeps the current CSV page and expanded JSON branches.
+
+## 1.23.0 — 2026-11-11
+
+- Job Run Files opens CSV previews as tables and JSON previews with collapsible objects and arrays. The Formatted view switch defaults to on and remembers the last choice in this browser profile.
+
+## 1.22.9 — 2026-11-11
+
+- Both pipeline stars now recognize the same saved favorite when its displayed name or version changes. Unpinning removes saved duplicates for that row and preserves other major versions.
+- Integration Packages now shows the latest published Sub-Pipeline release in each major version.
+
+## 1.22.8 — 2026-10-15
+
+- Fixes View Published Fitting Details when the published pipeline already has a draft. The page's alternate published-state label is now recognized; the existing version remained locked in this case.
+- Keeps the opt-in requirement, normal-contrast viewing, scrolling, selection/copy, read-only text/code, disabled actions, original lock restoration, and fail-closed handling of unknown states/editors. Draft pipelines remain unaffected.
+- Retains the 1.22.7 Packages favorites fix. No new permissions, stored data, service calls, or v2 features are added.
+- Adds real-Ace synthetic regressions for existing-draft published versions on direct entry/reload, actual copy/scroll, mutation blocking, action locks, opt-out, and unknown-state rejection.
+
+## 1.22.7 — 2026-10-15
+
+- Fixes missing favorite icons and Pinned Packages when Integration Packages exposes the current tenant through its existing menu/session context instead of component state. Designer keeps its existing identity lookup.
+- Preserves saved favorite records, tenant/page isolation, settings, and recovery rules. No reset, migration, new permissions, polling, authentication calls, or additional service requests are introduced.
+- Adds regressions for context-only Packages identity, tenant switches, missing/stale identity, direct reload, and retained Designer roots. Browser fixtures use disposable system-temp profiles and clean up after failures.
+- This is a v1-only hotfix; v2 exporter and settings work is not included. Signed-in confirmation remains the owner's next step.
+
 ## 1.22.6 — 2026-10-13
 
 - Removes the blanket grey dimming while **View Published Fitting Details** is enabled, so published fitting text/code is easier to read. Native disabled action styling and all read-only protections remain.

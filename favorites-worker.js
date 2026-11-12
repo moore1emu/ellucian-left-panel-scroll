@@ -49,9 +49,28 @@ async function retireVerifiedRecoveryCopies(expected) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
-  if (sender.id !== chrome.runtime.id || !['favorites-prepare', 'favorites-save', 'favorites-assign', 'favorites-import'].includes(message?.type)) return;
+  if (sender.id !== chrome.runtime.id || !['favorites-prepare', 'favorites-save', 'favorites-assign', 'favorites-import', 'capability-pin'].includes(message?.type)) return;
   pendingFavoriteUpdate = pendingFavoriteUpdate.catch(() => {}).then(async () => {
     const data = FavoritesData;
+    // Pin clicks and backup imports use one queue so a merge cannot overwrite a concurrent click.
+    if (message.type === 'capability-pin') {
+      if (!sender.tab || sender.frameId !== 0 || !sender.documentId || typeof message.add !== 'boolean') throw new Error('Open an Experience page first.');
+      const scope = data.capabilityScope(message.key);
+      const origin = new URL(scope.home).origin;
+      if (new URL(sender.url).origin !== origin) throw new Error('Favorite site changed.');
+      // A previously injected custom tab may remain open after its exact site grant is removed.
+      if (!CustomSites.defaults().includes(origin) && (!(await CustomSites.readSites()).includes(origin) ||
+          !await chrome.permissions.contains({ origins:[CustomSites.pattern(origin)] }))) throw new Error('Enable access to this site first.');
+      const [item] = data.capabilityApps(scope.home, [message.item]);
+      const saved = await chrome.storage.local.get({[message.key]:[], [data.CAPABILITIES_ENABLED]:true});
+      const active = await chrome.tabs.sendMessage(sender.tab.id, {type:'capability-pin-context'}, {frameId:0, documentId:sender.documentId});
+      if (active !== message.key || saved[data.CAPABILITIES_ENABLED] === false) throw new Error('Capabilities favorites are unavailable.');
+      const list = data.capabilityApps(scope.home,saved[message.key]);
+      const exists = list.some(pin => pin.path === item.path);
+      if (message.add !== exists) await chrome.storage.local.set({[message.key]:message.add ? [...list,item] : list.filter(pin => pin.path !== item.path)});
+      respond({ok:true});
+      return;
+    }
     // Only an extension popup can import backups or confirm assignment of an old list.
     const popupSender = sender.url === chrome.runtime.getURL('popup.html');
     if (!['favorites-save', 'favorites-prepare'].includes(message.type) && sender.tab && !popupSender) throw new Error('Open settings to restore favorites.');
@@ -68,6 +87,17 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     if (message.type === 'favorites-import') {
       const incoming = data.backup(message.backup);
       if (!['merge', 'replace'].includes(message.mode)) throw new Error('Choose Merge or Replace.');
+      // An older backup has no Capabilities section. Replace affects only explicitly listed scopes.
+      const capabilities = incoming.capabilityFavorites;
+      if (capabilities) {
+        const keys = capabilities.lists.map(data.capabilityKey);
+        const previous = message.mode === 'merge' && keys.length ? await chrome.storage.local.get(keys) : {};
+        for (const group of capabilities.lists) {
+          const key = data.capabilityKey(group);
+          writes[key] = message.mode === 'replace' ? group.apps : data.capabilityApps(group.home, [...(previous[key] || []), ...group.apps]);
+        }
+        writes[data.CAPABILITIES_ENABLED] = capabilities.enabled;
+      }
       // Replace only lists present in this file, never all browser favorites or other tenants.
       for (const group of incoming.favorites) {
         const key = data.key(group);

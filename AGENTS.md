@@ -2,9 +2,15 @@
 
 ## Scope and Approval
 
+- Capability shortcuts use the current Experience Home path and site origin to share pins across Home and every page beneath that Home path with the Experience header and Capabilities button. Keep the shortcuts clickable above Home’s content layer. Use the native menu’s same-tenant app paths and local icon symbols. Place a separate star before each eligible launch link and follow the current menu contents as rows change. Cover approved custom HTTPS origins, including nested Home paths and root Home links with verified tenant identity. Preserve current-tab navigation and native header spacing. The default-on Capabilities favorites switch hides stars and shortcuts without deleting pins. Include the switch and scoped app lists in JSON backups. Older backups preserve both.
+
+- In 1.23.0, Job Run Files uses the open native editor for JSON and CSV. Keep the default-on Formatted view choice in local extension storage and preserve the original file for raw view.
+
 - Make surgical changes within the owner's request. Preserve deliberate behavior and useful comments; ask before broader refactoring, architecture changes, or consequential behavior changes.
 - Use `develop` for test builds. Owner-authorized review branches may feed into develop. Keep main unchanged until the owner confirms the intended release works and explicitly authorizes merging. Testing, store submission, store approval, and GitHub merging are separate steps.
 - Use draft pull requests to track unconfirmed development. Preserve individual version commits when an approved merge is performed. Do not enable auto-merge or publish/upload a store update without authorization.
+
+- Keep pipeline star actions tied to the saved pin identities represented by the displayed row. A single unpin removes prior duplicates within that package and major version.
 
 ## Comments and Execution Worlds
 
@@ -23,12 +29,18 @@
 
 ## Versions, Packaging, and Documentation
 
-- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next version after 1.22.6 is 1.22.7. Do not rename historical releases.
+- Maintain one cumulative v1 What’s New list. Carry it through local version bumps and add user-visible changes. Start a new list and advance LAST_PUBLISHED_VERSION only after verifying a new store release. Show it on upgrade and remember dismissal for that version.
+- Each delivered code revision needs its own manifest version and a newest-first entry in docs/CHANGELOG.md. Internal commits and documentation-only changes do not require separate version bumps. Keep patch numbers 0–9; the next v1 version after 1.24.3 is 1.24.4. Do not rename historical releases.
+- Published fitting detection recognizes both observed Create Draft labels, including the existing-draft case, and still requires disabled Publish on the fitting route. Unknown labels/editors remain locked; never simplify this to disabled-controls or pointer-events-only detection.
+- This v1 hotfix branches from main independently of v2 development. Bring the narrow Packages identity fix into develop too, without replacing v2 files or merging unfinished v2 work into main.
+- Packages identity may come from context.tenantId on the existing menu/session owner. Keep that fallback Packages-only, inspect only callback presence (never invoke it for identity), and preserve Designer's live manager lookup and tenant isolation. Missing identity must not reset saved pins or reuse a stale tenant.
 - Preserve the root-level extension layout and the existing release filename `ellucian-left-panel-scroll.zip`. Keep only the latest ZIP/unpacked release in the configured outputs folder; retain any needed prior build in a separate recovery folder.
 - Put manifest.json at the ZIP root, with runtime assets and icons beside it. Include README.md, CHANGELOG.md, and PRIVACY.md inside the ZIP and identical copies beside it. Do not package tests, agent instructions, development dependencies, scratch files, or personal workflow notes.
 - GitHub keeps a concise root README, detailed guides/screenshots and changelog under docs/, and the full root PRIVACY.md at its existing store-linked URL. Do not replace that policy with a pointer or overwrite the short repository README with the longer packaged guide.
 
 ## Verification and Completion
+
+- Browser fixtures must create unique system-temp profiles, include launch in try/finally, validate the exact owned path, and remove it with bounded lock retries even when startup/assertions/shutdown fail. Never use installed personal profiles.
 
 - Check syntax for changed JavaScript and run the applicable maintained synthetic regressions. The repository includes the popup switch-save regression; additional local regressions may be supplied by the owner. Put installation/run commands in README, and clearly report any unavailable tests rather than treating syntax alone as sufficient.
 - For shared-helper/message changes, verify script order, direct/SPA entry, sharing opt-out/timeouts, and favorites/resize behavior. For storage changes, test failed reads/writes, pending-save interactions, navigation, and extension-context invalidation. Use no live institution services in automated fixtures.

@@ -25,6 +25,7 @@ function installChromeStub() {
   window.chrome = {
     runtime,
     storage: {
+      onChanged: { addListener() {} },
       local: {
         get(defaults, callback) {
           const result = typeof defaults === "object" && defaults ? { ...defaults } : {};
@@ -52,6 +53,8 @@ function installChromeStub() {
 }
 
 const SWITCHES = [
+  { id: "capabilities-favorites-enabled", key: "capabilitiesFavoritesEnabled", label: "Capabilities favorites", status: "capabilities-status" },
+  { id: "job-file-viewer-enabled", key: "jobFileViewerEnabled", label: "Enable JSON and CSV viewer", status: "job-file-viewer-status" },
   { id: "remember-width", key: "rememberWidth", label: "Remember Resized Width", status: "package-artifacts-status" },
   { id: "favorites-enabled", key: "favoritesEnabled", label: "Pinned Packages", status: "package-artifacts-status" },
   { id: "shared-version-enabled", key: "sharedVersionEnabled", label: "Shared To", status: "shared-from-status" },
@@ -153,6 +156,20 @@ async function expectMatches(page, item, expected, step) {
       await page.close();
       console.log(`ok - ${item.label}`);
     }
+
+    // A failed dismissal must keep both the release notes and the retry button usable.
+    const { page: notesPage } = await openPopup(browser, { pendingUpdateSummary: { version: "0.0.0-test" } });
+    const notice = notesPage.locator('#update-summary');
+    const dismiss = notice.getByRole('button', { name: 'Dismiss update summary' });
+    await dismiss.click();
+    assert.ok(await dismiss.isDisabled());
+    await notesPage.evaluate(() => window.__settleWrite(true));
+    assert.ok(await notice.isVisible());
+    assert.match(await notice.locator('[role="status"]').textContent(), /try again/i);
+    await dismiss.click();
+    await notesPage.evaluate(() => window.__settleWrite(false));
+    assert.equal(await notice.isVisible(), false);
+    await notesPage.close();
 
     // Saved widths are cleared only after reset-on-refresh actually saves.
     const widths = { "example.test|packages": 320 };

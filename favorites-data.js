@@ -2,6 +2,8 @@
 
 // Share bounded, credential-free backup rules between the worker, popup, and isolated page.
 globalThis.FavoritesData = (() => {
+  const CAPABILITY_PREFIX = 'capabilityPins:';
+  const CAPABILITIES_ENABLED = 'capabilitiesFavoritesEnabled';
   const KEY = 'favoritePackagesByTenant';
   const LEGACY = 'favoritePackagesByHost';
   const EXPANDED = 'favoritesExpandedByHost';
@@ -75,6 +77,55 @@ globalThis.FavoritesData = (() => {
     });
   }
 
+  // Use the same storage identities as existing installs, including separate tenants at a root Home URL.
+  function capabilityKey({home, tenantId}) {
+    const url = new URL(home);
+    if (url.protocol !== 'https:' || url.href !== home || url.username || url.password || /[?#]/u.test(home) ||
+        !url.pathname.endsWith('/') || url.pathname.includes('//')) throw new Error('Invalid Capabilities Home URL.');
+    if (url.pathname === '/') {
+      if (typeof tenantId !== 'string' || !tenantId.trim() || tenantId.trim() !== tenantId) throw new Error('Missing Capabilities tenant.');
+      return CAPABILITY_PREFIX + home + ':tenant:' + tenantId;
+    }
+    if (tenantId !== undefined) throw new Error('Unexpected Capabilities tenant.');
+    return CAPABILITY_PREFIX + home;
+  }
+
+  function capabilityScope(key) {
+    if (typeof key !== 'string' || !key.startsWith(CAPABILITY_PREFIX)) throw new Error('Invalid Capabilities list.');
+    const suffix = key.slice(CAPABILITY_PREFIX.length);
+    const root = new URL(suffix).origin + '/';
+    const scope = suffix.startsWith(root + ':tenant:') ? {home:root, tenantId:suffix.slice((root + ':tenant:').length)} : {home:suffix};
+    if (capabilityKey(scope) !== key) throw new Error('Invalid Capabilities list.');
+    return scope;
+  }
+
+  // Accept only same-tenant app paths and local sprite identifiers that the menu can safely render.
+  function capabilityApps(home, apps) {
+    if (!Array.isArray(apps)) throw new Error('Invalid Capabilities favorites.');
+    const base = new URL(home);
+    const unique = new Map();
+    for (const item of apps) {
+      if (typeof item?.path !== 'string' || !item.path.startsWith(base.pathname + 'app/')) throw new Error('Invalid Capabilities app path.');
+      const link = new URL(item.path, home);
+      if (link.origin !== base.origin || link.pathname !== item.path || typeof item.name !== 'string' ||
+          !item.name.trim() || item.name.length > 256 || (item.icon !== undefined && item.icon !== '' && (typeof item.icon !== 'string' || !/^#ds-icon-[a-z0-9-]+$/iu.test(item.icon)))) throw new Error('Invalid Capabilities favorite.');
+      if (!unique.has(item.path)) unique.set(item.path,{path:item.path, name:item.name.trim(), icon:item.icon || ''});
+    }
+    return [...unique.values()];
+  }
+
+  function capabilityBackup(value) {
+    if (typeof value?.enabled !== 'boolean' || !Array.isArray(value.lists)) throw new Error('Invalid Capabilities backup.');
+    const seen = new Set();
+    const lists = value.lists.map(group => {
+      const key = capabilityKey(group);
+      if (seen.has(key)) throw new Error('Repeated Capabilities list.');
+      seen.add(key);
+      return {...capabilityScope(key), apps:capabilityApps(group.home, group.apps)};
+    });
+    return {enabled:value.enabled, lists};
+  }
+
   // Require a known backup format; parsing JSON never executes its contents.
   function backup(value) {
     if (value?.format !== 'integration-navigator-backup' || value.schemaVersion !== 1 || !Array.isArray(value.favorites) || value.favorites.length > 200 || !Array.isArray(value.unassignedFavorites) || value.unassignedFavorites.length > 200) throw new Error('Choose an Integration Navigator backup JSON file.');
@@ -100,7 +151,8 @@ globalThis.FavoritesData = (() => {
       if (assignment && assignmentMap.has(legacyKey(clean)) && key(assignmentMap.get(legacyKey(clean))) !== key(assignment)) throw new Error('Conflicting favorite assignments.');
       return { site: clean.site, page: clean.page, packages: items(entry.packages), ...(assignedTenantId ? { assignedTenantId } : {}) };
     });
-    return { format: value.format, schemaVersion: 1, favorites, unassignedFavorites, assignments: [...assignmentMap.values()], environments: sources(value.environments || []) };
+    return { format: value.format, schemaVersion: 1, favorites, unassignedFavorites, assignments: [...assignmentMap.values()],
+      ...(value.capabilityFavorites === undefined ? {} : {capabilityFavorites:capabilityBackup(value.capabilityFavorites)}), environments: sources(value.environments || []) };
   }
 
   // Export unresolved recovery copies and compact assignment markers, not cleaned-up duplicate pins.
@@ -122,7 +174,10 @@ globalThis.FavoritesData = (() => {
     const environments = Object.entries(settings.designerOwnershipCache || {}).map(([environmentId, entry]) => ({ environmentId, environment: entry.environment,
       lastCheckedAt: new Date(entry.checkedAt).toISOString(), packages: entry.packages.map((group) => group.name === null
         ? { name: 'Package Not Yet Recorded', packageNameRecorded: false, pipelines: group.pipelines } : group) }));
-    return { ...backup({ format: 'integration-navigator-backup', schemaVersion: 1, favorites, unassignedFavorites, assignments, environments }), extensionVersion: version, exportedAt: new Date().toISOString() };
+    // Discover per-site keys without exporting unrelated local settings or permissions.
+    const lists = Object.keys(settings).filter(k => k.startsWith(CAPABILITY_PREFIX)).map(k => ({...capabilityScope(k), apps:settings[k]}));
+    const capabilityFavorites = {enabled:settings[CAPABILITIES_ENABLED] !== false, lists};
+    return { ...backup({ format: 'integration-navigator-backup', schemaVersion: 1, favorites, unassignedFavorites, assignments, environments, capabilityFavorites }), extensionVersion: version, exportedAt: new Date().toISOString() };
   }
-  return Object.freeze({ KEY, LEGACY, EXPANDED, HEIGHTS, ASSIGNED, defaults, scope, key, fromKey, legacyKey, items, merge, backup, exportData });
+  return Object.freeze({ CAPABILITIES_ENABLED, capabilityScope, capabilityKey, capabilityApps, KEY, LEGACY, EXPANDED, HEIGHTS, ASSIGNED, defaults, scope, key, fromKey, legacyKey, items, merge, backup, exportData });
 })();

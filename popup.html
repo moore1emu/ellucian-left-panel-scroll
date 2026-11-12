@@ -17,6 +17,17 @@
         </div>
       </header>
 
+      <!-- Show update notes only after an update, until this version is dismissed. -->
+      <section id="update-summary" class="settings-card update-summary-card" aria-labelledby="update-summary-title" hidden>
+        <div class="update-summary-heading">
+          <h2 id="update-summary-title">What's New</h2>
+          <button id="dismiss-update-summary" type="button" aria-label="Dismiss update summary">Dismiss</button>
+        </div>
+        <p id="update-summary-baseline"></p>
+        <ul id="update-summary-items"></ul>
+        <p id="update-summary-status" class="icon-status" role="status" aria-live="polite"></p>
+      </section>
+
       <!-- Keep everyday page options together in the same compact disclosure style. -->
       <details class="settings-card page-behavior-card" open>
         <summary>Page Behavior</summary>
@@ -55,6 +66,17 @@
           </span>
         </label>
 
+        <label class="setting-row" for="capabilities-favorites-enabled">
+          <span class="setting-copy">
+            <span class="setting-title" id="capabilities-title">Capabilities favorites</span>
+            <span class="setting-description" id="capabilities-help">Show menu stars and Experience header links.</span>
+          </span>
+          <span class="switch">
+            <input id="capabilities-favorites-enabled" type="checkbox" disabled aria-labelledby="capabilities-title" aria-describedby="capabilities-help" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="capabilities-status" class="icon-status" role="status" aria-live="polite"></p>
         <!-- Keep reference display with width and favorites, separate from sharing settings. -->
         <label class="setting-row" for="package-artifacts-enabled" title="Integration Packages only; Designer is unchanged. Refresh Integration Packages after enabling.">
           <span class="setting-copy">
@@ -67,6 +89,18 @@
           </span>
         </label>
         <p id="package-artifacts-status" class="icon-status" role="status" aria-live="polite"></p>
+        <!-- Let the native text viewer take over without resetting either footer preference. -->
+        <label class="setting-row" for="job-file-viewer-enabled">
+          <span class="setting-copy">
+            <span class="setting-title" id="job-file-viewer-title">Enable JSON and CSV viewer</span>
+            <span class="setting-description" id="job-file-viewer-help">Format files in Job Run Files.</span>
+          </span>
+          <span class="switch">
+            <input id="job-file-viewer-enabled" type="checkbox" disabled aria-labelledby="job-file-viewer-title" aria-describedby="job-file-viewer-help" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p id="job-file-viewer-status" class="icon-status" role="status" aria-live="polite"></p>
         <!-- Separate navigation/display choices from the two optional sharing features. -->
         <hr class="page-behavior-divider" />
         <!-- Keep destination sharing details an opt-in named to match Shared From. -->
@@ -221,7 +255,7 @@
       <!-- Keep: group export/import in the last settings section, with Refresh left under Shared From (1.22.3). -->
       <details class="settings-card backup-card">
         <summary>Backup &amp; Restore</summary>
-        <p class="card-description">Back up favorites and saved sources.</p>
+        <p class="card-description">Back up package, pipeline and Capabilities favorites and saved sources.</p>
         <button id="export-shared-from" type="button" aria-label="Export Favorites and Shared From JSON" title="Back up tenant favorites and saved Designer sources">Export JSON</button>
         <button id="import-favorites" type="button">Import JSON</button>
         <input id="backup-file" type="file" accept=".json,application/json" hidden />
@@ -231,7 +265,7 @@
             <select id="backup-mode"><option value="merge">Merge (Keep Existing Order)</option><option value="replace">Replace Matching Lists</option></select>
           </label>
           <label class="card-description"><input id="backup-sources" type="checkbox" /> Also Restore Shared From Data</label>
-          <p class="card-description">Shared From must be enabled first. No settings or site permissions change.</p>
+          <p class="card-description">Shared From must be enabled first. Site permissions stay unchanged.</p>
           <button id="confirm-backup" type="button">Import Backup</button>
           <button id="cancel-backup" type="button">Cancel</button>
         </div>
@@ -265,6 +299,8 @@
     <script src="icon-appearance.js"></script>
     <script src="favorite-appearance.js"></script>
     <script src="favorites-data.js"></script>
+    <script src="update-summary.js"></script>
+    <script src="update-summary-popup.js"></script>
     <script src="popup.js"></script>
     <script src="favorites-popup.js"></script>
     <script src="custom-sites.js"></script>

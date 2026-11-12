@@ -1164,7 +1164,7 @@
   }
 
   // Add or remove one pipeline pin and create or remove its implicit package parent.
-  function togglePipelineFavorite(packageName, pipelineEntry) {
+  function togglePipelineFavorite(packageName, pipelineEntry, savedKeys) {
     if (!favoritesLoaded || activeFavoritesStorageKey !== getFavoriteScopeKey()) return;
     const packageIdentity = normalizePackageIdentity(packageName);
     const pipeline = {
@@ -1184,15 +1184,12 @@
     );
     const currentGroup = favoritePipelineGroups.get(packageIdentity);
     const currentPipelines = currentGroup?.pipelines ?? [];
-    const existingIndex = currentPipelines.findIndex(
-      (savedPipeline) => getPipelineIdentity(savedPipeline) === pipelineIdentity,
-    );
-
-    // Remove the requested child or append it in the order it was pinned.
-    const nextPipelines = [...currentPipelines];
-    if (existingIndex >= 0) {
-      nextPipelines.splice(existingIndex, 1);
-    } else {
+    // Remove the original saved records even when their display name or version has changed.
+    const nextPipelines = currentPipelines.filter((entry) => !savedKeys.includes(getPipelineIdentity(entry)));
+    if (savedKeys.length && nextPipelines.length === currentPipelines.length) return;
+    // A second add from a stale control must not create a duplicate.
+    if (!savedKeys.length) {
+      if (currentPipelines.some((entry) => getPipelineIdentity(entry) === pipelineIdentity)) return;
       nextPipelines.push(pipeline);
     }
 
@@ -1279,9 +1276,14 @@
   function moveFavoritePipeline(packageName, sourcePipeline, targetPipeline, insertAfter) {
     const packageIdentity = normalizePackageIdentity(packageName);
     const currentGroup = favoritePipelineGroups.get(packageIdentity);
-    const orderedPipelines = moveListEntry(currentGroup?.pipelines ?? [], getPipelineIdentity,
-      getPipelineIdentity(sourcePipeline), getPipelineIdentity(targetPipeline), insertAfter);
-    if (!orderedPipelines) return;
+    if (!currentGroup) return;
+    // Move every saved spelling behind the dragged row together so a duplicate cannot anchor it in place.
+    const sourceKeys = new Set(sourcePipeline.savedKeys);
+    const moving = currentGroup.pipelines.filter((entry) => sourceKeys.has(getPipelineIdentity(entry)));
+    const orderedPipelines = currentGroup.pipelines.filter((entry) => !sourceKeys.has(getPipelineIdentity(entry)));
+    const targetIndex = orderedPipelines.findIndex((entry) => getPipelineIdentity(entry) === targetPipeline.savedKeys[0]);
+    if (!moving.length || targetIndex < 0) return;
+    orderedPipelines.splice(targetIndex + (insertAfter ? 1 : 0), 0, ...moving);
     // Save the child order without changing the package pin or disclosure state.
     favoritePipelineGroups.set(packageIdentity, { ...currentGroup, pipelines: orderedPipelines });
     refreshFavoritesUI();
@@ -1430,7 +1432,7 @@
   }
 
   // Add or refresh a star beside one currently rendered pipeline row.
-  function updatePipelineFavoriteButton(pipelineRow) {
+  function updatePipelineFavoriteButton(pipelineRow, pinsByPackage) {
     const rowContent = pipelineRow.querySelector(
       ":scope > .MuiTreeItem-content",
     );
@@ -1465,19 +1467,10 @@
 
     const packageName = packageEntry.name;
     const packageIdentity = normalizePackageIdentity(packageName);
-    const pipelineEntry = packageEntry.pipelines.find(
-        (pipeline) =>
-          pipeline.name === pipelineName &&
-          (!pipelineVersion || pipeline.version === pipelineVersion),
-      ) ?? visiblePipeline;
-    const isFavorite = Boolean(
-      favoritePipelineGroups
-        .get(packageIdentity)
-        ?.pipelines.some(
-          (pipeline) =>
-            getPipelineIdentity(pipeline) === getPipelineIdentity(pipelineEntry),
-        ),
-    );
+    // Match the indexed alias even when the tree omits the display-only version prefix.
+    const pipelineEntry = packageEntry.pipelines.find((entry) => exactPipelineRecordsMatch(entry, visiblePipeline)) ?? visiblePipeline;
+    const savedPin = pinsByPackage.get(packageIdentity)?.get(getPipelineIdentity(pipelineEntry));
+    const isFavorite = Boolean(savedPin);
     let favoriteButton = pipelineHost.querySelector(
       ":scope > .ellucian-pipeline-favorite-button",
     );
@@ -1501,6 +1494,7 @@
             originalName: favoriteButton.dataset.pipelineOriginalName,
             version: favoriteButton.dataset.pipelineVersion,
           },
+          favoriteButton.savedPipelineKeys,
         );
       });
       pipelineHost.appendChild(favoriteButton);
@@ -1511,6 +1505,7 @@
     favoriteButton.dataset.pipelineName = pipelineEntry.name;
     favoriteButton.dataset.pipelineOriginalName = pipelineEntry.originalName;
     favoriteButton.dataset.pipelineVersion = pipelineEntry.version;
+    favoriteButton.savedPipelineKeys = savedPin?.savedKeys ?? [];
     favoriteButton.dataset.favorite = String(isFavorite);
     favoriteButton.setAttribute("aria-pressed", String(isFavorite));
     favoriteButton.setAttribute(
@@ -1663,6 +1658,8 @@
       );
     });
     const seenFavorites = new Set();
+    // Both sets of stars act on the same saved pins.
+    const pinsByPackage = new Map();
 
     // Resolve saved pipeline pins against the current index without deleting stale pins.
     const orderedFavoriteNames = getOrderedFavoriteNames();
@@ -1676,24 +1673,22 @@
         }
 
         const savedGroup = favoritePipelineGroups.get(identity);
-        const favoritePipelines = (savedGroup?.pipelines ?? []).flatMap(
-          (savedPipeline) => {
-            const sameNamePipelines = packageEntry.pipelines.filter((pipeline) =>
-              pipelineNamesMatch(pipeline, savedPipeline),
-            );
-            const matchingPipeline =
-              sameNamePipelines
-                .filter((pipeline) =>
-                  pipelinesMatch(pipeline, savedPipeline),
-                )
-                .sort(comparePipelineVersionsDescending)[0] ??
-              // Accept a sole name match when Ellucian reformats its version value.
-              (sameNamePipelines.length === 1 ? sameNamePipelines[0] : null);
-
-            // Keep: show the saved, previously verified child while Ellucian unloads its row (1.9.3).
-            return [matchingPipeline ?? savedPipeline];
-          },
-        );
+        const resolvedPins = new Map();
+        for (const savedPipeline of savedGroup?.pipelines ?? []) {
+          const sameName = packageEntry.pipelines.filter((entry) => pipelineNamesMatch(entry, savedPipeline));
+          const matching = sameName.filter((entry) => pipelinesMatch(entry, savedPipeline)).sort(comparePipelineVersionsDescending)[0];
+          // Accept a sole name for a reformatted version, but keep different numeric majors independent.
+          const sole = sameName.length === 1 ? sameName[0] : null;
+          const useFallback = sole && ![sole.version, savedPipeline.version].every((version) => /^\d+$/u.test(getPipelineMajorVersion(version)));
+          // Keep: show the saved, previously verified child while Ellucian unloads its row (1.9.3).
+          const display = matching ?? (useFallback ? sole : savedPipeline);
+          const displayKey = getPipelineIdentity(display);
+          // Coalesce earlier duplicates in the list and retain each stored key for explicit removal.
+          if (!resolvedPins.has(displayKey)) resolvedPins.set(displayKey, { ...display, savedPipeline, savedKeys: [] });
+          resolvedPins.get(displayKey).savedKeys.push(getPipelineIdentity(savedPipeline));
+        }
+        pinsByPackage.set(identity, resolvedPins);
+        const favoritePipelines = [...resolvedPins.values()];
         const packagePinned = favoritePackageIdentities.has(identity);
 
         // Keep: hide unavailable child-only groups while retaining their stored identities (1.8.0).
@@ -1711,6 +1706,9 @@
       },
     );
 
+    // Native stars also need refreshing when the pinned list can reuse its controls.
+    panel.querySelectorAll(PIPELINE_ROW_SELECTOR).forEach((row) => updatePipelineFavoriteButton(row, pinsByPackage));
+
     // Avoid replacing interactive controls when the complete visible state is unchanged.
     const renderSignature = JSON.stringify({
       expanded: favoritesExpanded,
@@ -1722,7 +1720,7 @@
         pipelinesExpanded: packageEntry.pipelinesExpanded,
         // Keep: a newer minor/patch release must refresh both its badge and navigation target (1.20.1).
         pipelines: packageEntry.favoritePipelines.map((pipeline) => [
-          getPipelineIdentity(pipeline), pipeline.name, pipeline.originalName, pipeline.version,
+          pipeline.savedKeys, pipeline.name, pipeline.originalName, pipeline.version,
         ]),
       })),
     });
@@ -1896,7 +1894,7 @@
           const pipelineItem = document.createElement("div");
           pipelineItem.className = "ellucian-favorite-pipeline-item";
 
-          const pipelineIdentity = getPipelineIdentity(pipelineEntry);
+          const pipelineIdentity = getPipelineIdentity(pipelineEntry.savedPipeline);
           const pipelineDragHandle = document.createElement("button");
           pipelineDragHandle.type = "button";
           pipelineDragHandle.className =
@@ -1925,13 +1923,13 @@
             accepts: (source) => source.packageIdentity === packageIdentity,
             isSelf: (source) => source.pipelineIdentity === pipelineIdentity,
             neighbor: (step) => {
-              const index = packageEntry.favoritePipelines.findIndex((pipeline) => getPipelineIdentity(pipeline) === pipelineIdentity);
+              const index = packageEntry.favoritePipelines.findIndex((pipeline) => getPipelineIdentity(pipeline.savedPipeline) === pipelineIdentity);
               const target = packageEntry.favoritePipelines[index + step];
               return target ? { pipelineEntry: target } : null;
             },
             move: (source, target, insertAfter) => {
               moveFavoritePipeline(packageEntry.name, source.pipelineEntry, target.pipelineEntry, insertAfter);
-              focusFavoritePipelineHandle(packageEntry.name, source.pipelineEntry);
+              focusFavoritePipelineHandle(packageEntry.name, source.pipelineEntry.savedPipeline);
             },
           });
 
@@ -1975,7 +1973,7 @@
           pipelineRemoveButton.addEventListener("click", (event) => {
             // Unpin only this child without toggling the package disclosure state.
             event.stopPropagation();
-            togglePipelineFavorite(packageEntry.name, pipelineEntry);
+            togglePipelineFavorite(packageEntry.name, pipelineEntry, pipelineEntry.savedKeys);
           });
 
           pipelineItem.append(
@@ -2108,12 +2106,6 @@
         updatePackageFavoriteButton(packageRow, favoritePackageIdentities);
       });
 
-    // Add stars only to child rows that Ellucian has currently rendered.
-    panel
-      .querySelectorAll(
-        PIPELINE_ROW_SELECTOR,
-      )
-      .forEach(updatePipelineFavoriteButton);
     renderFavoritesSection(panel, section);
 
     // Restore a saved height or expose the current automatic height to the handle.
@@ -2882,12 +2874,15 @@
     pipelines.slice(0, 10000).forEach((entry) => {
       const pipeline = { name: normalizeText(entry?.name), version: normalizeText(entry?.version), type: getPackageArtifactType(entry?.type) };
       if (!pipeline.type || !pipeline.name || !/^v?\d+\.\d+\.\d+$/u.test(pipeline.version)) return;
-      const identity = `${pipeline.name}\u0000${pipeline.type}`;
+      // Keep: mirror MAIN capture's per-major Sub-Pipelines without changing latest-overall APIs (2.1.2).
+      const major = pipeline.type === 'Sub-Pipeline' ? pipeline.version.replace(/^v/u, '').split('.')[0] : '';
+      const identity = JSON.stringify([pipeline.name, pipeline.type, major]);
       const previous = latest.get(identity);
       // Numeric version ordering handles patch/minor numbers above nine correctly.
       if (!previous || comparePipelineVersionsDescending(pipeline, previous) < 0) latest.set(identity, pipeline);
     });
-    return Array.from(latest.values()).sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }));
+    // Keep same-name published majors together in numeric ascending order.
+    return Array.from(latest.values()).sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }) || comparePipelineVersionsDescending(second, first));
   }
 
   // Restore placeholders and remove only extension-owned records on package or route changes.

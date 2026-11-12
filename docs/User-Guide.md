@@ -2,6 +2,20 @@
 
 [Back to the README](../README.md) · [Troubleshooting](Troubleshooting.md)
 
+## What’s New
+
+After an update, open the Integration Navigator toolbar icon to see release highlights above **Page Behavior**. They stay there until you select **Dismiss** for that version. On a fresh installation the popup opens directly to settings.
+
+## Capabilities favorites
+
+Open the nine-dot **Capabilities** menu on Experience Home, on a page opened from a card, or in a capability app such as Integration Packages, Integration Designer or Reporting & Analytics. Select the star to the left of an app’s icon to pin it. The stars follow the apps available in your menu. The app appears to the left of **Tasks** on every page under that site’s Home path with the Experience header and Capabilities button. Hover over its icon or focus it with the keyboard to see its name. If the icon is unavailable, the shortcut shows the app name. Select a shortcut or a Capabilities menu link to open the app in the current tab. Select its star again to unpin it. Header favorites stay in this browser profile for the current site and Home path. When Home is at the domain root, the extension uses the tenant ID provided by Experience. Under **Page Behavior**, turn **Capabilities favorites** off to hide the menu stars and header links. Turn it on to show your saved links again.
+
+## Job Run Files
+
+In **Page Behavior**, **Enable JSON and CSV viewer** starts on. Turn it off to use Ellucian’s text viewer and hide the two footer controls. Turning it back on restores your saved **Formatted view** and **Wrap text** choices, even in an open file.
+
+Open **View File** for a CSV or JSON job output. At the bottom of the dialog, **Formatted view** and **Wrap text** are to the left of **Close**. Formatted view starts on. Scroll across wide files, or select **Wrap text** to fit long values to the available width. Wrapping starts off. CSV uses the first record for column headings and preserves quoted fields. With wrapping on, values wrap and headings stay on one line. If the headings are too wide to fit, scroll across the preview. Expand JSON objects and arrays to read their contents. Turn **Formatted view** off for the original text. **Wrap text** stays visible but grayed out, and keeps its checkmark when you turn formatting back on. Your browser remembers both choices for the next file. Large or invalid previews fall back to the original text.
+
 ## Getting Started
 
 Install [Integration Navigator from the Chrome Web Store](https://chromewebstore.google.com/detail/integration-navigator/dbmjmmgocklhjnadhmibaldicbgoignd) in Chrome or Edge. In Edge, allow extensions from other stores if prompted, then approve the installation. [Microsoft's installation instructions](https://support.microsoft.com/en-us/edge/add-turn-off-or-remove-extensions-in-microsoft-edge) explain this option.
@@ -14,10 +28,12 @@ The package sidebar scrolls independently, keeping its heading visible. Drag its
 
 Use a package's star to pin it. In Integration Packages, you can also pin published pipelines beneath their package. Designer does not offer pipeline stars because its sidebar only lists packages.
 
+Version 1.22.7 also recognizes Packages tenants supplied through the page's live session context. If favorites were hidden on that page, reload the extension and refresh Packages; do not reset or re-create your pins first.
+
 - Select a favorite package to open it, or a favorite pipeline to open that pipeline's page.
 - Use the arrow to expand or collapse a favorite's pipelines without opening the package.
 - Drag handles to reorder packages or pipelines within their package.
-- Use a selected star again to unpin an item, including from the favorites area.
+- Use a selected star again to unpin an item, including from the favorites area. If an older build saved duplicate entries for the same pipeline, one click removes them together.
 - Resize the favorites area vertically, or collapse it when you need more space.
 
 Favorites and their layout stay separate by site, tenant ID, and Packages/Designer page. Multiple tenants on one vanity domain have separate lists. Hiding favorites does not delete them. Unavailable favorites are hidden without deleting their saved pins. Unknown tenant identity cannot load another tenant's favorites.
@@ -34,7 +50,7 @@ Designer pipeline search shows the first 20 matches and a count when there are m
 
 Search ignores case, spaces, and separators: `MMR`, `unco mmr`, and `uncommr` can all find `UNCO-MMR`.
 
-Enable **Page Behavior → Show APIs & Sub-Pipelines** to add a **Type** column and the newest published API/Sub-Pipeline release for each name in Integration Packages. These are plain, non-clickable records without run actions; they are not added to the sidebar or favorites. Normal Integration links work as before. These records use the page's normal package response, not extra network lookups or the Designer cache. **Shared From** remains an independent optional column.
+Enable **Page Behavior → Show APIs & Sub-Pipelines** to add a **Type** column and the newest published release for each API and for each major version of a Sub-Pipeline in Integration Packages. These are plain, non-clickable records without run actions; they are not added to the sidebar or favorites. Normal Integration links work as before. These records use the page's normal package response, not extra network lookups or the Designer cache. **Shared From** remains an independent optional column.
 
 Refresh Integration Packages once after installing this update or re-enabling **Show APIs & Sub-Pipelines**. The page then loads the metadata normally, before its sidebar filters out non-runnable entries. Turning this display setting off removes Type and the extra records and clears their temporary in-memory data, without clearing Designer sources or favorites. Turning Shared From off removes only its source column and cache. Source labels require visiting Designer; API/Sub-Pipeline names do not.
 
@@ -54,7 +70,7 @@ The section groups width memory, pinned favorites, and **Show APIs & Sub-Pipelin
 
 Enable **Page Behavior → View Published Fitting Details** to scroll, select, and copy text/code in a published fitting without creating a draft. It is off by default and independent of sharing settings. Code/text remains read-only; checkboxes, dropdowns, reset buttons, and other fitting actions remain disabled. Blanket grey dimming is removed while viewing is enabled; disabled actions still look inactive. Draft editing is unchanged. Switching off or leaving the published fitting restores native UI locks and appearance.
 
-Normal selection and Ctrl+A/Ctrl+C work in supported Ace editors. Editing shortcuts, typing, paste, cut, and drop are blocked. If the existing editor cannot be safely identified, it stays locked; refresh the page and retry, or report the issue without confidential source code. The feature saves only its preference, not fitting contents, and adds no service requests.
+Normal selection and Ctrl+A/Ctrl+C work in supported Ace editors, including a published version that already has a draft. Create Draft and Publish keep their native availability; this viewing option does not create or change drafts. Editing shortcuts, typing, paste, cut, and drop are blocked. If the existing editor or published state cannot be safely identified, it stays locked; refresh the page and retry, or report the issue without confidential source code. The feature saves only its preference, not fitting contents, and adds no service requests.
 
 ### Shared To — Designer
 
@@ -80,11 +96,11 @@ For a manual retry, open Designer in the source environment and select **Page Be
 
 In Designer, settings shows **Cached MM-DD-YY**, **No Cache**, or **Caching…** for the current environment. The date uses your browser's local time and reflects the last successful save, not a live share check. A failed refresh retains the date and shows its failure separately. **Status Unavailable** means the page connection or environment cannot be identified. Opening settings does not collect more data.
 
-**Backup & Restore → Export JSON** downloads a backup of favorites by site, tenant ID, and page, including pipeline pins, order, and layout. Backup & Restore is the last settings section. Any saved Shared From data is included, grouped by **Environment → Package → Pipelines**, with original last-checked times. Older source names without a recorded package appear under **Package Not Yet Recorded**. It works without cached sources and does not change favorites or settings. Nothing is uploaded; review institution-specific names and identifiers before sharing.
+**Backup & Restore → Export JSON** downloads a backup of favorites by site, tenant ID, and page, including pipeline pins, order, and layout. It also includes your Capabilities links by Home URL and root tenant, along with the Capabilities favorites switch. Backup & Restore is the last settings section. Any saved Shared From data is included, grouped by **Environment → Package → Pipelines**, with original last-checked times. Older source names without a recorded package appear under **Package Not Yet Recorded**. It works without cached sources and does not change favorites or settings. Nothing is uploaded; review institution-specific names and identifiers before sharing.
 
 The `favorites` section is the active tenant-specific data. Older recovery copies remain in `unassignedFavorites` until their destination and pins are verified; an `assignedTenantId` there means assignment is known but the copy has not yet been safely retired. Version 1.22.4 removes a duplicate only after reading back the saved tenant list and confirming every old pin is present. Compact `assignments` markers keep that ownership after cleanup, without repeating package/pipeline data. Missing pins or a failed verification keep the copy rather than deleting or silently merging it.
 
-**Backup & Restore → Import JSON** previews the tenant lists before you confirm. Merge keeps existing order and adds missing pins. Replace requires separate confirmation and affects only the matching lists in the file; other tenants are untouched. Current tenant lists take precedence over their older recovery copies. Backups preserve migration associations so pins removed afterward are not revived; older files with one matching current list are handled the same way. Old lists without a corresponding current list follow the upgrade assignment rules on your next visit. **Also Restore Shared From Data** is optional and requires Shared From to be enabled first. Restoring does not change preferences or site permissions, refresh source dates, or replace newer source snapshots with older ones. Older source-only exports are not importable backups. A different site domain does not automatically reuse another domain's favorites.
+**Backup & Restore → Import JSON** previews the tenant lists before you confirm. Merge keeps existing order and adds missing pins. Replace requires separate confirmation and affects only the matching lists in the file; other tenants are untouched. Current tenant lists take precedence over their older recovery copies. Backups preserve migration associations so pins removed afterward are not revived; older files with one matching current list are handled the same way. Old lists without a corresponding current list follow the upgrade assignment rules on your next visit. **Also Restore Shared From Data** is optional and requires Shared From to be enabled first. The preview shows the Capabilities lists and switch value the file will restore. Older backups leave both alone. Site permissions and other settings stay as configured. Source dates are preserved. Older source-only exports are not importable backups. A different site domain does not automatically reuse another domain's favorites.
 
 Turning Shared From off clears only its browser cache, not favorites. Exported files remain separate snapshots and do not update or disappear automatically.
 
@@ -102,7 +118,7 @@ The previews reflect your choices. **Reset** restores the toolbar default; **Res
 
 ### Custom Sites
 
-Add your university's HTTPS Experience URL and allow access when prompted, then refresh the page. Setup finishes in the background even if settings close. Custom sites must use the normal Integration Packages/Designer page paths.
+Add your university's HTTPS Experience URL and allow access when prompted, then refresh the page. Setup finishes in the background even if settings close. The Capabilities stars and header shortcuts use your site's own Home link and app paths. For a site with Home at the domain root, Experience must provide the current tenant ID. The Packages and Designer tools use their normal page paths.
 
 Saved custom sites have a **Remove** button. Removing one revokes its optional access; refresh open pages to clear already-loaded controls. Its favorites and widths are retained if you add it again. Adding a different domain does not transfer another domain's favorites or widths. The two standard Experience sites stay enabled.
 
